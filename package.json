@@ -1,0 +1,45 @@
+{
+  "name": "retro-pocket-games",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A pocket arcade in your browser — 20 retro classics, one installable PWA.",
+  "type": "module",
+  "license": "MIT",
+  "author": "C0deWiz4rd010",
+  "homepage": "https://c0dewiz4rd010.github.io/retro-pocket-games/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/C0deWiz4rd010/retro-pocket-games.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "gen:icons": "node scripts/gen-icons.mjs",
+    "prebuild": "node scripts/gen-icons.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,css}\" \"*.{json,md}\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "idb-keyval": "^6.2.1",
+    "pixi.js": "^8.6.6",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.5",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.0",
+    "vite": "^5.4.11",
+    "vite-plugin-pwa": "^0.21.1",
+    "vitest": "^2.1.8"
+  }
+}

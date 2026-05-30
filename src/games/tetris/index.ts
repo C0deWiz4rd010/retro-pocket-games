@@ -1,0 +1,206 @@
+import { Container, Graphics } from 'pixi.js';
+import type { Game, GameContext } from '@core/types';
+import type { Action } from '@core/InputManager';
+import type { RNG } from '@utils/rng';
+
+const COLS = 10;
+const ROWS = 20;
+
+type Cell = number; // 0 empty, else color
+interface Piece {
+  m: number[][];
+  color: number;
+  x: number;
+  y: number;
+}
+
+const SHAPES: { m: number[][]; color: number }[] = [
+  { m: [[1, 1, 1, 1]], color: 0x00f7ff }, // I
+  { m: [[1, 1], [1, 1]], color: 0xffd200 }, // O
+  { m: [[0, 1, 0], [1, 1, 1]], color: 0xb14cff }, // T
+  { m: [[0, 1, 1], [1, 1, 0]], color: 0x3ddc84 }, // S
+  { m: [[1, 1, 0], [0, 1, 1]], color: 0xff4d4d }, // Z
+  { m: [[1, 0, 0], [1, 1, 1]], color: 0x4a7bff }, // J
+  { m: [[0, 0, 1], [1, 1, 1]], color: 0xff7b00 }, // L
+];
+
+const rotate = (m: number[][]): number[][] =>
+  m[0]!.map((_, x) => m.map((row) => row[x]!).reverse());
+
+function bag(rng: RNG): number[] {
+  return rng.shuffle([0, 1, 2, 3, 4, 5, 6]);
+}
+
+export default function createGame(ctx: GameContext): Game {
+  const cell = Math.floor(Math.min(ctx.width / (COLS + 2), ctx.height / (ROWS + 1)));
+  const fieldW = COLS * cell;
+  const fieldH = ROWS * cell;
+  const ox = (ctx.width - fieldW) / 2;
+  const oy = (ctx.height - fieldH) / 2;
+
+  const layer = new Container();
+  layer.position.set(ox, oy);
+  ctx.stage.addChild(layer);
+  const frame = new Graphics();
+  frame.rect(-3, -3, fieldW + 6, fieldH + 6).stroke({ width: 3, color: 0x2b2b40 });
+  const g = new Graphics();
+  layer.addChild(frame, g);
+
+  const board: Cell[] = new Array(COLS * ROWS).fill(0);
+  let queue: number[] = bag(ctx.rng);
+  let score = 0;
+  let lines = 0;
+  let level = 1;
+  let over = false;
+  let dropAcc = 0;
+  let softDrop = false;
+
+  const spawn = (): Piece => {
+    if (queue.length < 1) queue = bag(ctx.rng);
+    const id = queue.shift() as number;
+    const s = SHAPES[id]!;
+    return { m: s.m.map((r) => [...r]), color: s.color, x: Math.floor((COLS - s.m[0]!.length) / 2), y: 0 };
+  };
+  let piece = spawn();
+
+  const collides = (p: Piece, nx = p.x, ny = p.y, m = p.m): boolean => {
+    for (let y = 0; y < m.length; y++)
+      for (let x = 0; x < m[y]!.length; x++) {
+        if (!m[y]![x]) continue;
+        const bx = nx + x;
+        const by = ny + y;
+        if (bx < 0 || bx >= COLS || by >= ROWS) return true;
+        if (by >= 0 && board[by * COLS + bx]) return true;
+      }
+    return false;
+  };
+
+  const lock = (): void => {
+    piece.m.forEach((row, y) =>
+      row.forEach((v, x) => {
+        if (v && piece.y + y >= 0) board[(piece.y + y) * COLS + piece.x + x] = piece.color;
+      }),
+    );
+    clearLines();
+    piece = spawn();
+    if (collides(piece)) {
+      over = true;
+      ctx.gameOver(score, { lines, level });
+    }
+  };
+
+  const clearLines = (): void => {
+    let cleared = 0;
+    for (let y = ROWS - 1; y >= 0; y--) {
+      if (board.slice(y * COLS, y * COLS + COLS).every((c) => c !== 0)) {
+        board.splice(y * COLS, COLS);
+        board.unshift(...new Array(COLS).fill(0));
+        cleared++;
+        y++;
+      }
+    }
+    if (cleared) {
+      lines += cleared;
+      score += [0, 100, 300, 500, 800][cleared]! * level;
+      level = 1 + Math.floor(lines / 10);
+      ctx.hud.setScore(score);
+      ctx.hud.setLabel(`LV ${level}`);
+      ctx.audio.sfx(cleared >= 4 ? 'powerup' : 'clear');
+    }
+  };
+
+  const tryMove = (dx: number, dy: number): boolean => {
+    if (collides(piece, piece.x + dx, piece.y + dy)) return false;
+    piece.x += dx;
+    piece.y += dy;
+    return true;
+  };
+
+  const tryRotate = (): void => {
+    const r = rotate(piece.m);
+    for (const kick of [0, -1, 1, -2, 2]) {
+      if (!collides(piece, piece.x + kick, piece.y, r)) {
+        piece.m = r;
+        piece.x += kick;
+        ctx.audio.sfx('blip');
+        return;
+      }
+    }
+  };
+
+  const hardDrop = (): void => {
+    while (tryMove(0, 1)) score += 1;
+    ctx.hud.setScore(score);
+    lock();
+  };
+
+  const onDown = (a: Action): void => {
+    if (over) return;
+    if (a === 'left') tryMove(-1, 0);
+    else if (a === 'right') tryMove(1, 0);
+    else if (a === 'a' || a === 'up') tryRotate();
+    else if (a === 'down') softDrop = true;
+    else if (a === 'b') hardDrop();
+  };
+  const onUp = (a: Action): void => {
+    if (a === 'down') softDrop = false;
+  };
+  const offD = ctx.input.on('down', onDown);
+  const offU = ctx.input.on('up', onUp);
+  const offS = ctx.input.on('swipe', (d) => {
+    if (over) return;
+    if (d === 'down') hardDrop();
+    else if (d === 'left') tryMove(-1, 0);
+    else if (d === 'right') tryMove(1, 0);
+    else tryRotate();
+  });
+
+  ctx.hud.setScore(0);
+  ctx.hud.setLabel('LV 1');
+
+  const draw = (): void => {
+    g.clear();
+    g.rect(0, 0, fieldW, fieldH).fill({ color: 0x0a0a12, alpha: 0.6 });
+    // settled
+    board.forEach((c, i) => {
+      if (!c) return;
+      const x = (i % COLS) * cell;
+      const y = Math.floor(i / COLS) * cell;
+      g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: c });
+    });
+    // ghost
+    let gy = piece.y;
+    while (!collides(piece, piece.x, gy + 1)) gy++;
+    piece.m.forEach((row, y) =>
+      row.forEach((v, x) => {
+        if (v) g.roundRect((piece.x + x) * cell + 1, (gy + y) * cell + 1, cell - 2, cell - 2, 3).fill({ color: piece.color, alpha: 0.18 });
+      }),
+    );
+    // active
+    piece.m.forEach((row, y) =>
+      row.forEach((v, x) => {
+        if (v && piece.y + y >= 0)
+          g.roundRect((piece.x + x) * cell + 1, (piece.y + y) * cell + 1, cell - 2, cell - 2, 3).fill({ color: piece.color });
+      }),
+    );
+  };
+
+  return {
+    update(dt) {
+      if (over) return;
+      dropAcc += dt;
+      const speed = softDrop ? 0.05 : Math.max(0.08, 0.8 - (level - 1) * 0.07);
+      if (dropAcc >= speed) {
+        dropAcc = 0;
+        if (!tryMove(0, 1)) lock();
+      }
+      draw();
+    },
+    destroy() {
+      offD();
+      offU();
+      offS();
+      layer.destroy({ children: true });
+    },
+  };
+}

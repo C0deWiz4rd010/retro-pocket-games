@@ -1,0 +1,121 @@
+/* The device shell (Console skin) + Clean Launcher skin. See docs/01 §4, docs/00 skins */
+
+.device {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Console skin: framed handheld ── */
+:root[data-skin='console'] .device {
+  max-width: min(480px, 100vw);
+  max-height: 100dvh;
+  margin: 0 auto;
+  background: var(--shell);
+  border: 2px solid var(--surface-2);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  padding: calc(8px + var(--safe-t)) 12px calc(8px + var(--safe-b));
+  gap: 8px;
+}
+@media (min-width: 520px) {
+  :root[data-skin='console'] .device {
+    border-radius: 28px;
+    max-height: min(880px, 96dvh);
+    margin: auto;
+    padding: 16px 14px 18px;
+  }
+}
+
+.device__brand {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+:root[data-skin='console'] .device__brand {
+  display: flex;
+}
+.device__brand .led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+  animation: led-pulse 2.4s ease-in-out infinite;
+}
+@keyframes led-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ── The screen (display) ── */
+.screen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+:root[data-skin='console'] .screen {
+  border: 3px solid #05050a;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.9),
+    inset 0 0 0 1px var(--surface-2);
+}
+
+.screen canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* DOM overlay layer (menus, HUD, modals) sits above the canvas */
+.screen__view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+/* When a game is active, the overlay lets pointer events fall through except on controls */
+.screen__view.is-game {
+  pointer-events: none;
+}
+.screen__view.is-game > * {
+  pointer-events: auto;
+}
+
+/* ── Console hardware controls (shown during a game) ── */
+.device__pad {
+  display: none;
+}
+:root[data-skin='console'] .device__pad.is-active {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  padding: 6px 10px 2px;
+  min-height: 120px;
+}
+
+/* In launcher skin, on-screen controls render as overlays inside the screen instead */
+:root[data-skin='launcher'] .device {
+  max-width: 100vw;
+}
+:root[data-skin='launcher'] .device__brand {
+  display: none;
+}

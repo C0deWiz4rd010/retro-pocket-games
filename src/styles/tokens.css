@@ -1,0 +1,96 @@
+/* Design tokens & the 4 themes. See docs/01-design-system.md */
+
+:root {
+  --radius: 12px;
+  --radius-lg: 20px;
+  --tap: 48px;
+  --gap: 12px;
+  --font-pixel: 'Press Start 2P', 'VT323', monospace;
+  --font-hud: 'VT323', 'Press Start 2P', monospace;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  --fx-intensity: 0.6;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Cyberpunk (default) ── */
+:root[data-theme='cyberpunk'] {
+  --bg: #0a0a12;
+  --surface: #14141f;
+  --surface-2: #1d1d2b;
+  --primary: #00f7ff;
+  --accent: #ff2e97;
+  --glow: #00f7ff;
+  --text: #e6e6f0;
+  --text-muted: #8a8aa3;
+  --ok: #3ddc84;
+  --warn: #ffb000;
+  --danger: #ff4d4d;
+  --shell: linear-gradient(160deg, #1a1a2e, #0d0d18);
+}
+
+/* ── GameBoy DMG ── */
+:root[data-theme='gameboy'] {
+  --bg: #0f380f;
+  --surface: #1e4d1e;
+  --surface-2: #306230;
+  --primary: #9bbc0f;
+  --accent: #8bac0f;
+  --glow: #9bbc0f;
+  --text: #cadc9f;
+  --text-muted: #6b8c4a;
+  --ok: #9bbc0f;
+  --warn: #d7e894;
+  --danger: #e63946;
+  --shell: linear-gradient(160deg, #2a4d2a, #0f380f);
+}
+
+/* ── C64 Blue ── */
+:root[data-theme='c64'] {
+  --bg: #2a2199;
+  --surface: #3e31a2;
+  --surface-2: #4a3fb0;
+  --primary: #a8a0ff;
+  --accent: #7c70da;
+  --glow: #a8a0ff;
+  --text: #e8e4ff;
+  --text-muted: #9b92e0;
+  --ok: #7cffb0;
+  --warn: #ffd27f;
+  --danger: #ff6b8a;
+  --shell: linear-gradient(160deg, #4a3fb0, #2a2199);
+}
+
+/* ── Amber Terminal ── */
+:root[data-theme='amber'] {
+  --bg: #0d0a02;
+  --surface: #1a1308;
+  --surface-2: #2a2010;
+  --primary: #ffb000;
+  --accent: #ff7b00;
+  --glow: #ffb000;
+  --text: #ffd27f;
+  --text-muted: #a87b30;
+  --ok: #ffd700;
+  --warn: #ff9e00;
+  --danger: #ff5252;
+  --shell: linear-gradient(160deg, #2a2010, #0d0a02);
+}
+
+/* High-contrast a11y boost */
+:root.a11y-high-contrast {
+  --text: #ffffff;
+  --text-muted: #cfcfe0;
+  --surface: #000000;
+  --surface-2: #111122;
+}
+
+:root.a11y-large-targets {
+  --tap: 60px;
+}

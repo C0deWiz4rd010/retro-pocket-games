@@ -1,0 +1,474 @@
+/* Shared UI components. See docs/01 §3 */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 15px;
+  transition:
+    transform 0.08s var(--ease),
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+.btn:active {
+  transform: scale(0.96);
+}
+.btn--primary {
+  background: var(--primary);
+  color: #04040a;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 60%, transparent);
+}
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--surface-2);
+}
+.btn--danger {
+  background: color-mix(in srgb, var(--danger) 24%, var(--surface));
+  color: var(--danger);
+}
+.btn--block {
+  width: 100%;
+}
+
+/* Top bar (inside the screen) */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  padding-top: max(12px, var(--safe-t));
+}
+.topbar__title {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  color: var(--primary);
+  text-shadow: 0 0 10px var(--glow);
+  letter-spacing: 1px;
+  flex: 1;
+}
+.iconbtn {
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+.iconbtn:active {
+  transform: scale(0.92);
+}
+
+/* Scroll body inside the screen */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 14px calc(20px + var(--safe-b));
+}
+
+/* Home */
+.hero {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 40%, var(--surface)), var(--surface));
+  border: 1px solid var(--surface-2);
+  overflow: hidden;
+}
+.hero__tag {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+.hero__title {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 6px 0 2px;
+}
+.hero__sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.hero__streak {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.xpbar {
+  flex: 1;
+  height: 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.xpbar > i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--glow);
+}
+
+.section-title {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin: 14px 2px 10px;
+}
+
+.tilegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px;
+}
+.tile {
+  position: relative;
+  aspect-ratio: 1 / 1.12;
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tile-accent, var(--primary)) 28%, var(--surface)), var(--surface));
+  border: 1px solid var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  overflow: hidden;
+  transition: transform 0.1s var(--ease);
+}
+.tile:active {
+  transform: scale(0.95);
+}
+.tile__glyph {
+  font-size: 30px;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tile-accent) 70%, transparent));
+}
+.tile__title {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.tile__best {
+  font-family: var(--font-hud);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.tile--soon {
+  opacity: 0.5;
+}
+.tile__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 8px;
+  font-family: var(--font-pixel);
+  background: var(--accent);
+  color: #04040a;
+  padding: 3px 5px;
+  border-radius: 6px;
+}
+
+/* SideNav */
+.nav {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: min(78%, 300px);
+  background: var(--surface);
+  z-index: 30;
+  transform: translateX(-105%);
+  transition: transform 0.25s var(--ease);
+  display: flex;
+  flex-direction: column;
+  padding: max(16px, var(--safe-t)) 0 calc(16px + var(--safe-b));
+  box-shadow: 6px 0 30px rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+}
+.nav.open {
+  transform: translateX(0);
+}
+.nav__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 29;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease);
+}
+.nav__scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.nav__head {
+  padding: 0 18px 14px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  color: var(--primary);
+  text-shadow: 0 0 10px var(--glow);
+}
+.nav__group {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  padding: 12px 18px 4px;
+}
+.nav__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  font-size: 15px;
+  text-align: left;
+  border-left: 3px solid transparent;
+}
+.nav__item:active,
+.nav__item.active {
+  background: var(--surface-2);
+  border-left-color: var(--primary);
+}
+.nav__item[disabled] {
+  opacity: 0.4;
+}
+
+/* Overlay / modal (pause, game over, tutorial) */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 4, 10, 0.78);
+  backdrop-filter: blur(3px);
+  animation: fade 0.18s var(--ease);
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.panel {
+  width: min(86%, 340px);
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px calc(20px + var(--safe-b));
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.panel__title {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--primary);
+  text-shadow: 0 0 12px var(--glow);
+  margin-bottom: 6px;
+}
+.panel__score {
+  font-family: var(--font-hud);
+  font-size: 40px;
+  color: var(--text);
+}
+.panel__row {
+  display: flex;
+  gap: 10px;
+}
+
+/* HUD */
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  padding-top: max(10px, var(--safe-t));
+  font-family: var(--font-hud);
+}
+.hud__score {
+  font-size: 26px;
+  color: var(--text);
+  text-shadow: 0 0 8px var(--glow);
+}
+.hud__label {
+  font-size: 18px;
+  color: var(--text-muted);
+  flex: 1;
+}
+.hud__lives {
+  font-size: 18px;
+  color: var(--danger);
+}
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  transform: translateX(-50%);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  z-index: 25;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 40%, transparent);
+  animation: toast 1.8s var(--ease) forwards;
+}
+@keyframes toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  15%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Touch controls (overlay in launcher skin, hardware area in console skin) */
+.touch {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 18px calc(18px + var(--safe-b));
+  z-index: 10;
+}
+/* on-screen controls are shown during play in both skins (v1) */
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 46px);
+  grid-template-rows: repeat(3, 46px);
+  gap: 4px;
+}
+.dpad button {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  border-radius: 10px;
+  font-size: 18px;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+.dpad button:active {
+  background: var(--primary);
+  color: #04040a;
+}
+.dpad .up {
+  grid-area: 1 / 2;
+}
+.dpad .left {
+  grid-area: 2 / 1;
+}
+.dpad .right {
+  grid-area: 2 / 3;
+}
+.dpad .down {
+  grid-area: 3 / 2;
+}
+.actionbtns {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.actionbtns button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: #04040a;
+}
+.actionbtns .a {
+  background: var(--accent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.actionbtns .b {
+  background: var(--primary);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--glow) 60%, transparent);
+}
+.actionbtns button:active {
+  transform: scale(0.9);
+}
+
+/* Settings */
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--surface-2);
+  font-size: 15px;
+}
+.seg {
+  display: inline-flex;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.seg button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.seg button.on {
+  background: var(--primary);
+  color: #04040a;
+}
+.switch {
+  width: 52px;
+  height: 30px;
+  border-radius: 30px;
+  background: var(--surface-2);
+  position: relative;
+  transition: background 0.2s var(--ease);
+}
+.switch.on {
+  background: var(--primary);
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s var(--ease);
+}
+.switch.on::after {
+  transform: translateX(22px);
+}

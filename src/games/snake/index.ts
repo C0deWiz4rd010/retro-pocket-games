@@ -31,8 +31,9 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(bg);
 
   const food = new Graphics();
+  const bonusG = new Graphics();
   const snakeG = new Graphics();
-  layer.addChild(food, snakeG);
+  layer.addChild(food, bonusG, snakeG);
 
   const state: SnakeState = createSnake(cols, rows, ctx.rng);
   ctx.hud.setScore(0);
@@ -46,14 +47,41 @@ export default function createGame(ctx: GameContext): Game {
 
   let acc = 0;
   let dead = false;
+  let eaten = 0;
+  let combo = 0;
+  let comboTimer = 0;
+  let pulse = 0;
+  // Timed golden bonus fruit: appears periodically, worth more, ticking down.
+  let bonus: { x: number; y: number; ttl: number } | null = null;
 
-  const interval = (): number => Math.max(0.06, 0.16 - state.score * 0.0008);
+  const interval = (): number => Math.max(0.06, 0.16 - state.score * 0.0006);
+
+  const spawnBonus = (): void => {
+    const free: { x: number; y: number }[] = [];
+    for (let y = 0; y < rows; y++)
+      for (let x = 0; x < cols; x++)
+        if (
+          !state.body.some((b) => b.x === x && b.y === y) &&
+          !(state.food.x === x && state.food.y === y)
+        )
+          free.push({ x, y });
+    if (free.length) bonus = { ...ctx.rng.pick(free), ttl: 6 };
+  };
 
   const draw = (): void => {
     food.clear();
     food
       .circle(state.food.x * cell + cell / 2, state.food.y * cell + cell / 2, cell * 0.34)
       .fill({ color: 0xff2e97 });
+
+    bonusG.clear();
+    if (bonus) {
+      const cxp = bonus.x * cell + cell / 2;
+      const cyp = bonus.y * cell + cell / 2;
+      const r = cell * (0.3 + 0.08 * Math.sin(pulse * 8));
+      bonusG.circle(cxp, cyp, r).fill({ color: 0xffd200 });
+      bonusG.circle(cxp, cyp, r * 0.5).fill({ color: 0xfff6b0 });
+    }
 
     snakeG.clear();
     state.body.forEach((seg, i) => {
@@ -68,13 +96,46 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update(dt) {
       if (dead) return;
+      pulse += dt;
+      if (comboTimer > 0) comboTimer -= dt;
+      else combo = 0;
+      if (bonus) {
+        bonus.ttl -= dt;
+        if (bonus.ttl <= 0) bonus = null;
+      }
+
       acc += dt;
-      if (acc < interval()) return;
+      if (acc < interval()) {
+        draw();
+        return;
+      }
       acc = 0;
       const r = step(state, ctx.rng);
+
+      const head = state.body[0]!;
+      if (bonus && head.x === bonus.x && head.y === bonus.y) {
+        const pts = 30 + Math.ceil(bonus.ttl) * 5;
+        state.score += pts;
+        bonus = null;
+        combo++;
+        comboTimer = 3;
+        state.grow += 1;
+        ctx.audio.sfx('coin');
+        ctx.hud.toast(`BONUS +${pts}`);
+        ctx.hud.setScore(state.score);
+      }
+
       if (r === 'eat') {
+        eaten++;
+        combo++;
+        comboTimer = 3;
+        if (combo >= 3) {
+          state.score += combo;
+          ctx.hud.toast(`COMBO x${combo}`);
+        }
         ctx.audio.sfx('eat');
         ctx.hud.setScore(state.score);
+        if (eaten % 5 === 0 && !bonus) spawnBonus();
       }
       if (r === 'dead') {
         dead = true;

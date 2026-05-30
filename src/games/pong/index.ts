@@ -18,6 +18,9 @@ export default function createGame(ctx: GameContext): Game {
   let pScore = 0;
   let cScore = 0;
   let over = false;
+  let rally = 0;
+  let bestRally = 0;
+  const trail: { x: number; y: number }[] = [];
   const WIN = 11;
 
   const serve = (toPlayer: boolean): void => {
@@ -40,6 +43,11 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     for (let y = 0; y < H; y += 24) g.rect(W / 2 - 1, y, 2, 12).fill({ color: 0xffffff, alpha: 0.3 });
+    trail.forEach((t, i) =>
+      g
+        .circle(t.x, t.y, ball.r * (0.3 + (i / trail.length) * 0.6))
+        .fill({ color: 0x00f7ff, alpha: (i / trail.length) * 0.4 }),
+    );
     g.roundRect(14, player.y, padW, padH, 4).fill({ color: 0x00f7ff });
     g.roundRect(W - 14 - padW, cpu.y, padW, padH, 4).fill({ color: 0xff2e97 });
     g.circle(ball.x, ball.y, ball.r).fill({ color: 0xffffff });
@@ -48,12 +56,18 @@ export default function createGame(ctx: GameContext): Game {
   const point = (player1: boolean): void => {
     if (player1) pScore++;
     else cScore++;
+    bestRally = Math.max(bestRally, rally);
+    rally = 0;
+    trail.length = 0;
     ctx.hud.setScore(pScore);
     setLabel();
     ctx.audio.sfx(player1 ? 'coin' : 'hit');
     if (pScore >= WIN || cScore >= WIN) {
       over = true;
-      ctx.gameOver(pScore * 100 + (pScore > cScore ? 500 : 0), { won: pScore > cScore ? 1 : 0 });
+      ctx.gameOver(pScore * 100 + (pScore > cScore ? 500 : 0), {
+        won: pScore > cScore ? 1 : 0,
+        rally: bestRally,
+      });
       return;
     }
     serve(!player1);
@@ -73,6 +87,8 @@ export default function createGame(ctx: GameContext): Game {
 
       ball.x += ball.vx * dt;
       ball.y += ball.vy * dt;
+      trail.push({ x: ball.x, y: ball.y });
+      if (trail.length > 8) trail.shift();
       if (ball.y < ball.r) {
         ball.y = ball.r;
         ball.vy = Math.abs(ball.vy);
@@ -88,6 +104,8 @@ export default function createGame(ctx: GameContext): Game {
         const sp = Math.min(560, Math.hypot(ball.vx, ball.vy) * 1.05);
         ball.vx = Math.abs(sp * 0.8);
         ball.vy = hit * sp * 0.7;
+        rally++;
+        if (rally % 5 === 0) ctx.hud.toast(`RALLY x${rally}`);
         ctx.audio.sfx('blip');
       } else if (
         ball.vx > 0 &&
@@ -100,6 +118,7 @@ export default function createGame(ctx: GameContext): Game {
         const sp = Math.min(560, Math.hypot(ball.vx, ball.vy) * 1.05);
         ball.vx = -Math.abs(sp * 0.8);
         ball.vy = hit * sp * 0.7;
+        rally++;
         ctx.audio.sfx('blip');
       }
 

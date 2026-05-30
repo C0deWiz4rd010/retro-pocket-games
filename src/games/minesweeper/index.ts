@@ -35,7 +35,10 @@ export default function createGame(ctx: GameContext): Game {
   let placed = false;
   let flagMode = false;
   let over = false;
+  let started = false;
+  let elapsed = 0;
   let safeLeft = COLS * ROWS - MINES;
+  const flaggedCount = (): number => flagged.filter(Boolean).length;
   const idx = (x: number, y: number): number => y * COLS + x;
   const inB = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < COLS && y < ROWS;
 
@@ -78,35 +81,61 @@ export default function createGame(ctx: GameContext): Game {
     if (adj[i] === 0) for (const n of neighbors(x, y)) reveal(n % COLS, Math.floor(n / COLS));
   };
 
+  const chord = (x: number, y: number): void => {
+    const i = idx(x, y);
+    if (!revealed[i] || adj[i] === 0) return;
+    const ns = neighbors(x, y);
+    const flags = ns.filter((n) => flagged[n]).length;
+    if (flags !== adj[i]) return;
+    for (const n of ns) if (!flagged[n] && !revealed[n]) reveal(n % COLS, Math.floor(n / COLS));
+  };
+
+  const winCheck = (): void => {
+    if (!over && safeLeft <= 0) {
+      over = true;
+      ctx.audio.sfx('powerup');
+      ctx.hud.toast('CLEARED!');
+      ctx.gameOver(1000 + Math.max(0, 300 - Math.floor(elapsed) * 3), { cleared: 1 });
+    }
+  };
+
   const click = (vx: number, vy: number): void => {
     if (over) return;
     const x = Math.floor((vx - ox) / cell);
     const y = Math.floor((vy - oy) / cell);
     if (!inB(x, y)) return;
+    started = true;
     const i = idx(x, y);
     if (flagMode) {
       if (!revealed[i]) {
         flagged[i] = !flagged[i];
+        updateLabel();
         ctx.audio.sfx('blip');
       }
     } else {
       if (flagged[i]) return;
+      if (revealed[i]) {
+        chord(x, y);
+        winCheck();
+        draw();
+        return;
+      }
       if (!placed) place(x, y);
       reveal(x, y);
       ctx.audio.sfx('eat');
     }
-    if (!over && safeLeft <= 0) {
-      over = true;
-      ctx.audio.sfx('powerup');
-      ctx.hud.toast('CLEARED!');
-      ctx.gameOver(1000, { cleared: 1 });
-    }
+    winCheck();
     draw();
+  };
+
+  const updateLabel = (): void => {
+    const left = MINES - flaggedCount();
+    ctx.hud.setLabel(`${flagMode ? '🚩' : '⛏'} ${left} • ${Math.floor(elapsed)}s`);
   };
 
   const setMode = (m: boolean): void => {
     flagMode = m;
-    ctx.hud.setLabel(flagMode ? '🚩 FLAG MODE' : 'REVEAL MODE');
+    updateLabel();
   };
 
   const offTap = ctx.input.on('tap', ({ x, y }) => click(x, y));
@@ -155,8 +184,17 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setScore(0);
   draw();
 
+  let labelAcc = 0;
   return {
-    update() {},
+    update(dt) {
+      if (over || !started) return;
+      elapsed += dt;
+      labelAcc += dt;
+      if (labelAcc >= 0.25) {
+        labelAcc = 0;
+        updateLabel();
+      }
+    },
     destroy() {
       offTap();
       offDown();

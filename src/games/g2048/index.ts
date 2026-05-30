@@ -71,6 +71,8 @@ export default function createGame(ctx: GameContext): Game {
 
   const move = (dir: 'up' | 'down' | 'left' | 'right'): boolean => {
     const before = grid.join(',');
+    const snapGrid = [...grid];
+    const snapScore = score;
     let gained = 0;
     for (let i = 0; i < N; i++) {
       const vals: number[] = [];

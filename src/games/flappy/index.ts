@@ -95,6 +95,9 @@ export default function createGame(ctx: GameContext): Game {
           score++;
           ctx.hud.setScore(score);
           ctx.audio.sfx('coin');
+          if (score === 10) ctx.hud.toast('🥉 BRONZE');
+          else if (score === 25) ctx.hud.toast('🥈 SILVER');
+          else if (score === 50) ctx.hud.toast('🥇 GOLD');
         }
         const inX = bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W;
         const hitY = bird.y - bird.r < p.gapY || bird.y + bird.r > p.gapY + GAP;

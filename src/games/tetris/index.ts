@@ -6,8 +6,9 @@ import type { RNG } from '@utils/rng';
 const COLS = 10;
 const ROWS = 20;
 
-type Cell = number; // 0 empty, else color
+type Cell = number;
 interface Piece {
+  id: number;
   m: number[][];
   color: number;
   x: number;
@@ -24,18 +25,16 @@ const SHAPES: { m: number[][]; color: number }[] = [
   { m: [[0, 0, 1], [1, 1, 1]], color: 0xff7b00 }, // L
 ];
 
-const rotate = (m: number[][]): number[][] =>
-  m[0]!.map((_, x) => m.map((row) => row[x]!).reverse());
-
-function bag(rng: RNG): number[] {
-  return rng.shuffle([0, 1, 2, 3, 4, 5, 6]);
-}
+const rotate = (m: number[][]): number[][] => m[0]!.map((_, x) => m.map((row) => row[x]!).reverse());
+const bag = (rng: RNG): number[] => rng.shuffle([0, 1, 2, 3, 4, 5, 6]);
 
 export default function createGame(ctx: GameContext): Game {
-  const cell = Math.floor(Math.min(ctx.width / (COLS + 2), ctx.height / (ROWS + 1)));
+  const cell = Math.floor(Math.min(ctx.width / (COLS + 5), ctx.height / (ROWS + 1)));
   const fieldW = COLS * cell;
   const fieldH = ROWS * cell;
-  const ox = (ctx.width - fieldW) / 2;
+  const sideW = cell * 4.2;
+  const totalW = fieldW + sideW;
+  const ox = (ctx.width - totalW) / 2;
   const oy = (ctx.height - fieldH) / 2;
 
   const layer = new Container();
@@ -44,10 +43,13 @@ export default function createGame(ctx: GameContext): Game {
   const frame = new Graphics();
   frame.rect(-3, -3, fieldW + 6, fieldH + 6).stroke({ width: 3, color: 0x2b2b40 });
   const g = new Graphics();
-  layer.addChild(frame, g);
+  const sideG = new Graphics();
+  layer.addChild(frame, g, sideG);
 
   const board: Cell[] = new Array(COLS * ROWS).fill(0);
-  let queue: number[] = bag(ctx.rng);
+  let queue: number[] = [...bag(ctx.rng), ...bag(ctx.rng)];
+  let holdId: number | null = null;
+  let holdUsed = false;
   let score = 0;
   let lines = 0;
   let level = 1;
@@ -55,11 +57,14 @@ export default function createGame(ctx: GameContext): Game {
   let dropAcc = 0;
   let softDrop = false;
 
-  const spawn = (): Piece => {
-    if (queue.length < 1) queue = bag(ctx.rng);
-    const id = queue.shift() as number;
+  const makePiece = (id: number): Piece => {
     const s = SHAPES[id]!;
-    return { m: s.m.map((r) => [...r]), color: s.color, x: Math.floor((COLS - s.m[0]!.length) / 2), y: 0 };
+    return { id, m: s.m.map((r) => [...r]), color: s.color, x: Math.floor((COLS - s.m[0]!.length) / 2), y: 0 };
+  };
+  const spawn = (): Piece => {
+    if (queue.length < 7) queue.push(...bag(ctx.rng));
+    holdUsed = false;
+    return makePiece(queue.shift() as number);
   };
   let piece = spawn();
 
@@ -105,6 +110,7 @@ export default function createGame(ctx: GameContext): Game {
       level = 1 + Math.floor(lines / 10);
       ctx.hud.setScore(score);
       ctx.hud.setLabel(`LV ${level}`);
+      if (cleared >= 4) ctx.hud.toast('TETRIS!');
       ctx.audio.sfx(cleared >= 4 ? 'powerup' : 'clear');
     }
   };
@@ -134,6 +140,21 @@ export default function createGame(ctx: GameContext): Game {
     lock();
   };
 
+  const hold = (): void => {
+    if (holdUsed) return;
+    holdUsed = true;
+    const cur = piece.id;
+    if (holdId === null) {
+      holdId = cur;
+      piece = spawn();
+    } else {
+      const swap = holdId;
+      holdId = cur;
+      piece = makePiece(swap);
+    }
+    ctx.audio.sfx('select');
+  };
+
   const onDown = (a: Action): void => {
     if (over) return;
     if (a === 'left') tryMove(-1, 0);
@@ -141,6 +162,7 @@ export default function createGame(ctx: GameContext): Game {
     else if (a === 'a' || a === 'up') tryRotate();
     else if (a === 'down') softDrop = true;
     else if (a === 'b') hardDrop();
+    else if (a === 'select' || a === 'start') hold();
   };
   const onUp = (a: Action): void => {
     if (a === 'down') softDrop = false;
@@ -158,17 +180,26 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setScore(0);
   ctx.hud.setLabel('LV 1');
 
+  const drawMini = (id: number | null, px: number, py: number): void => {
+    if (id === null) return;
+    const s = SHAPES[id]!;
+    const mc = cell * 0.7;
+    s.m.forEach((row, y) =>
+      row.forEach((v, x) => {
+        if (v) sideG.roundRect(px + x * mc, py + y * mc, mc - 2, mc - 2, 2).fill({ color: s.color });
+      }),
+    );
+  };
+
   const draw = (): void => {
     g.clear();
     g.rect(0, 0, fieldW, fieldH).fill({ color: 0x0a0a12, alpha: 0.6 });
-    // settled
     board.forEach((c, i) => {
       if (!c) return;
       const x = (i % COLS) * cell;
       const y = Math.floor(i / COLS) * cell;
       g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: c });
     });
-    // ghost
     let gy = piece.y;
     while (!collides(piece, piece.x, gy + 1)) gy++;
     piece.m.forEach((row, y) =>
@@ -176,13 +207,18 @@ export default function createGame(ctx: GameContext): Game {
         if (v) g.roundRect((piece.x + x) * cell + 1, (gy + y) * cell + 1, cell - 2, cell - 2, 3).fill({ color: piece.color, alpha: 0.18 });
       }),
     );
-    // active
     piece.m.forEach((row, y) =>
       row.forEach((v, x) => {
         if (v && piece.y + y >= 0)
           g.roundRect((piece.x + x) * cell + 1, (piece.y + y) * cell + 1, cell - 2, cell - 2, 3).fill({ color: piece.color });
       }),
     );
+
+    sideG.clear();
+    const sx = fieldW + cell * 0.6;
+    sideG.rect(sx, 0, sideW - cell * 0.6, fieldH).fill({ color: 0x0a0a12, alpha: 0.3 });
+    drawMini(holdId, sx + cell * 0.3, cell * 1.0);
+    for (let n = 0; n < 3; n++) drawMini(queue[n] ?? null, sx + cell * 0.3, cell * (4.2 + n * 2.4));
   };
 
   return {

@@ -4,6 +4,32 @@ import { clamp } from '@utils/math';
 
 const BRICK_COLORS = [0xff4d4d, 0xff7b00, 0xffd200, 0x3ddc84, 0x00f7ff];
 
+interface Ball {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+interface Brick {
+  x: number;
+  y: number;
+  c: number;
+  hp: number;
+}
+type PowerKind = 'multi' | 'wide' | 'slow' | 'life';
+interface Drop {
+  x: number;
+  y: number;
+  kind: PowerKind;
+}
+
+const POWER_META: Record<PowerKind, { color: number; label: string }> = {
+  multi: { color: 0x00f7ff, label: 'MULTIBALL' },
+  wide: { color: 0x3ddc84, label: 'WIDE PADDLE' },
+  slow: { color: 0xffd200, label: 'SLOW' },
+  life: { color: 0xff2e97, label: '+1 LIFE' },
+};
+
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
   const H = ctx.height;
@@ -15,36 +41,39 @@ export default function createGame(ctx: GameContext): Game {
   const cols = 7;
   const brickW = (W - 20) / cols;
   const brickH = 18;
-  const pad = { w: 70, h: 12, x: W / 2 - 35, y: H - 40 };
-  const ball = { x: W / 2, y: pad.y - 8, vx: 0, vy: 0, r: 6, stuck: true };
-  let bricks: { x: number; y: number; c: number }[] = [];
+  const pad = { w: 70, h: 12, x: W / 2 - 35, y: H - 40, baseW: 70, wideT: 0 };
+  let balls: Ball[] = [];
+  let drops: Drop[] = [];
+  let bricks: Brick[] = [];
   let score = 0;
   let lives = 3;
   let level = 1;
   let over = false;
+  let stuck = true;
+  let slowT = 0;
 
   const buildBricks = (): void => {
     bricks = [];
     const rows = Math.min(3 + level, 6);
     for (let r = 0; r < rows; r++)
-      for (let c = 0; c < cols; c++)
-        bricks.push({ x: 10 + c * brickW, y: 60 + r * (brickH + 6), c: BRICK_COLORS[r % BRICK_COLORS.length]! });
+      for (let c = 0; c < cols; c++) {
+        const hp = r === 0 && level > 2 ? 2 : 1;
+        bricks.push({ x: 10 + c * brickW, y: 60 + r * (brickH + 6), c: BRICK_COLORS[r % BRICK_COLORS.length]!, hp });
+      }
   };
 
   const resetBall = (): void => {
-    ball.stuck = true;
-    ball.x = pad.x + pad.w / 2;
-    ball.y = pad.y - ball.r - 1;
-    ball.vx = 0;
-    ball.vy = 0;
+    stuck = true;
+    balls = [{ x: pad.x + pad.w / 2, y: pad.y - 8, vx: 0, vy: 0 }];
   };
 
   const launch = (): void => {
-    if (!ball.stuck) return;
-    const speed = 280 + level * 20;
-    ball.vx = (ctx.rng.next() < 0.5 ? -1 : 1) * speed * 0.5;
-    ball.vy = -speed;
-    ball.stuck = false;
+    if (!stuck) return;
+    const speed = 280 + level * 18;
+    const b = balls[0]!;
+    b.vx = (ctx.rng.next() < 0.5 ? -1 : 1) * speed * 0.5;
+    b.vy = -speed;
+    stuck = false;
     ctx.audio.sfx('blip');
   };
 
@@ -56,83 +85,118 @@ export default function createGame(ctx: GameContext): Game {
 
   const offPtr = ctx.input.on('pointermove', ({ x }) => {
     pad.x = clamp(x - pad.w / 2, 0, W - pad.w);
-    if (ball.stuck) ball.x = pad.x + pad.w / 2;
+    if (stuck && balls[0]) balls[0].x = pad.x + pad.w / 2;
   });
   const offTap = ctx.input.on('tap', () => launch());
   const offDown = ctx.input.on('down', (a) => {
     if (a === 'a') launch();
   });
 
+  const maybeDrop = (x: number, y: number): void => {
+    if (ctx.rng.next() > 0.16) return;
+    const kinds: PowerKind[] = ['multi', 'wide', 'slow', 'life'];
+    drops.push({ x, y, kind: ctx.rng.pick(kinds) });
+  };
+
+  const applyPower = (kind: PowerKind): void => {
+    ctx.audio.sfx('powerup');
+    ctx.hud.toast(POWER_META[kind].label);
+    if (kind === 'multi') {
+      const extra: Ball[] = [];
+      for (const b of balls) {
+        const sp = Math.hypot(b.vx, b.vy) || 320;
+        extra.push({ x: b.x, y: b.y, vx: sp * 0.4, vy: -Math.abs(sp * 0.9) });
+        extra.push({ x: b.x, y: b.y, vx: -sp * 0.4, vy: -Math.abs(sp * 0.9) });
+      }
+      balls.push(...extra.slice(0, 4));
+    } else if (kind === 'wide') {
+      pad.wideT = 10;
+      pad.w = pad.baseW * 1.6;
+    } else if (kind === 'slow') {
+      slowT = 7;
+    } else if (kind === 'life') {
+      lives++;
+      ctx.hud.setLives(lives);
+    }
+  };
+
   const draw = (): void => {
     g.clear();
-    bricks.forEach((b) => g.roundRect(b.x, b.y, brickW - 4, brickH, 3).fill({ color: b.c }));
-    g.roundRect(pad.x, pad.y, pad.w, pad.h, 6).fill({ color: 0x00f7ff });
-    g.circle(ball.x, ball.y, ball.r).fill({ color: 0xffffff });
+    bricks.forEach((b) =>
+      g.roundRect(b.x, b.y, brickW - 4, brickH, 3).fill({ color: b.hp > 1 ? 0xffffff : b.c }),
+    );
+    drops.forEach((d) => {
+      g.roundRect(d.x - 9, d.y - 6, 18, 12, 3).fill({ color: POWER_META[d.kind].color });
+    });
+    g.roundRect(pad.x, pad.y, pad.w, pad.h, 6).fill({ color: pad.wideT > 0 ? 0x3ddc84 : 0x00f7ff });
+    balls.forEach((b) => g.circle(b.x, b.y, 6).fill({ color: 0xffffff }));
   };
 
   return {
     update(dt) {
       if (over) return;
+      const sdt = dt * (slowT > 0 ? 0.6 : 1);
+      if (slowT > 0) slowT -= dt;
+      if (pad.wideT > 0) {
+        pad.wideT -= dt;
+        if (pad.wideT <= 0) pad.w = pad.baseW;
+      }
+
       const moveX = ctx.input.axis().x;
       if (moveX) pad.x = clamp(pad.x + moveX * 360 * dt, 0, W - pad.w);
 
-      if (ball.stuck) {
-        ball.x = pad.x + pad.w / 2;
+      if (stuck) {
+        if (balls[0]) balls[0].x = pad.x + pad.w / 2;
         draw();
         return;
       }
 
-      ball.x += ball.vx * dt;
-      ball.y += ball.vy * dt;
-
-      if (ball.x < ball.r) {
-        ball.x = ball.r;
-        ball.vx = Math.abs(ball.vx);
-      } else if (ball.x > W - ball.r) {
-        ball.x = W - ball.r;
-        ball.vx = -Math.abs(ball.vx);
-      }
-      if (ball.y < ball.r) {
-        ball.y = ball.r;
-        ball.vy = Math.abs(ball.vy);
-      }
-
-      // paddle
-      if (
-        ball.vy > 0 &&
-        ball.y + ball.r >= pad.y &&
-        ball.y < pad.y + pad.h &&
-        ball.x >= pad.x &&
-        ball.x <= pad.x + pad.w
-      ) {
-        const hit = (ball.x - (pad.x + pad.w / 2)) / (pad.w / 2);
-        const speed = Math.hypot(ball.vx, ball.vy);
-        ball.vx = hit * speed * 0.8;
-        ball.vy = -Math.abs(speed * 0.7) - 40;
-        ctx.audio.sfx('blip');
-      }
-
-      // bricks
-      for (let i = 0; i < bricks.length; i++) {
-        const b = bricks[i]!;
-        if (ball.x > b.x && ball.x < b.x + brickW && ball.y > b.y && ball.y < b.y + brickH) {
-          bricks.splice(i, 1);
-          ball.vy = -ball.vy;
-          score += 10 * level;
-          ctx.hud.setScore(score);
-          ctx.audio.sfx('hit');
-          break;
+      for (const ball of balls) {
+        ball.x += ball.vx * sdt;
+        ball.y += ball.vy * sdt;
+        if (ball.x < 6) {
+          ball.x = 6;
+          ball.vx = Math.abs(ball.vx);
+        } else if (ball.x > W - 6) {
+          ball.x = W - 6;
+          ball.vx = -Math.abs(ball.vx);
+        }
+        if (ball.y < 6) {
+          ball.y = 6;
+          ball.vy = Math.abs(ball.vy);
+        }
+        if (
+          ball.vy > 0 &&
+          ball.y + 6 >= pad.y &&
+          ball.y < pad.y + pad.h &&
+          ball.x >= pad.x &&
+          ball.x <= pad.x + pad.w
+        ) {
+          const hit = (ball.x - (pad.x + pad.w / 2)) / (pad.w / 2);
+          const speed = Math.hypot(ball.vx, ball.vy);
+          ball.vx = hit * speed * 0.8;
+          ball.vy = -Math.abs(speed * 0.7) - 40;
+          ctx.audio.sfx('blip');
+        }
+        for (let i = 0; i < bricks.length; i++) {
+          const b = bricks[i]!;
+          if (ball.x > b.x && ball.x < b.x + brickW && ball.y > b.y && ball.y < b.y + brickH) {
+            ball.vy = -ball.vy;
+            b.hp--;
+            if (b.hp <= 0) {
+              bricks.splice(i, 1);
+              score += 10 * level;
+              ctx.hud.setScore(score);
+              maybeDrop(b.x + brickW / 2, b.y);
+            }
+            ctx.audio.sfx('hit');
+            break;
+          }
         }
       }
 
-      if (!bricks.length) {
-        level++;
-        ctx.audio.sfx('powerup');
-        buildBricks();
-        resetBall();
-      }
-
-      if (ball.y > H + 20) {
+      balls = balls.filter((b) => b.y <= H + 20);
+      if (balls.length === 0) {
         lives--;
         ctx.hud.setLives(lives);
         ctx.audio.sfx('explosion');
@@ -141,6 +205,28 @@ export default function createGame(ctx: GameContext): Game {
           ctx.gameOver(score, { level });
           return;
         }
+        resetBall();
+      }
+
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const d = drops[i]!;
+        d.y += 120 * dt;
+        if (d.y > H) {
+          drops.splice(i, 1);
+          continue;
+        }
+        if (d.y > pad.y && d.x > pad.x && d.x < pad.x + pad.w) {
+          drops.splice(i, 1);
+          applyPower(d.kind);
+        }
+      }
+
+      if (!bricks.length) {
+        level++;
+        ctx.hud.setLabel(`LEVEL ${level}`);
+        ctx.audio.sfx('powerup');
+        drops = [];
+        buildBricks();
         resetBall();
       }
       draw();

@@ -38,6 +38,9 @@ export default function createGame(ctx: GameContext): Game {
   let lives = 3;
   let wave = 1;
   let over = false;
+  let saucer: { x: number; y: number; dir: number; fire: number } | null = null;
+  let saucerTimer = 18;
+  let eBullets: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
 
   const spawnWave = (): void => {
     roids = [];
@@ -102,6 +105,11 @@ export default function createGame(ctx: GameContext): Game {
       g.poly(path).stroke({ width: 2, color: 0xcad0ff });
     });
     bullets.forEach((b) => g.circle(b.x, b.y, 2.5).fill({ color: 0xffffff }));
+    eBullets.forEach((b) => g.circle(b.x, b.y, 2.5).fill({ color: 0xff4d4d }));
+    if (saucer) {
+      g.ellipse(saucer.x, saucer.y, 16, 7).stroke({ width: 2, color: 0xff2e97 });
+      g.ellipse(saucer.x, saucer.y - 3, 8, 5).stroke({ width: 2, color: 0xff7b00 });
+    }
   };
 
   return {
@@ -133,6 +141,66 @@ export default function createGame(ctx: GameContext): Game {
         r.x = wrap(r.x + r.vx * dt, W);
         r.y = wrap(r.y + r.vy * dt, H);
       });
+
+      // hostile saucer: spawn, drift, and shoot toward the ship
+      saucerTimer -= dt;
+      if (!saucer && saucerTimer <= 0 && roids.length) {
+        const d = ctx.rng.next() < 0.5 ? 1 : -1;
+        saucer = { x: d > 0 ? 0 : W, y: 40 + ctx.rng.next() * (H - 80), dir: d, fire: 1.4 };
+        saucerTimer = 22 + ctx.rng.next() * 12;
+      }
+      if (saucer) {
+        saucer.x += saucer.dir * 90 * dt;
+        saucer.y += Math.sin(performance.now() / 400) * 20 * dt;
+        if (saucer.x < -20 || saucer.x > W + 20) saucer = null;
+      }
+      if (saucer) {
+        saucer.fire -= dt;
+        if (saucer.fire <= 0) {
+          saucer.fire = 1.4;
+          const ang = Math.atan2(ship.y - saucer.y, ship.x - saucer.x) + (ctx.rng.next() - 0.5) * 0.4;
+          eBullets.push({ x: saucer.x, y: saucer.y, vx: Math.cos(ang) * 220, vy: Math.sin(ang) * 220, life: 2.4 });
+          ctx.audio.sfx('shoot');
+        }
+      }
+      eBullets.forEach((b) => {
+        b.x = wrap(b.x + b.vx * dt, W);
+        b.y = wrap(b.y + b.vy * dt, H);
+        b.life -= dt;
+      });
+      eBullets = eBullets.filter((b) => b.life > 0);
+
+      if (saucer) {
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j]!;
+          if (Math.hypot(b.x - saucer.x, b.y - saucer.y) < 16) {
+            bullets.splice(j, 1);
+            score += 200;
+            ctx.hud.setScore(score);
+            ctx.hud.toast('SAUCER +200');
+            ctx.audio.sfx('explosion');
+            saucer = null;
+            break;
+          }
+        }
+      }
+      if (ship.inv <= 0) {
+        for (const b of eBullets) {
+          if (Math.hypot(b.x - ship.x, b.y - ship.y) < 9) {
+            lives--;
+            ctx.hud.setLives(lives);
+            ctx.audio.sfx('hit');
+            eBullets = [];
+            if (lives <= 0) {
+              over = true;
+              ctx.gameOver(score, { wave });
+              return;
+            }
+            respawn();
+            break;
+          }
+        }
+      }
 
       // bullet vs roid
       for (let i = roids.length - 1; i >= 0; i--) {

@@ -89,6 +89,23 @@ function rows(rerender: () => void): HTMLElement[] {
         (skin) => updateSettings({ skin }),
       ),
     ),
+    ...(s.skin === 'console'
+      ? [
+          row(
+            'Console shell',
+            seg(
+              s.shell,
+              [
+                { value: 'brick', label: 'Brick' },
+                { value: 'slim', label: 'Slim' },
+                { value: 'wide', label: 'Wide' },
+                { value: 'tv', label: 'TV' },
+              ],
+              (shell) => updateSettings({ shell }),
+            ),
+          ),
+        ]
+      : []),
     row(
       'Screen FX',
       seg(

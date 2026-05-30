@@ -9,9 +9,14 @@ export type ThemeId = z.infer<typeof ThemeId>;
 export const SkinId = z.enum(['console', 'launcher']);
 export type SkinId = z.infer<typeof SkinId>;
 
+/** Console housing shapes (gamepad mode). See docs/01 §4. */
+export const ShellId = z.enum(['brick', 'slim', 'wide', 'tv']);
+export type ShellId = z.infer<typeof ShellId>;
+
 export const SettingsSchema = z.object({
   theme: ThemeId.default('cyberpunk'),
   skin: SkinId.default('console'),
+  shell: ShellId.default('brick'),
   screenFx: z
     .object({
       mode: z.enum(['off', 'css', 'full']).default('css'),

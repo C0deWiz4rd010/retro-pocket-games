@@ -15,6 +15,10 @@ export function getBest(gameId: string): number {
   return cache.get(gameId)?.best ?? 0;
 }
 
+export function getLastPlayed(gameId: string): number {
+  return cache.get(gameId)?.lastPlayed ?? 0;
+}
+
 /**
  * Record a finished run. Returns whether it's a new personal best.
  * Live in-game score is NOT persisted — only the final result, per docs/07.

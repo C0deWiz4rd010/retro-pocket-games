@@ -33,6 +33,7 @@ function applyToDom(s: Settings): void {
   const root = document.documentElement;
   root.dataset.theme = s.theme;
   root.dataset.skin = s.skin;
+  root.dataset.shell = s.shell;
   root.dataset.fx = s.screenFx.mode;
   root.dataset.colorblind = s.a11y.colorblind;
   root.classList.toggle('a11y-reduced-motion', s.a11y.reducedMotion);

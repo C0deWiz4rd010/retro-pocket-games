@@ -1,15 +1,36 @@
-/* The device shell (Console skin) + Clean Launcher skin. See docs/01 §4, docs/00 skins */
+/* Skins & housings. Console = gamepad housing (4 shell shapes). Launcher = fixed
+   left rail + dashboard on wide screens. See docs/00 skins, docs/01 §4. */
+
+.frame {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+}
+
+/* The persistent launcher rail — hidden unless launcher skin on a wide screen. */
+.rail {
+  display: none;
+  flex-direction: column;
+  width: 264px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--surface-2);
+  padding: max(18px, var(--safe-t)) 0 calc(16px + var(--safe-b));
+  overflow-y: auto;
+}
 
 .device {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: 100%;
   overflow: hidden;
 }
 
-/* ── Console skin: framed handheld ── */
+/* ─────────────────────────  CONSOLE SKIN  ───────────────────────── */
 :root[data-skin='console'] .device {
   max-width: min(480px, 100vw);
   max-height: 100dvh;
@@ -20,15 +41,14 @@
     0 0 0 1px rgba(0, 0, 0, 0.5),
     0 20px 60px rgba(0, 0, 0, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  padding: calc(8px + var(--safe-t)) 12px calc(8px + var(--safe-b));
+  padding: calc(10px + var(--safe-t)) 14px calc(10px + var(--safe-b));
   gap: 8px;
 }
 @media (min-width: 520px) {
   :root[data-skin='console'] .device {
-    border-radius: 28px;
-    max-height: min(880px, 96dvh);
     margin: auto;
-    padding: 16px 14px 18px;
+    max-height: min(900px, 96dvh);
+    padding: 18px 16px 20px;
   }
 }
 
@@ -36,7 +56,7 @@
   display: none;
   align-items: center;
   justify-content: space-between;
-  padding: 0 6px;
+  padding: 0 6px 2px;
   font-family: var(--font-pixel);
   font-size: 9px;
   letter-spacing: 1px;
@@ -59,7 +79,101 @@
   }
 }
 
-/* ── The screen (display) ── */
+/* Decorative speaker grille (console only) */
+.device__grille {
+  display: none;
+  gap: 4px;
+  justify-content: center;
+  padding-top: 6px;
+}
+:root[data-skin='console'] .device__grille {
+  display: flex;
+}
+.device__grille i {
+  width: 5px;
+  height: 22px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--surface-2) 80%, #000);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Shell shape: BRICK (classic, rounded bottom-left like a DMG) ── */
+:root[data-skin='console'][data-shell='brick'] .device {
+  border-radius: 16px 16px 16px 52px;
+}
+:root[data-skin='console'][data-shell='brick'] .screen {
+  border-radius: 10px 10px 6px 6px;
+}
+
+/* ── Shell shape: SLIM (sleek modern, heavy rounding) ── */
+:root[data-skin='console'][data-shell='slim'] .device {
+  border-radius: 36px;
+  max-width: min(440px, 100vw);
+  background: linear-gradient(160deg, #20203a, #0c0c16);
+}
+:root[data-skin='console'][data-shell='slim'] .screen {
+  border-radius: 22px;
+}
+:root[data-skin='console'][data-shell='slim'] .device__grille {
+  display: none;
+}
+
+/* ── Shell shape: WIDE (landscape handheld with grips) ── */
+@media (min-width: 700px) {
+  :root[data-skin='console'][data-shell='wide'] .device {
+    max-width: min(820px, 98vw);
+    max-height: min(540px, 96dvh);
+    border-radius: 28px;
+    padding-left: 70px;
+    padding-right: 70px;
+  }
+  :root[data-skin='console'][data-shell='wide'] .device::before,
+  :root[data-skin='console'][data-shell='wide'] .device::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: radial-gradient(circle at 35% 35%, var(--surface-2), #05050a);
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.25);
+  }
+  :root[data-skin='console'][data-shell='wide'] .device::before {
+    left: 12px;
+  }
+  :root[data-skin='console'][data-shell='wide'] .device::after {
+    right: 12px;
+  }
+}
+
+/* ── Shell shape: TV (retro CRT set, wood/amber cabinet) ── */
+:root[data-skin='console'][data-shell='tv'] .device {
+  border-radius: 22px;
+  border-width: 3px;
+  background: linear-gradient(160deg, #3a2f22, #1c160d);
+  padding: 18px 22px 30px;
+}
+:root[data-skin='console'][data-shell='tv'] .screen {
+  border-radius: 26px / 18px;
+  border: 4px solid #05050a;
+}
+:root[data-skin='console'][data-shell='tv'] .device::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 46%;
+  height: 14px;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(160deg, #3a2f22, #140f08);
+}
+:root[data-skin='console'][data-shell='tv'] .device__grille i {
+  background: #2a2010;
+}
+
+/* ─────────────────────────  THE SCREEN  ───────────────────────── */
 .screen {
   position: relative;
   flex: 1;
@@ -70,7 +184,6 @@
 }
 :root[data-skin='console'] .screen {
   border: 3px solid #05050a;
-  border-radius: 14px;
   box-shadow:
     inset 0 0 30px rgba(0, 0, 0, 0.9),
     inset 0 0 0 1px var(--surface-2);
@@ -84,7 +197,6 @@
   display: block;
 }
 
-/* DOM overlay layer (menus, HUD, modals) sits above the canvas */
 .screen__view {
   position: absolute;
   inset: 0;
@@ -92,7 +204,6 @@
   flex-direction: column;
   z-index: 2;
 }
-/* When a game is active, the overlay lets pointer events fall through except on controls */
 .screen__view.is-game {
   pointer-events: none;
 }
@@ -100,22 +211,32 @@
   pointer-events: auto;
 }
 
-/* ── Console hardware controls (shown during a game) ── */
-.device__pad {
+/* ─────────────────────────  LAUNCHER SKIN  ───────────────────────── */
+:root[data-skin='launcher'] .device {
+  max-width: 100%;
+  background: var(--bg);
+}
+:root[data-skin='launcher'] .device__brand,
+:root[data-skin='launcher'] .device__grille {
   display: none;
 }
-:root[data-skin='console'] .device__pad.is-active {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: center;
-  padding: 6px 10px 2px;
-  min-height: 120px;
+:root[data-skin='launcher'] .screen {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-/* In launcher skin, on-screen controls render as overlays inside the screen instead */
-:root[data-skin='launcher'] .device {
-  max-width: 100vw;
-}
-:root[data-skin='launcher'] .device__brand {
-  display: none;
+/* Wide screens: show the fixed rail, hide the in-screen hamburger + drawer. */
+@media (min-width: 900px) {
+  :root[data-skin='launcher'] .rail {
+    display: flex;
+  }
+  :root[data-skin='launcher'] .nav,
+  :root[data-skin='launcher'] .nav__scrim,
+  :root[data-skin='launcher'] .topbar__menu {
+    display: none;
+  }
+  :root[data-skin='launcher'] .device {
+    margin: 0;
+  }
 }

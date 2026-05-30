@@ -120,6 +120,85 @@
   margin-bottom: 16px;
   font-size: 13px;
 }
+
+/* Dashboard stat cards */
+.statgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.statcard {
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.statcard__val {
+  font-family: var(--font-hud);
+  font-size: 26px;
+  color: var(--primary);
+  text-shadow: 0 0 8px var(--glow);
+  line-height: 1;
+}
+.statcard__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Continue / recently played strip */
+.continue-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+.continue-card {
+  flex: 0 0 auto;
+  width: 120px;
+  border-radius: var(--radius);
+  border: 1px solid var(--surface-2);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ca, var(--primary)) 26%, var(--surface)), var(--surface));
+  padding: 10px;
+  text-align: left;
+}
+.continue-card .g {
+  font-size: 24px;
+}
+.continue-card .t {
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.continue-card .s {
+  font-family: var(--font-hud);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Wider, denser dashboard for the launcher rail layout */
+@media (min-width: 900px) {
+  :root[data-skin='launcher'] .tilegrid {
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 16px;
+  }
+  :root[data-skin='launcher'] .scroll {
+    padding: 0 28px calc(28px + var(--safe-b));
+    max-width: 1180px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  :root[data-skin='launcher'] .hero {
+    padding: 24px;
+  }
+  :root[data-skin='launcher'] .hero__title {
+    font-size: 28px;
+  }
+}
 .xpbar {
   flex: 1;
   height: 8px;

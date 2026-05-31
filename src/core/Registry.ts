@@ -141,18 +141,18 @@ export const GAMES: GameMeta[] = [
     available: true,
     loader: () => import('@games/asteroids'),
   },
-  // ── Catalog completion (same contract; built in upcoming iterations — docs/08 Phase 5) ──
-  mk('pacman', 'Pac-Man', 'grid', 'Arcade', 'portrait', '#ffeb3b', '🟡', 'Eat the dots, dodge the ghosts.'),
-  mk('frogger', 'Frogger', 'grid', 'Arcade', 'portrait', '#4caf50', '🐸', 'Cross the road and the river.'),
-  mk('galaga', 'Galaga', 'shooter', 'Shooter', 'portrait', '#42a5f5', '🛸', 'Formation shooter with divers.'),
-  mk('centipede', 'Centipede', 'shooter', 'Shooter', 'portrait', '#8bc34a', '🐛', 'Blast the segmented crawler.'),
-  mk('missile', 'Missile Command', 'shooter', 'Shooter', 'portrait', '#ff5252', '🚨', 'Defend your cities. Aim & fire.'),
-  mk('bomberman', 'Bomberman', 'grid', 'Arcade', 'portrait', '#ff9800', '💥', 'Bomb the maze, beat the foes.'),
-  mk('qbert', 'Q*bert', 'grid', 'Arcade', 'portrait', '#ff7043', '🟧', 'Hop cubes, change their color.'),
-  mk('doodle', 'Doodle Jump', 'sidescroll', 'Jump', 'portrait', '#8bc34a', '⬆️', 'Bounce ever upward.'),
-  mk('simon', 'Simon', 'standalone', 'Puzzle', 'portrait', '#e91e63', '🎵', 'Repeat the color sequence.'),
-  mk('lander', 'Lunar Lander', 'vector', 'Physics', 'portrait', '#b0bec5', '🌙', 'Land softly on low fuel.'),
-  mk('tron', 'Tron', 'grid', 'Arcade', 'landscape', '#00e5ff', '🏍️', 'Trap your rival with light trails.'),
+  // ── Catalog completion: the remaining classics (docs/08 Phase 5) ──
+  mk('pacman', 'Pac-Man', 'grid', 'Arcade', 'portrait', '#ffeb3b', '🟡', 'Eat the dots, dodge the ghosts.', () => import('@games/pacman')),
+  mk('frogger', 'Frogger', 'grid', 'Arcade', 'portrait', '#4caf50', '🐸', 'Cross the road and the river.', () => import('@games/frogger')),
+  mk('galaga', 'Galaga', 'shooter', 'Shooter', 'portrait', '#42a5f5', '🛸', 'Formation shooter with divers.', () => import('@games/galaga')),
+  mk('centipede', 'Centipede', 'shooter', 'Shooter', 'portrait', '#8bc34a', '🐛', 'Blast the segmented crawler.', () => import('@games/centipede')),
+  mk('missile', 'Missile Command', 'shooter', 'Shooter', 'portrait', '#ff5252', '🚨', 'Defend your cities. Aim & fire.', () => import('@games/missile')),
+  mk('bomberman', 'Bomberman', 'grid', 'Arcade', 'portrait', '#ff9800', '💥', 'Bomb the maze, beat the foes.', () => import('@games/bomberman')),
+  mk('qbert', 'Q*bert', 'grid', 'Arcade', 'portrait', '#ff7043', '🟧', 'Hop cubes, change their color.', () => import('@games/qbert')),
+  mk('doodle', 'Doodle Jump', 'sidescroll', 'Jump', 'portrait', '#8bc34a', '⬆️', 'Bounce ever upward.', () => import('@games/doodle')),
+  mk('simon', 'Simon', 'standalone', 'Puzzle', 'portrait', '#e91e63', '🎵', 'Repeat the color sequence.', () => import('@games/simon')),
+  mk('lander', 'Lunar Lander', 'vector', 'Physics', 'portrait', '#b0bec5', '🌙', 'Land softly on low fuel.', () => import('@games/lander')),
+  mk('tron', 'Tron', 'grid', 'Arcade', 'landscape', '#00e5ff', '🏍️', 'Trap your rival with light trails.', () => import('@games/tron')),
 ];
 
 function mk(
@@ -164,6 +164,7 @@ function mk(
   accent: string,
   glyph: string,
   blurb: string,
+  loader?: () => Promise<GameModule>,
 ): GameMeta {
   const portrait = orientation !== 'landscape';
   return {
@@ -176,7 +177,8 @@ function mk(
     accent,
     glyph,
     blurb,
-    available: false,
+    available: Boolean(loader),
+    ...(loader ? { loader } : {}),
   };
 }
 

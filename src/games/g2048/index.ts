@@ -39,9 +39,11 @@ export default function createGame(ctx: GameContext): Game {
     layer.addChild(t);
   }
 
-  const grid: number[] = new Array(N * N).fill(0);
+  let grid: number[] = new Array(N * N).fill(0);
   let score = 0;
   let over = false;
+  let won = false;
+  let prev: { grid: number[]; score: number } | null = null;
   const at = (x: number, y: number): number => grid[y * N + x] as number;
   const set = (x: number, y: number, v: number): void => {
     grid[y * N + x] = v;
@@ -94,15 +96,31 @@ export default function createGame(ctx: GameContext): Game {
     }
     const moved = grid.join(',') !== before;
     if (moved) {
+      prev = { grid: snapGrid, score: snapScore };
       score += gained;
       ctx.hud.setScore(score);
       if (gained > 0) ctx.audio.sfx('eat');
       else ctx.audio.sfx('blip');
       spawn();
       draw();
+      if (!won && grid.includes(2048)) {
+        won = true;
+        ctx.audio.sfx('powerup');
+        ctx.hud.toast('2048! KEEP GOING');
+      }
       if (!canMove()) endGame();
     }
     return moved;
+  };
+
+  const undo = (): void => {
+    if (over || !prev) return;
+    grid = [...prev.grid];
+    score = prev.score;
+    prev = null;
+    ctx.hud.setScore(score);
+    ctx.audio.sfx('select');
+    draw();
   };
 
   const canMove = (): boolean => {
@@ -143,6 +161,7 @@ export default function createGame(ctx: GameContext): Game {
   const handle = (a: Action | Dir): void => {
     if (over) return;
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') move(a);
+    else if (a === 'b' || a === 'select') undo();
   };
   const offDown = ctx.input.on('down', handle);
   const offSwipe = ctx.input.on('swipe', handle);
@@ -151,7 +170,7 @@ export default function createGame(ctx: GameContext): Game {
   spawn();
   draw();
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('SWIPE TO MERGE');
+  ctx.hud.setLabel('SWIPE • B=UNDO');
 
   return {
     update() {},

@@ -47,7 +47,7 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(frame, g, sideG);
 
   const board: Cell[] = new Array(COLS * ROWS).fill(0);
-  let queue: number[] = [...bag(ctx.rng), ...bag(ctx.rng)];
+  const queue: number[] = [...bag(ctx.rng), ...bag(ctx.rng)];
   let holdId: number | null = null;
   let holdUsed = false;
   let score = 0;

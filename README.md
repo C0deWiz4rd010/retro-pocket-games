@@ -2,7 +2,7 @@
 
 # 🎮 RETRO POCKET
 
-### A pocket arcade in your browser — 20 retro classics, one installable PWA.
+### A pocket arcade in your browser — 40 retro games, one installable PWA.
 
 [![Play Now](https://img.shields.io/badge/▶_PLAY_NOW-GitHub_Pages-00f7ff?style=for-the-badge)](https://c0dewiz4rd010.github.io/retro-pocket-games/)
 [![PWA](https://img.shields.io/badge/PWA-installable-7b2ff7?style=for-the-badge)](#)
@@ -13,19 +13,22 @@
 
 ---
 
-**Retro Pocket** is a mobile-first, offline-capable web platform that bundles **20 classic
-retro games** into a single installable Progressive Web App. It looks and feels like a native
-handheld console — complete with an optional virtual device shell, CRT screen effects,
+**Retro Pocket** is a mobile-first, offline-capable web platform that bundles **40 classic
+and original retro games** into a single installable Progressive Web App. It looks and feels
+like a native handheld console — complete with switchable device shells, CRT screen effects,
 chiptune sound, touch controls, achievements and a daily challenge — but runs entirely in
 the browser.
 
 ## ✨ Highlights
 
-- **20 retro classics** — Snake, Tetris, Pong, Breakout, Asteroids, Space Invaders, Pac-Man,
-  Flappy Bird, 2048, Minesweeper, Frogger, Galaga, Centipede, Missile Command, Bomberman,
-  Q\*bert, Doodle Jump, Simon, Lunar Lander and Tron Light Cycles.
-- **Two skins, one tap** — switch between a *Handheld Console* shell and a *Clean Arcade
-  Launcher* in Settings.
+- **40 games across 8 categories** — the canon (Snake, Tetris, Pong, Breakout, Asteroids,
+  Space Invaders, Pac-Man, Flappy, 2048, Minesweeper, Frogger, Galaga, Centipede, Missile
+  Command, Bomberman, Q\*bert, Doodle Jump, Simon, Lunar Lander, Tron) plus 20 more —
+  Memory, Lights Out, 15 Puzzle, Sokoban, Mastermind, Flood-It, Connect Four, Tic-Tac-Toe,
+  Reversi, Gem Match, Columns, Meteor Dodge, Copter, Pixel Runner, Whack-a-Mole, Stacker,
+  Pinball, Maze Run, Reflex Grid and Tunnel Flyer.
+- **Two skins, four shells** — switch between a *Clean Launcher* (fixed rail + dashboard) and
+  a *Handheld Console* with selectable **Brick / Slim / Wide / TV** housings, all in Settings.
 - **Mobile-first & installable** — fullscreen PWA, safe-area aware, touch controls, haptics,
   orientation handling, fully playable **offline**.
 - **Retro feel** — toggleable CRT/scanline screen effects, neon themes (Cyberpunk, GameBoy
@@ -57,6 +60,12 @@ npm run preview  # preview the production build locally
 npm run test     # run unit tests (Vitest)
 npm run lint     # lint with ESLint
 ```
+
+## ✅ Verification
+
+A dependency-free CDP smoke test (`node scripts/smoke.mjs <url>`) launches headless Chrome
+against the built app, asserts the shell + all game tiles mount, and reports any console
+errors — handy in CI or after a build.
 
 ## 📚 Documentation
 

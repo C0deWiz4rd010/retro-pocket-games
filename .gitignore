@@ -49,3 +49,11 @@ test-results/
 # TypeScript
 *.tsbuildinfo
 eslint.txt
+
+# Local smoke-test artifacts
+shot-*.png
+cdp-*.png
+gl-*.png
+dom.html
+chrome-err.txt
+preview.log

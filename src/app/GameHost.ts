@@ -4,6 +4,8 @@ import { InputManager, type Action } from '@core/InputManager';
 import { audio } from '@core/AudioManager';
 import { haptics } from '@core/Haptics';
 import { wakeLock } from '@core/WakeLock';
+import { screenFX } from '@core/ScreenFX';
+import { perf } from '@core/PerfMonitor';
 import { RNG } from '@utils/rng';
 import { el, clear } from '@utils/dom';
 import { submitScore, getBest, loadScores } from '@store/scores';
@@ -11,6 +13,8 @@ import { awardRun } from '@store/profile';
 import { evaluateAchievements, buildContext, type Achievement } from '@store/achievements';
 import { recordDailyResult, currentStreak } from '@store/dailyStore';
 import { loadLeaderboard, qualifies, addEntry } from '@store/leaderboard';
+import { hasSeenTutorial, markTutorialSeen } from '@store/prefs';
+import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
 import { t } from '@i18n/index';
 import type { Game, GameContext, Hud } from '@core/types';
@@ -74,14 +78,36 @@ export class GameHost {
     if (this.destroyed) return;
     this.game = await mod.default(ctx);
 
-    this.running = true;
-    this.tickFn = (t: Ticker) => {
+    // CRT shader (if enabled) + dev FPS meter / auto-downgrade.
+    screenFX.apply();
+    perf.attach(this.screenView);
+
+    // Pause on Start/Esc/P from keyboard or gamepad.
+    this.input.on('down', (a) => {
+      if (a === 'pause' || a === 'start') this.pause();
+    });
+
+    this.tickFn = (tk: Ticker) => {
       this.input.pollGamepad();
+      const dt = Math.min(tk.deltaMS / 1000, 0.05);
+      screenFX.tick(dt);
+      perf.tick(dt);
       if (!this.running || !this.game) return;
-      const dt = Math.min(t.deltaMS / 1000, 0.05);
       this.game.update(dt);
     };
     pixi.app.ticker.add(this.tickFn);
+
+    // First-run tutorial: hold the sim until dismissed, then play.
+    if (!hasSeenTutorial(this.meta.id)) {
+      this.running = false;
+      const ov = showTutorial(this.meta, () => {
+        markTutorialSeen(this.meta.id);
+        this.running = true;
+      });
+      this.screenView.append(ov);
+    } else {
+      this.running = true;
+    }
   }
 
   /** Pause from outside (e.g. tab blur). Safe to call repeatedly. */
@@ -301,6 +327,7 @@ export class GameHost {
   private teardown(): void {
     this.running = false;
     void wakeLock.release();
+    perf.detach();
     if (this.tickFn) pixi.app.ticker.remove(this.tickFn);
     this.tickFn = null;
     this.game?.destroy();

@@ -1,15 +1,18 @@
 import './styles/index.css';
 import { registerSW } from 'virtual:pwa-register';
-import { loadSettings, settings, updateSettings } from '@store/settings';
+import { loadSettings, settings, updateSettings, onSettingsChange } from '@store/settings';
+import { audio } from '@core/AudioManager';
+import { screenFX } from '@core/ScreenFX';
 import { loadProfile } from '@store/profile';
 import { loadAchievements } from '@store/achievements';
 import { loadDaily } from '@store/dailyStore';
+import { loadPrefs } from '@store/prefs';
 import { detectLocale } from '@i18n/index';
 import { initPwaUx, offlineReadyToast } from '@app/pwa';
 import { App } from '@app/App';
 
 async function boot(): Promise<void> {
-  await Promise.all([loadSettings(), loadProfile(), loadAchievements(), loadDaily()]);
+  await Promise.all([loadSettings(), loadProfile(), loadAchievements(), loadDaily(), loadPrefs()]);
 
   // First-run locale detection (German user → DE automatically).
   if (!localStorage.getItem('rp:localeSet')) {
@@ -26,6 +29,12 @@ async function boot(): Promise<void> {
     location.hash = '#/bios';
   }
   localStorage.setItem('rp:seen', '1');
+
+  // React to live settings changes: re-sync music + CRT shader.
+  onSettingsChange(() => {
+    audio.syncMusic();
+    screenFX.apply();
+  });
 
   initPwaUx();
   const app = new App();

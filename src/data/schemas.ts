@@ -92,6 +92,13 @@ export const LeaderboardSchema = z.object({
 });
 export type Leaderboard = z.infer<typeof LeaderboardSchema>;
 
+/** Lightweight player prefs: favorite games + which tutorials have been seen. */
+export const PrefsSchema = z.object({
+  favorites: z.array(z.string()).default([]),
+  tutorialsSeen: z.array(z.string()).default([]),
+});
+export type Prefs = z.infer<typeof PrefsSchema>;
+
 export const DailySchema = z.object({
   lastPlayedDate: z.string().default(''),
   streak: z.number().int().nonnegative().default(0),

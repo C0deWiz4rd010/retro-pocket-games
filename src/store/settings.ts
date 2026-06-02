@@ -19,9 +19,18 @@ export async function loadSettings(): Promise<void> {
     effect(() => {
       const s = settings();
       applyToDom(s);
-      if (loaded) void write('settings', '_', s);
+      if (loaded) {
+        void write('settings', '_', s);
+        void onChange?.(s);
+      }
     });
   }
+}
+
+/** Optional side-effect hook fired after each settings change (set by main on boot). */
+let onChange: ((s: Settings) => void) | undefined;
+export function onSettingsChange(fn: (s: Settings) => void): void {
+  onChange = fn;
 }
 
 /** Shallow-merge a settings patch. */

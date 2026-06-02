@@ -5,6 +5,7 @@ import { GAMES, GROUP_ORDER, getGame, type GameMeta } from '@core/Registry';
 import { profile, xpForLevel } from '@store/profile';
 import { getBest, getLastPlayed, preloadScores } from '@store/scores';
 import { currentStreak, playedToday } from '@store/dailyStore';
+import { isFavorite, toggleFavorite } from '@store/prefs';
 import { GameHost } from './GameHost';
 import { renderSettings } from './views/Settings';
 import { renderBios } from './views/Bios';
@@ -68,6 +69,10 @@ export class App {
     this.teardownGame();
     this.closeNav();
 
+    // Menu music plays everywhere except inside an active game.
+    if (section === 'play' || section === 'daily') audio.stopMusic();
+    else audio.startMusic();
+
     if (section === 'play' && arg) {
       void this.launch(arg);
     } else if (section === 'settings') {
@@ -110,14 +115,45 @@ export class App {
       el('button', { class: 'iconbtn', 'aria-label': 'Settings', onClick: () => this.go('settings') }, ['⚙']),
     ]);
 
+    // Live search: when non-empty, the grouped grid collapses to a flat filtered result.
+    const gamesHost = el('div', {});
+    const search = el('input', {
+      class: 'search',
+      type: 'search',
+      placeholder: t('home.search'),
+      'aria-label': t('home.search'),
+      onInput: (e: Event) => {
+        const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
+        gamesHost.replaceChildren(q ? this.searchResults(q) : this.gamesByGroup());
+      },
+    });
+    gamesHost.append(this.gamesByGroup());
+
     const body = el('div', { class: 'scroll' }, [
       this.heroDaily(),
       this.statsRow(),
       ...this.continueSection(),
-      this.gamesByGroup(),
+      ...this.favoritesSection(),
+      el('div', { class: 'search-wrap' }, [search]),
+      gamesHost,
     ]);
 
     this.view.append(topbar, body);
+  }
+
+  private searchResults(q: string): HTMLElement {
+    const hits = GAMES.filter((g) => g.available && g.title.toLowerCase().includes(q));
+    if (!hits.length) return el('div', { class: 'search-empty' }, ['—']);
+    return el('div', { class: 'tilegrid' }, hits.map((g) => this.tile(g)));
+  }
+
+  private favoritesSection(): HTMLElement[] {
+    const favs = GAMES.filter((g) => g.available && isFavorite(g.id));
+    if (!favs.length) return [];
+    return [
+      el('div', { class: 'section-title' }, [t('home.favorites')]),
+      el('div', { class: 'tilegrid' }, favs.map((g) => this.tile(g))),
+    ];
   }
 
   private heroDaily(): HTMLElement {
@@ -208,6 +244,7 @@ export class App {
       },
       [
         g.available ? '' : el('span', { class: 'tile__badge' }, ['SOON']),
+        g.available ? this.favStar(g.id) : '',
         el('div', { class: 'tile__glyph' }, [g.glyph]),
         el('div', {}, [
           el('div', { class: 'tile__title' }, [g.title]),
@@ -217,6 +254,19 @@ export class App {
         ]),
       ],
     );
+  }
+
+  private favStar(id: string): HTMLElement {
+    return el('button', {
+      class: `tile__fav${isFavorite(id) ? ' is-fav' : ''}`,
+      'aria-label': 'Favorite',
+      onClick: (e: Event) => {
+        e.stopPropagation();
+        toggleFavorite(id);
+        audio.sfx('blip');
+        void this.renderHome();
+      },
+    }, [isFavorite(id) ? '★' : '☆']);
   }
 
   // ───────────────────────────── navigation ─────────────────────────────

@@ -21,6 +21,12 @@ export class AudioManager {
   private master: GainNode | null = null;
   private synth: ChiptuneSynth | null = null;
 
+  // Menu music: its own quiet bus + a looping arpeggio scheduled with the Web Audio clock.
+  private musicBus: GainNode | null = null;
+  private musicSynth: ChiptuneSynth | null = null;
+  private musicTimer: number | null = null;
+  private musicStep = 0;
+
   /** Lazily create the AudioContext (browsers require a user gesture first). */
   private ensure(): boolean {
     if (this.ctx) {
@@ -33,6 +39,10 @@ export class AudioManager {
     this.master = this.ctx.createGain();
     this.master.connect(this.ctx.destination);
     this.synth = new ChiptuneSynth(this.ctx, this.master);
+    this.musicBus = this.ctx.createGain();
+    this.musicBus.gain.value = 0.18;
+    this.musicBus.connect(this.ctx.destination);
+    this.musicSynth = new ChiptuneSynth(this.ctx, this.musicBus);
     this.applyVolume();
     return true;
   }
@@ -51,10 +61,41 @@ export class AudioManager {
   }
 
   private applyVolume(): void {
-    if (!this.master) return;
     const s = settings();
-    const muted = !s.audio.sfx || (this.blurred && s.audio.muteOnBlur);
-    this.master.gain.value = muted ? 0 : s.audio.master;
+    const blurMuted = this.blurred && s.audio.muteOnBlur;
+    if (this.master) this.master.gain.value = !s.audio.sfx || blurMuted ? 0 : s.audio.master;
+    if (this.musicBus) this.musicBus.gain.value = !s.audio.music || blurMuted ? 0 : 0.18 * s.audio.master;
+  }
+
+  // ── menu music: a gentle looping pentatonic arpeggio ──
+  private static readonly MUSIC: number[] = [261.6, 329.6, 392.0, 523.3, 392.0, 329.6, 440.0, 392.0];
+
+  startMusic(): void {
+    if (!settings().audio.music) return;
+    if (!this.ensure() || !this.musicSynth || this.musicTimer !== null) return;
+    this.applyVolume();
+    this.musicStep = 0;
+    this.musicTimer = window.setInterval(() => {
+      if (!this.musicSynth) return;
+      const note = AudioManager.MUSIC[this.musicStep % AudioManager.MUSIC.length]!;
+      this.musicSynth.tone({ freq: note, duration: 0.22, type: 'triangle', volume: 0.5 });
+      if (this.musicStep % 4 === 0) this.musicSynth.tone({ freq: note / 2, duration: 0.4, type: 'square', volume: 0.25 });
+      this.musicStep++;
+    }, 260);
+  }
+
+  stopMusic(): void {
+    if (this.musicTimer !== null) {
+      window.clearInterval(this.musicTimer);
+      this.musicTimer = null;
+    }
+  }
+
+  /** Re-evaluate music against the current setting (call after a settings change). */
+  syncMusic(): void {
+    if (settings().audio.music) this.startMusic();
+    else this.stopMusic();
+    this.applyVolume();
   }
 
   sfx(name: Sfx): void {

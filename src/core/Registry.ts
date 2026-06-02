@@ -8,7 +8,7 @@ export interface GameMeta {
   title: string;
   kit: Kit;
   /** Grouping label used by the side navigation. */
-  group: 'Arcade' | 'Puzzle' | 'Shooter' | 'Paddle' | 'Jump' | 'Physics';
+  group: 'Arcade' | 'Puzzle' | 'Brain' | 'Skill' | 'Shooter' | 'Paddle' | 'Jump' | 'Physics';
   orientation: Orientation;
   virtual: { w: number; h: number };
   accent: string; // tile accent color
@@ -153,6 +153,33 @@ export const GAMES: GameMeta[] = [
   mk('simon', 'Simon', 'standalone', 'Puzzle', 'portrait', '#e91e63', '🎵', 'Repeat the color sequence.', () => import('@games/simon')),
   mk('lander', 'Lunar Lander', 'vector', 'Physics', 'portrait', '#b0bec5', '🌙', 'Land softly on low fuel.', () => import('@games/lander')),
   mk('tron', 'Tron', 'grid', 'Arcade', 'landscape', '#00e5ff', '🏍️', 'Trap your rival with light trails.', () => import('@games/tron')),
+
+  // ── Volume II: 20 brand-new games ──
+  // Brain / logic
+  mk('memory', 'Memory', 'grid', 'Brain', 'portrait', '#ff80ab', '🃏', 'Find every matching pair.', () => import('@games/memory')),
+  mk('lightsout', 'Lights Out', 'grid', 'Brain', 'portrait', '#ffd200', '💡', 'Switch every light off.', () => import('@games/lightsout')),
+  mk('sliding', '15 Puzzle', 'grid', 'Brain', 'portrait', '#90caf9', '🔢', 'Slide tiles into order.', () => import('@games/sliding')),
+  mk('sokoban', 'Sokoban', 'grid', 'Brain', 'portrait', '#a1887f', '📦', 'Push every crate home.', () => import('@games/sokoban')),
+  mk('mastermind', 'Mastermind', 'standalone', 'Brain', 'portrait', '#b388ff', '🎯', 'Crack the secret code.', () => import('@games/mastermind')),
+  mk('flood', 'Flood-It', 'grid', 'Brain', 'portrait', '#4dd0e1', '🌊', 'Flood the board in one color.', () => import('@games/flood')),
+  mk('connectfour', 'Connect Four', 'grid', 'Brain', 'portrait', '#ffca28', '🔴', 'Four in a row beats the CPU.', () => import('@games/connectfour')),
+  mk('tictactoe', 'Tic-Tac-Toe', 'grid', 'Brain', 'portrait', '#80cbc4', '⭕', 'Classic Xs and Os vs CPU.', () => import('@games/tictactoe')),
+  mk('reversi', 'Reversi', 'grid', 'Brain', 'portrait', '#66bb6a', '⚫', 'Flip discs, own the board.', () => import('@games/reversi')),
+
+  // Puzzle (falling / matching)
+  mk('match3', 'Gem Match', 'grid', 'Puzzle', 'portrait', '#ec407a', '💎', 'Swap to line up three.', () => import('@games/match3')),
+  mk('columns', 'Columns', 'grid', 'Puzzle', 'portrait', '#ab47bc', '🟪', 'Match falling jewel stacks.', () => import('@games/columns')),
+
+  // Skill / action
+  mk('dodger', 'Meteor Dodge', 'vector', 'Skill', 'portrait', '#ff7043', '☄️', 'Survive the falling meteors.', () => import('@games/dodger')),
+  mk('helicopter', 'Copter', 'sidescroll', 'Skill', 'portrait', '#26c6da', '🚁', 'Fly the cave, tap to rise.', () => import('@games/helicopter')),
+  mk('runner', 'Pixel Runner', 'sidescroll', 'Skill', 'portrait', '#9ccc65', '🏃', 'Endless jump-and-run.', () => import('@games/runner')),
+  mk('whackamole', 'Whack-a-Mole', 'grid', 'Skill', 'portrait', '#8d6e63', '🔨', 'Bonk the moles, fast!', () => import('@games/whackamole')),
+  mk('stacker', 'Stacker', 'grid', 'Skill', 'portrait', '#ffa726', '🧱', 'Stack the moving blocks.', () => import('@games/stacker')),
+  mk('pinball', 'Pinball', 'paddle', 'Skill', 'portrait', '#ef5350', '🎰', 'Keep the ball alive, rack points.', () => import('@games/pinball')),
+  mk('maze', 'Maze Run', 'grid', 'Skill', 'portrait', '#7e57c2', '🌀', 'Escape the maze before time.', () => import('@games/maze')),
+  mk('reflex', 'Reflex Grid', 'standalone', 'Skill', 'portrait', '#26a69a', '⚡', 'Tap the target the instant it lights.', () => import('@games/reflex')),
+  mk('tunnel', 'Tunnel Flyer', 'sidescroll', 'Skill', 'portrait', '#42a5f5', '🛸', 'Thread the endless tunnel.', () => import('@games/tunnel')),
 ];
 
 function mk(
@@ -187,6 +214,8 @@ export const getGame = (id: string): GameMeta | undefined => GAMES.find((g) => g
 export const GROUP_ORDER: GameMeta['group'][] = [
   'Arcade',
   'Puzzle',
+  'Brain',
+  'Skill',
   'Shooter',
   'Paddle',
   'Jump',

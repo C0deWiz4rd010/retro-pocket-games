@@ -44,6 +44,7 @@ export class GameHost {
   private hudScore!: HTMLElement;
   private hudLabel!: HTMLElement;
   private hudLives!: HTMLElement;
+  private hudBest!: HTMLElement;
   private overlayHost!: HTMLElement;
 
   constructor(
@@ -124,17 +125,32 @@ export class GameHost {
   private buildChrome(): void {
     clear(this.screenView);
     this.screenView.classList.add('is-game', 'power-on');
+    // Drives the CSS rotate-prompt for landscape games viewed in portrait.
+    this.screenView.dataset.orient = this.meta.orientation;
 
     this.hudScore = el('div', { class: 'hud__score' }, ['0']);
     const labelText = this.opts.label ? `${this.opts.label} · ${this.meta.title.toUpperCase()}` : this.meta.title.toUpperCase();
     this.hudLabel = el('div', { class: 'hud__label' }, [labelText]);
     this.hudLives = el('div', { class: 'hud__lives' });
+    // Show the current best to beat (if any) as a subtle HUD badge.
+    const best = getBest(this.meta.id);
+    this.hudBest = el('div', { class: 'hud__best' }, [best > 0 ? `★ ${best}` : '']);
     const pauseBtn = el('button', { class: 'iconbtn', 'aria-label': t('game.paused'), onClick: () => this.pause() }, ['⏸']);
-    const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudLabel, this.hudLives, pauseBtn]);
+    const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudBest, this.hudLabel, this.hudLives, pauseBtn]);
 
     this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
 
-    this.screenView.append(hud, this.buildControls(), this.overlayHost);
+    this.screenView.append(hud, this.buildControls(), this.buildRotatePrompt(), this.overlayHost);
+  }
+
+  private buildRotatePrompt(): HTMLElement {
+    // CSS decides visibility (only landscape games in a portrait viewport). aria-hidden when
+    // not shown is handled by display:none in CSS.
+    return el('div', { class: 'rotate-prompt', role: 'alert' }, [
+      el('div', { class: 'rotate-prompt__icon' }, ['📱↻']),
+      el('div', { class: 'rotate-prompt__title' }, [t('rotate.text')]),
+      el('div', { class: 'rotate-prompt__hint' }, [t('rotate.hint')]),
+    ]);
   }
 
   private buildControls(): HTMLElement {
@@ -227,7 +243,17 @@ export class GameHost {
       el('div', { class: 'panel__title' }, [t('game.paused')]),
       el('button', { class: 'btn btn--primary btn--block', onClick: () => this.resume() }, [`▶  ${t('game.resume')}`]),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.restart() }, [`↻  ${t('game.restart')}`]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [`⌂  ${t('game.home')}`]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.confirmQuit() }, [`⌂  ${t('game.home')}`]),
+    ]);
+    this.showOverlay(panel);
+  }
+
+  /** Confirm before leaving an in-progress game, so a stray tap doesn't lose the run. */
+  private confirmQuit(): void {
+    const panel = el('div', { class: 'panel' }, [
+      el('div', { class: 'panel__title' }, [t('game.quitConfirm')]),
+      el('button', { class: 'btn btn--danger btn--block', onClick: () => this.exit() }, [`⌂  ${t('game.quit')}`]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.pause() }, [t('game.keepPlaying')]),
     ]);
     this.showOverlay(panel);
   }
@@ -338,9 +364,14 @@ export class GameHost {
 
   private showOverlay(panel: HTMLElement): void {
     this.clearOverlay();
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
     const ov = el('div', { class: 'overlay' }, [panel]);
     ov.dataset.overlay = '1';
     this.screenView.append(ov);
+    // Move focus into the dialog for keyboard + screen-reader users.
+    const focusable = panel.querySelector<HTMLElement>('button, input, [tabindex]');
+    focusable?.focus();
   }
   private clearOverlay(): void {
     this.screenView.querySelector('[data-overlay]')?.remove();

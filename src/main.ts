@@ -8,7 +8,7 @@ import { loadAchievements } from '@store/achievements';
 import { loadDaily } from '@store/dailyStore';
 import { loadPrefs } from '@store/prefs';
 import { detectLocale } from '@i18n/index';
-import { initPwaUx, offlineReadyToast } from '@app/pwa';
+import { initPwaUx, offlineReadyToast, updateReadyBanner } from '@app/pwa';
 import { App } from '@app/App';
 
 async function boot(): Promise<void> {
@@ -41,7 +41,11 @@ async function boot(): Promise<void> {
   await app.init();
 }
 
-// Service worker: auto-update + offline-ready confirmation.
-registerSW({ immediate: true, onOfflineReady: () => offlineReadyToast() });
+// Service worker: prompt to refresh when a new build is waiting + offline-ready confirmation.
+const updateSW = registerSW({
+  immediate: true,
+  onOfflineReady: () => offlineReadyToast(),
+  onNeedRefresh: () => updateReadyBanner(() => void updateSW(true)),
+});
 
 void boot();

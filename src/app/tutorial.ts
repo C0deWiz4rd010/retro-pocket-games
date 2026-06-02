@@ -37,7 +37,10 @@ export function showTutorial(meta: GameMeta, onStart: () => void): HTMLElement {
     el('div', { class: 'tut__hint' }, [t(HINT_KEY[meta.kit])]),
     el('button', { class: 'btn btn--primary btn--block', onClick: start }, [`▶  ${t('tut.start')}`]),
   ]);
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
   const overlay = el('div', { class: 'overlay' }, [panel]);
   overlay.dataset.overlay = '1';
+  window.setTimeout(() => panel.querySelector<HTMLElement>('button')?.focus(), 0);
   return overlay;
 }

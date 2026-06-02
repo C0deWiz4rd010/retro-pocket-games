@@ -197,7 +197,7 @@ async function doExport(): Promise<void> {
 function confirmReset(): void {
   const overlay = el('div', { class: 'overlay' });
   overlay.dataset.overlay = '1';
-  const panel = el('div', { class: 'panel' }, [
+  const panel = el('div', { class: 'panel', role: 'dialog', 'aria-modal': 'true' }, [
     el('div', { class: 'panel__title' }, ['⚠']),
     el('div', { style: 'font-size:15px' }, [t('settings.resetConfirm')]),
     el('button', {
@@ -210,4 +210,5 @@ function confirmReset(): void {
   ]);
   overlay.append(panel);
   (document.querySelector('.screen__view') ?? document.body).append(overlay);
+  panel.querySelector<HTMLElement>('.btn--ghost')?.focus(); // default to the safe action
 }

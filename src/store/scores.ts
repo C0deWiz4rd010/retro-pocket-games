@@ -19,6 +19,11 @@ export function getLastPlayed(gameId: string): number {
   return cache.get(gameId)?.lastPlayed ?? 0;
 }
 
+/** Best value for a game-specific custom stat (e.g. 'level', 'length'), if recorded. */
+export function getCustomBest(gameId: string, key: string): number {
+  return cache.get(gameId)?.custom?.[key] ?? 0;
+}
+
 /**
  * Record a finished run. Returns whether it's a new personal best.
  * Live in-game score is NOT persisted — only the final result, per docs/07.

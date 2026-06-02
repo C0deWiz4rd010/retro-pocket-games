@@ -921,3 +921,73 @@
   font-weight: 700;
   font-size: 16px;
 }
+
+/* ── Rotate-device prompt (landscape games in a portrait viewport) ── */
+.rotate-prompt {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 24px;
+  background: var(--bg);
+}
+.rotate-prompt__icon {
+  font-size: 56px;
+  animation: rotate-wiggle 1.6s ease-in-out infinite;
+}
+.a11y-reduced-motion .rotate-prompt__icon {
+  animation: none;
+}
+@keyframes rotate-wiggle {
+  0%, 100% { transform: rotate(-12deg); }
+  50% { transform: rotate(12deg); }
+}
+.rotate-prompt__title {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--primary);
+  text-shadow: 0 0 10px var(--glow);
+}
+.rotate-prompt__hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 240px;
+}
+/* Only show for landscape-only games while the screen is taller than wide. */
+@media (orientation: portrait) {
+  .screen__view[data-orient='landscape'] .rotate-prompt {
+    display: flex;
+  }
+}
+
+/* ── HUD best-to-beat badge ── */
+.hud__best {
+  font-family: var(--font-hud);
+  font-size: 14px;
+  color: var(--warn);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* ── Tile secondary best ── */
+.tile__custom {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* ── Stronger visible focus ring for keyboard users ── */
+.tile:focus-visible,
+.continue-card:focus-visible,
+.score-row:focus-visible,
+.nav__item:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

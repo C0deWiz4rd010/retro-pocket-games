@@ -3,7 +3,7 @@ import { pixi } from '@core/PixiManager';
 import { audio } from '@core/AudioManager';
 import { GAMES, GROUP_ORDER, getGame, type GameMeta } from '@core/Registry';
 import { profile, xpForLevel } from '@store/profile';
-import { getBest, getLastPlayed, preloadScores } from '@store/scores';
+import { getBest, getLastPlayed, getCustomBest, preloadScores } from '@store/scores';
 import { currentStreak, playedToday } from '@store/dailyStore';
 import { isFavorite, toggleFavorite } from '@store/prefs';
 import { GameHost } from './GameHost';
@@ -14,6 +14,21 @@ import { renderScores } from './views/Scores';
 import { renderProfile } from './views/Profile';
 import { pickDailyGame, dailySeed, dailyModifier } from './daily';
 import { t } from '@i18n/index';
+
+/** Games whose `custom` payload carries a meaningful secondary best worth showing on the tile. */
+const CUSTOM_BEST: Record<string, { key: string; label: string }> = {
+  snake: { key: 'length', label: 'len' },
+  tetris: { key: 'level', label: 'lvl' },
+  invaders: { key: 'wave', label: 'wave' },
+  asteroids: { key: 'wave', label: 'wave' },
+  galaga: { key: 'wave', label: 'wave' },
+  breakout: { key: 'level', label: 'lvl' },
+  stacker: { key: 'height', label: 'h' },
+  doodle: { key: 'height', label: 'h' },
+  simon: { key: 'len', label: 'seq' },
+  tron: { key: 'wins', label: 'wins' },
+  reversi: { key: 'discs', label: 'discs' },
+};
 
 /** The application shell: builds the device layout, owns navigation and the active game. */
 export class App {
@@ -270,9 +285,19 @@ export class App {
           el('div', { class: 'tile__best' }, [
             g.available ? (best ? `★ ${best}` : '—') : 'Coming soon',
           ]),
+          g.available ? this.customBestLabel(g.id) : '',
         ]),
       ],
     );
+  }
+
+  /** A second line with a game-specific personal best (e.g. "lvl 7", "len 42"). */
+  private customBestLabel(id: string): Node | string {
+    const spec = CUSTOM_BEST[id];
+    if (!spec) return '';
+    const v = getCustomBest(id, spec.key);
+    if (v <= 0) return '';
+    return el('div', { class: 'tile__custom' }, [`${spec.label} ${v}`]);
   }
 
   private favStar(id: string): HTMLElement {

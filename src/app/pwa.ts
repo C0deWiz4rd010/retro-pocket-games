@@ -55,3 +55,23 @@ export function offlineReadyToast(): void {
   document.body.append(toast);
   window.setTimeout(() => toast.remove(), 2600);
 }
+
+/**
+ * Non-intrusive "new version available" banner. `reload` is provided by the SW registration
+ * (updateSW) and activates the waiting worker before reloading. See docs/05 §4.
+ */
+export function updateReadyBanner(reload: () => void): void {
+  if (document.querySelector('.install-banner')) return;
+  const banner = el('div', { class: 'install-banner' }, [
+    el('span', {}, ['↻ ' + t('update.text')]),
+    el('div', { class: 'install-banner__actions' }, [
+      el('button', { class: 'btn btn--primary', onClick: () => reload() }, [t('update.cta')]),
+      el('button', {
+        class: 'iconbtn',
+        'aria-label': 'Dismiss',
+        onClick: (e: Event) => (e.currentTarget as HTMLElement).closest('.install-banner')?.remove(),
+      }, ['✕']),
+    ]),
+  ]);
+  document.body.append(banner);
+}

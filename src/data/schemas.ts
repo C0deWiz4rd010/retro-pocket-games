@@ -84,6 +84,14 @@ export const AchievementsSchema = z.object({
 });
 export type Achievements = z.infer<typeof AchievementsSchema>;
 
+/** Local leaderboard per game — top entries with a player-entered name. */
+export const LeaderboardSchema = z.object({
+  entries: z
+    .array(z.object({ name: z.string(), score: z.number(), at: z.number() }))
+    .default([]),
+});
+export type Leaderboard = z.infer<typeof LeaderboardSchema>;
+
 export const DailySchema = z.object({
   lastPlayedDate: z.string().default(''),
   streak: z.number().int().nonnegative().default(0),

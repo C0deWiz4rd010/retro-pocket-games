@@ -13,6 +13,7 @@ export default defineConfig({
       '@ui': fileURLToPath(new URL('./src/ui', import.meta.url)),
       '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
       '@app': fileURLToPath(new URL('./src/app', import.meta.url)),
+      '@i18n': fileURLToPath(new URL('./src/i18n', import.meta.url)),
     },
   },
   test: {

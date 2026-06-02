@@ -2,6 +2,7 @@ import { el } from '@utils/dom';
 import { settings, updateSettings } from '@store/settings';
 import { audio } from '@core/AudioManager';
 import { exportAll, wipeAll } from '@data/db';
+import { t } from '@i18n/index';
 import type { Settings } from '@data/schemas';
 
 type Opt<T> = { value: T; label: string };
@@ -64,9 +65,9 @@ function rows(rerender: () => void): HTMLElement[] {
     updateSettings({ controls: { ...s.controls, ...p } });
 
   return [
-    el('div', { class: 'section-title' }, ['APPEARANCE']),
+    el('div', { class: 'section-title' }, [t('settings.appearance')]),
     row(
-      'Theme',
+      t('settings.theme'),
       seg(
         s.theme,
         [
@@ -79,7 +80,7 @@ function rows(rerender: () => void): HTMLElement[] {
       ),
     ),
     row(
-      'Skin',
+      t('settings.skin'),
       seg(
         s.skin,
         [
@@ -92,7 +93,7 @@ function rows(rerender: () => void): HTMLElement[] {
     ...(s.skin === 'console'
       ? [
           row(
-            'Console shell',
+            t('settings.shell'),
             seg(
               s.shell,
               [
@@ -107,7 +108,7 @@ function rows(rerender: () => void): HTMLElement[] {
         ]
       : []),
     row(
-      'Screen FX',
+      t('settings.fx'),
       seg(
         s.screenFx.mode,
         [
@@ -118,15 +119,29 @@ function rows(rerender: () => void): HTMLElement[] {
         (mode) => patchScreenFx({ mode }),
       ),
     ),
-
-    el('div', { class: 'section-title' }, ['AUDIO']),
-    row('Sound effects', toggle(s.audio.sfx, (sfx) => patchAudio({ sfx }))),
-    row('Mute on blur', toggle(s.audio.muteOnBlur, (muteOnBlur) => patchAudio({ muteOnBlur }))),
-
-    el('div', { class: 'section-title' }, ['CONTROLS']),
-    row('Haptics', toggle(s.controls.haptics, (haptics) => patchControls({ haptics }))),
     row(
-      'Hand',
+      t('settings.language'),
+      seg(
+        s.locale,
+        [
+          { value: 'en', label: 'EN' },
+          { value: 'de', label: 'DE' },
+        ],
+        (locale) => {
+          updateSettings({ locale });
+          rerender();
+        },
+      ),
+    ),
+
+    el('div', { class: 'section-title' }, [t('settings.audio')]),
+    row(t('settings.sfx'), toggle(s.audio.sfx, (sfx) => patchAudio({ sfx }))),
+    row(t('settings.muteOnBlur'), toggle(s.audio.muteOnBlur, (muteOnBlur) => patchAudio({ muteOnBlur }))),
+
+    el('div', { class: 'section-title' }, [t('settings.controls')]),
+    row(t('settings.haptics'), toggle(s.controls.haptics, (haptics) => patchControls({ haptics }))),
+    row(
+      t('settings.hand'),
       seg(
         s.controls.touchLayout,
         [
@@ -137,21 +152,21 @@ function rows(rerender: () => void): HTMLElement[] {
       ),
     ),
 
-    el('div', { class: 'section-title' }, ['ACCESSIBILITY']),
-    row('Reduced motion', toggle(s.a11y.reducedMotion, (reducedMotion) => patchA11y({ reducedMotion }))),
-    row('High contrast', toggle(s.a11y.highContrast, (highContrast) => patchA11y({ highContrast }))),
-    row('Large touch targets', toggle(s.a11y.largeTargets, (largeTargets) => patchA11y({ largeTargets }))),
+    el('div', { class: 'section-title' }, [t('settings.a11y')]),
+    row(t('settings.reducedMotion'), toggle(s.a11y.reducedMotion, (reducedMotion) => patchA11y({ reducedMotion }))),
+    row(t('settings.highContrast'), toggle(s.a11y.highContrast, (highContrast) => patchA11y({ highContrast }))),
+    row(t('settings.largeTargets'), toggle(s.a11y.largeTargets, (largeTargets) => patchA11y({ largeTargets }))),
 
-    el('div', { class: 'section-title' }, ['DATA']),
+    el('div', { class: 'section-title' }, [t('settings.data')]),
     el('div', { class: 'panel__row', style: 'padding:8px 0 20px' }, [
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => void doExport() }, ['⬇ Export']),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => void doExport() }, [`⬇ ${t('settings.export')}`]),
       el('button', {
         class: 'btn btn--danger btn--block',
         onClick: () => void doReset(rerender),
-      }, ['⟲ Reset']),
+      }, [`⟲ ${t('settings.reset')}`]),
     ]),
     el('div', { style: 'text-align:center;color:var(--text-muted);font-size:11px;padding-bottom:20px' }, [
-      'Retro Pocket • all data stays on your device',
+      t('settings.footer'),
     ]),
   ];
 }

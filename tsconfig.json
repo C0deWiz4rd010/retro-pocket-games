@@ -37,7 +37,8 @@
       "@data/*": ["src/data/*"],
       "@ui/*": ["src/ui/*"],
       "@utils/*": ["src/utils/*"],
-      "@app/*": ["src/app/*"]
+      "@app/*": ["src/app/*"],
+      "@i18n/*": ["src/i18n/*"]
     },
 
     "types": ["vite/client", "vite-plugin-pwa/client", "node"]

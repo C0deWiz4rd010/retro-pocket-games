@@ -37,15 +37,24 @@ export class AudioManager {
     return true;
   }
 
+  private blurred = false;
+
   /** Call from a user-gesture handler to unlock audio on mobile. */
   unlock(): void {
     this.ensure();
   }
 
+  /** Mute/unmute when the tab loses/regains focus (respects the muteOnBlur setting). */
+  setMutedByBlur(blurred: boolean): void {
+    this.blurred = blurred;
+    this.applyVolume();
+  }
+
   private applyVolume(): void {
     if (!this.master) return;
     const s = settings();
-    this.master.gain.value = s.audio.sfx ? s.audio.master : 0;
+    const muted = !s.audio.sfx || (this.blurred && s.audio.muteOnBlur);
+    this.master.gain.value = muted ? 0 : s.audio.master;
   }
 
   sfx(name: Sfx): void {

@@ -10,7 +10,9 @@ import { GameHost } from './GameHost';
 import { renderSettings } from './views/Settings';
 import { renderBios } from './views/Bios';
 import { renderAchievements } from './views/Achievements';
-import { pickDailyGame, dailySeed } from './daily';
+import { renderScores } from './views/Scores';
+import { renderProfile } from './views/Profile';
+import { pickDailyGame, dailySeed, dailyModifier } from './daily';
 import { t } from '@i18n/index';
 
 /** The application shell: builds the device layout, owns navigation and the active game. */
@@ -79,6 +81,10 @@ export class App {
       this.renderSettings();
     } else if (section === 'achievements') {
       this.renderAchievements();
+    } else if (section === 'scores') {
+      void this.renderScores(arg);
+    } else if (section === 'profile') {
+      this.renderProfile();
     } else if (section === 'bios') {
       this.renderBios();
     } else if (section === 'daily') {
@@ -112,6 +118,7 @@ export class App {
     const topbar = el('div', { class: 'topbar' }, [
       el('button', { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() }, ['☰']),
       el('div', { class: 'topbar__title' }, ['RETRO POCKET']),
+      el('button', { class: 'iconbtn', 'aria-label': t('home.surprise'), onClick: () => this.surpriseMe() }, ['🎲']),
       el('button', { class: 'iconbtn', 'aria-label': 'Settings', onClick: () => this.go('settings') }, ['⚙']),
     ]);
 
@@ -158,16 +165,28 @@ export class App {
 
   private heroDaily(): HTMLElement {
     const meta = pickDailyGame();
+    const mod = dailyModifier();
     const streak = currentStreak();
     const done = playedToday();
     const children: (Node | string)[] = [
       el('div', { class: 'hero__tag' }, [`★ ${t('home.daily')}`]),
       el('div', { class: 'hero__title' }, [meta.title]),
       el('div', { class: 'hero__sub' }, [meta.blurb]),
+      el('div', { class: 'hero__mod' }, [`✦ ${t(mod.label)}`]),
       el('button', { class: 'btn btn--primary' }, [done ? `✓  ${t('home.done')}` : `▶  ${t('home.playToday')}`]),
     ];
     if (streak > 0) children.push(el('div', { class: 'hero__streak' }, [`🔥 ${t('home.streak', { n: streak })}`]));
     return el('div', { class: 'hero', role: 'button', onClick: () => this.go('daily') }, children);
+  }
+
+  /** Surprise me: jump straight into a random available game. */
+  private surpriseMe(): void {
+    const pool = GAMES.filter((g) => g.available);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick) {
+      audio.sfx('select');
+      this.go(`play/${pick.id}`);
+    }
   }
 
   private statsRow(): HTMLElement {
@@ -180,7 +199,7 @@ export class App {
         el('div', { class: 'statcard__label' }, [label]),
       ]);
     return el('div', { class: 'statgrid' }, [
-      el('div', { class: 'statcard' }, [
+      el('div', { class: 'statcard statcard--link', role: 'button', onClick: () => this.go('profile') }, [
         el('div', { class: 'statcard__val' }, [`Lv.${p.level}`]),
         el('div', { class: 'xpbar', style: 'margin-top:6px' }, [el('i', { style: `width:${pct}%` })]),
         el('div', { class: 'statcard__label' }, [`${p.xp}/${need} XP`]),
@@ -275,7 +294,9 @@ export class App {
       el('div', { class: 'nav__head' }, ['● RETRO POCKET']),
       this.navItem('⌂', t('nav.home'), () => this.go(''), 'home'),
       this.navItem('★', t('nav.daily'), () => this.go('daily'), 'daily'),
+      this.navItem('🏅', t('nav.scores'), () => this.go('scores'), 'scores'),
       this.navItem('🏆', t('nav.achievements'), () => this.go('achievements'), 'achievements'),
+      this.navItem('👤', t('nav.profile'), () => this.go('profile'), 'profile'),
       this.navItem('⚙', t('nav.settings'), () => this.go('settings'), 'settings'),
     ];
     for (const group of GROUP_ORDER) {
@@ -364,6 +385,37 @@ export class App {
     );
   }
 
+  private async renderScores(arg?: string): Promise<void> {
+    clear(this.view);
+    this.view.classList.remove('is-game');
+    this.powerOn();
+    this.markActiveNav('scores');
+    const back = arg ? () => this.go('scores') : () => this.go('');
+    this.view.append(
+      el('div', { class: 'topbar' }, [
+        el('button', { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() }, ['☰']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: back }, ['‹']),
+        el('div', { class: 'topbar__title' }, [t('nav.scores')]),
+      ]),
+      await renderScores(arg),
+    );
+  }
+
+  private renderProfile(): void {
+    clear(this.view);
+    this.view.classList.remove('is-game');
+    this.powerOn();
+    this.markActiveNav('profile');
+    this.view.append(
+      el('div', { class: 'topbar' }, [
+        el('button', { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() }, ['☰']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, ['‹']),
+        el('div', { class: 'topbar__title' }, [t('nav.profile')]),
+      ]),
+      renderProfile(),
+    );
+  }
+
   private renderBios(): void {
     clear(this.view);
     this.view.classList.remove('is-game');
@@ -389,8 +441,15 @@ export class App {
       return;
     }
     this.markActiveNav('daily');
+    const mod = dailyModifier();
     this.host = new GameHost(this.view, meta, () => this.go(''));
-    await this.host.start({ seed: dailySeed(), label: 'DAILY', daily: true });
+    await this.host.start({
+      seed: dailySeed(),
+      label: 'DAILY',
+      daily: true,
+      timeScale: mod.timeScale,
+      scoreMult: mod.scoreMult,
+    });
   }
 
   private teardownGame(): void {

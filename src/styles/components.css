@@ -779,3 +779,145 @@
   border-radius: 6px;
   pointer-events: none;
 }
+
+/* ── Daily modifier badge on the hero ── */
+.hero__mod {
+  display: inline-block;
+  margin: 4px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ── Volume slider ── */
+.slider {
+  width: 130px;
+  accent-color: var(--primary);
+}
+
+/* ── Scores hub ── */
+.score-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 24px;
+}
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  text-align: left;
+}
+.score-row:active {
+  transform: scale(0.98);
+}
+.score-row__glyph {
+  font-size: 24px;
+}
+.score-row__title {
+  flex: 1;
+  font-weight: 700;
+  font-size: 14px;
+}
+.score-row__best {
+  font-family: var(--font-hud);
+  font-size: 16px;
+  color: var(--primary);
+}
+
+/* ── Leaderboard detail ── */
+.lb-hero {
+  text-align: center;
+  padding: 12px 0 4px;
+}
+.lb-hero__glyph {
+  font-size: 52px;
+}
+.lb-hero__title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 4px 0 10px;
+}
+.lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 24px;
+}
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.lb-row--top {
+  border: 1px solid var(--primary);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--glow) 22%, transparent);
+}
+.lb-row__rank {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  color: var(--text-muted);
+  width: 28px;
+}
+.lb-row__name {
+  flex: 1;
+  font-family: var(--font-hud);
+  font-size: 18px;
+}
+.lb-row__score {
+  font-family: var(--font-hud);
+  font-size: 18px;
+  color: var(--primary);
+}
+.lb-empty {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 30px 16px;
+}
+
+/* ── Profile ── */
+.profile-hero {
+  text-align: center;
+  padding: 16px 0 8px;
+}
+.profile-hero__level {
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  color: var(--primary);
+  text-shadow: 0 0 12px var(--glow);
+}
+.fav-game {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px;
+  margin-top: 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  text-align: left;
+}
+.fav-game__glyph {
+  font-size: 36px;
+}
+.fav-game__label {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+.fav-game__title {
+  font-weight: 700;
+  font-size: 16px;
+}

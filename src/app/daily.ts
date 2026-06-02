@@ -18,3 +18,29 @@ export function pickDailyGame(): GameMeta {
   const rng = new RNG(dailySeed());
   return rng.pick(pool);
 }
+
+/**
+ * A daily modifier applied generically by the host (no per-game code):
+ *  - `timeScale` multiplies the simulation dt (fast/slow runs)
+ *  - `scoreMult` rewards harder modifiers with a score multiplier
+ *  - `label` is an i18n key for the hero + HUD banner
+ */
+export interface DailyModifier {
+  id: string;
+  label: string;
+  timeScale: number;
+  scoreMult: number;
+}
+
+const MODIFIERS: DailyModifier[] = [
+  { id: 'classic', label: 'mod.classic', timeScale: 1.0, scoreMult: 1.0 },
+  { id: 'turbo', label: 'mod.turbo', timeScale: 1.4, scoreMult: 1.5 },
+  { id: 'zen', label: 'mod.zen', timeScale: 0.8, scoreMult: 1.0 },
+  { id: 'sudden', label: 'mod.sudden', timeScale: 1.15, scoreMult: 2.0 },
+];
+
+/** Today's modifier — deterministic from the date (offset so it differs from game pick). */
+export function dailyModifier(): DailyModifier {
+  const rng = new RNG((dailySeed() ^ 0x5bd1e995) >>> 0);
+  return rng.pick(MODIFIERS);
+}

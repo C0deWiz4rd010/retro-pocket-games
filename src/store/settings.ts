@@ -49,4 +49,16 @@ function applyToDom(s: Settings): void {
   root.classList.toggle('a11y-high-contrast', s.a11y.highContrast);
   root.classList.toggle('a11y-large-targets', s.a11y.largeTargets);
   root.style.setProperty('--fx-intensity', String(s.screenFx.intensity));
+
+  // Keep the browser/OS chrome color in sync with the active theme's background.
+  const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+  if (bg) {
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', bg);
+  }
 }

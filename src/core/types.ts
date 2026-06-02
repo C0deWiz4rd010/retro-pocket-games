@@ -21,6 +21,11 @@ export interface GameContext {
   audio: AudioManager;
   rng: RNG;
   hud: Hud;
+  /**
+   * Simulation speed multiplier from daily modifiers (1 for normal play). The host already
+   * folds this into the dt it passes to update(); exposed for games that tune their own timers.
+   */
+  timeScale?: number;
   /** Signal the run is over; the host shows the game-over overlay and persists the score. */
   gameOver(score: number, custom?: Record<string, number>): void;
 }

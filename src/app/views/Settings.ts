@@ -57,6 +57,16 @@ function rows(rerender: () => void): HTMLElement[] {
   const row = (label: string, control: Node): HTMLElement =>
     el('div', { class: 'setting' }, [el('span', {}, [label]), control as HTMLElement]);
 
+  const slider = (value: number, onChange: (v: number) => void): HTMLElement =>
+    el('input', {
+      class: 'slider',
+      type: 'range',
+      min: '0',
+      max: '100',
+      value: String(Math.round(value * 100)),
+      onInput: (e: Event) => onChange(Number((e.target as HTMLInputElement).value) / 100),
+    });
+
   const patchScreenFx = (p: Partial<Settings['screenFx']>) =>
     updateSettings({ screenFx: { ...s.screenFx, ...p } });
   const patchAudio = (p: Partial<Settings['audio']>) => updateSettings({ audio: { ...s.audio, ...p } });
@@ -135,6 +145,7 @@ function rows(rerender: () => void): HTMLElement[] {
     ),
 
     el('div', { class: 'section-title' }, [t('settings.audio')]),
+    row(t('settings.volume'), slider(s.audio.master, (master) => patchAudio({ master }))),
     row(t('settings.sfx'), toggle(s.audio.sfx, (sfx) => patchAudio({ sfx }))),
     row(t('settings.muteOnBlur'), toggle(s.audio.muteOnBlur, (muteOnBlur) => patchAudio({ muteOnBlur }))),
 
@@ -162,7 +173,7 @@ function rows(rerender: () => void): HTMLElement[] {
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => void doExport() }, [`⬇ ${t('settings.export')}`]),
       el('button', {
         class: 'btn btn--danger btn--block',
-        onClick: () => void doReset(rerender),
+        onClick: () => confirmReset(),
       }, [`⟲ ${t('settings.reset')}`]),
     ]),
     el('div', { style: 'text-align:center;color:var(--text-muted);font-size:11px;padding-bottom:20px' }, [
@@ -182,8 +193,21 @@ async function doExport(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
-async function doReset(rerender: () => void): Promise<void> {
-  await wipeAll();
-  location.reload();
-  rerender();
+/** Two-step confirmation overlay so progress can't be wiped by accident. */
+function confirmReset(): void {
+  const overlay = el('div', { class: 'overlay' });
+  overlay.dataset.overlay = '1';
+  const panel = el('div', { class: 'panel' }, [
+    el('div', { class: 'panel__title' }, ['⚠']),
+    el('div', { style: 'font-size:15px' }, [t('settings.resetConfirm')]),
+    el('button', {
+      class: 'btn btn--danger btn--block',
+      onClick: () => void wipeAll().then(() => location.reload()),
+    }, [t('settings.resetYes')]),
+    el('button', { class: 'btn btn--ghost btn--block', onClick: () => overlay.remove() }, [
+      t('settings.cancel'),
+    ]),
+  ]);
+  overlay.append(panel);
+  (document.querySelector('.screen__view') ?? document.body).append(overlay);
 }

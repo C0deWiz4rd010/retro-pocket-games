@@ -24,6 +24,8 @@ export interface RunOptions {
   seed?: number;
   label?: string; // e.g. "DAILY" banner
   daily?: boolean; // counts toward the daily streak
+  timeScale?: number; // daily modifier: simulation speed multiplier
+  scoreMult?: number; // daily modifier: score multiplier applied at game over
 }
 
 /**
@@ -71,6 +73,7 @@ export class GameHost {
       audio,
       rng: new RNG(opts.seed ?? (Date.now() & 0xffffffff)),
       hud: this.makeHud(),
+      timeScale: opts.timeScale ?? 1,
       gameOver: (score, custom) => void this.handleGameOver(score, custom),
     };
 
@@ -87,13 +90,15 @@ export class GameHost {
       if (a === 'pause' || a === 'start') this.pause();
     });
 
+    const timeScale = opts.timeScale ?? 1;
     this.tickFn = (tk: Ticker) => {
       this.input.pollGamepad();
       const dt = Math.min(tk.deltaMS / 1000, 0.05);
       screenFX.tick(dt);
       perf.tick(dt);
       if (!this.running || !this.game) return;
-      this.game.update(dt);
+      // Fold the daily time-scale in, but keep the per-step dt clamped for stability.
+      this.game.update(Math.min(dt * timeScale, 0.05));
     };
     pixi.app.ticker.add(this.tickFn);
 
@@ -243,11 +248,15 @@ export class GameHost {
     this.onExit();
   }
 
-  private async handleGameOver(score: number, custom: Record<string, number> = {}): Promise<void> {
+  private async handleGameOver(rawScore: number, custom: Record<string, number> = {}): Promise<void> {
     if (!this.running && this.game === null) return;
     this.running = false;
     audio.sfx('gameover');
     haptics.bump();
+
+    // Daily modifier score multiplier (1 for normal play).
+    const mult = this.opts.scoreMult ?? 1;
+    const score = mult !== 1 ? Math.round(rawScore * mult) : rawScore;
 
     const isBest = await submitScore(this.meta.id, score, custom);
     const { leveledUp, newLevel } = awardRun(this.meta.id, score);
@@ -273,15 +282,28 @@ export class GameHost {
       rows.push(this.buildNameEntry(score));
     }
 
+    if (mult !== 1) {
+      rows.push(el('div', { style: 'color:var(--accent);font-size:12px' }, [`×${mult} ${t('game.bonus')}`]));
+    }
+
     rows.push(
       el('div', { class: 'panel__row' }, [
         el('button', { class: 'btn btn--primary btn--block', onClick: () => this.restart() }, [`↻  ${t('game.retry')}`]),
         el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [`⌂  ${t('game.home')}`]),
       ]),
-      el('button', {
-        class: 'btn btn--ghost btn--block',
-        onClick: () => void shareScoreCard(this.meta, score, isBest),
-      }, [`↗  ${t('game.share')}`]),
+      el('div', { class: 'panel__row' }, [
+        el('button', {
+          class: 'btn btn--ghost btn--block',
+          onClick: () => {
+            this.teardown();
+            location.hash = `#/scores/${this.meta.id}`;
+          },
+        }, [`🏅  ${t('game.leaderboard')}`]),
+        el('button', {
+          class: 'btn btn--ghost btn--block',
+          onClick: () => void shareScoreCard(this.meta, score, isBest),
+        }, [`↗  ${t('game.share')}`]),
+      ]),
     );
 
     this.showOverlay(el('div', { class: 'panel' }, rows));

@@ -1,5 +1,6 @@
 import { ChiptuneSynth } from './ChiptuneSynth';
 import { settings } from '@store/settings';
+import { haptics } from './Haptics';
 
 /** Named SFX presets shared by all games (drawn with the ChiptuneSynth). */
 export type Sfx =
@@ -99,6 +100,8 @@ export class AudioManager {
   }
 
   sfx(name: Sfx): void {
+    // Haptics fire regardless of the audio mute state (it's its own setting).
+    haptics.forSfx(name);
     if (!settings().audio.sfx) return;
     if (!this.ensure() || !this.synth) return;
     this.applyVolume();

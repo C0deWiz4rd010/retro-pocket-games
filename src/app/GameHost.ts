@@ -260,7 +260,32 @@ export class GameHost {
 
   private resume(): void {
     this.clearOverlay();
-    this.running = true;
+    if (document.documentElement.classList.contains('a11y-reduced-motion')) {
+      this.running = true;
+      return;
+    }
+    // 3-2-1 countdown so the player isn't dropped straight back into the action.
+    const overlay = el('div', { class: 'overlay overlay--count' });
+    overlay.dataset.overlay = '1';
+    const num = el('div', { class: 'countdown' }, ['3']);
+    overlay.append(num);
+    this.screenView.append(overlay);
+    let n = 3;
+    const tick = (): void => {
+      if (n <= 0) {
+        overlay.remove();
+        this.running = true;
+        return;
+      }
+      num.textContent = String(n);
+      num.style.animation = 'none';
+      void num.offsetWidth;
+      num.style.animation = '';
+      audio.sfx('blip');
+      n--;
+      window.setTimeout(tick, 700);
+    };
+    tick();
   }
 
   private async restart(): Promise<void> {
@@ -294,9 +319,11 @@ export class GameHost {
     // Achievements — evaluated centrally from the run payload + profile, no per-game code.
     const unlocked = evaluateAchievements(buildContext(this.meta.id, score, custom, streak));
 
+    const scoreEl = el('div', { class: 'panel__score' }, ['0']);
+    this.countUp(scoreEl, score);
     const rows: (Node | string)[] = [
       el('div', { class: 'panel__title' }, [t('game.over')]),
-      el('div', { class: 'panel__score' }, [String(score)]),
+      scoreEl,
       el('div', { style: 'color:var(--text-muted);font-size:13px' }, [
         isBest ? t('game.newBest') : t('game.best', { n: getBest(this.meta.id) }),
       ]),
@@ -334,6 +361,24 @@ export class GameHost {
 
     this.showOverlay(el('div', { class: 'panel' }, rows));
     if (unlocked.length) this.toastAchievements(unlocked);
+  }
+
+  /** Animate a number from 0 → target (respecting reduced-motion). */
+  private countUp(node: HTMLElement, target: number): void {
+    if (target <= 0 || document.documentElement.classList.contains('a11y-reduced-motion')) {
+      node.textContent = String(target);
+      return;
+    }
+    const dur = 700;
+    const start = performance.now();
+    const step = (now: number): void => {
+      const p = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      node.textContent = String(Math.round(target * eased));
+      if (p < 1) requestAnimationFrame(step);
+      else node.textContent = String(target);
+    };
+    requestAnimationFrame(step);
   }
 
   private buildNameEntry(score: number): HTMLElement {

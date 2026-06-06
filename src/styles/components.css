@@ -991,3 +991,150 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* ── Home welcome (first-time players) ── */
+.welcome {
+  text-align: center;
+  padding: 20px 16px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--primary) 18%, var(--surface)), var(--surface));
+  border: 1px solid var(--surface-2);
+}
+.welcome__emoji {
+  font-size: 44px;
+}
+.welcome__title {
+  font-weight: 800;
+  font-size: 18px;
+  margin: 6px 0 2px;
+}
+.welcome__hint {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* ── Daily 7-day strip ── */
+.daily-strip {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.daily-dot {
+  flex: 1;
+  text-align: center;
+  padding: 6px 0;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+}
+.daily-dot.is-played {
+  border-color: color-mix(in srgb, var(--warn) 50%, var(--surface-2));
+}
+.daily-dot__d {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.daily-dot__mark {
+  font-size: 14px;
+}
+
+/* ── Section title with an inline action ── */
+.section-title--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.section-title__action {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--primary);
+  letter-spacing: 0;
+}
+
+/* ── Continue card "time ago" ── */
+.continue-card .ago {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Achievement filter tabs ── */
+.ach-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px 0 12px;
+}
+.seg-tab {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.seg-tab.on {
+  background: var(--primary);
+  color: #04040a;
+}
+
+/* ── Resume countdown ── */
+.overlay--count {
+  background: rgba(4, 4, 10, 0.45);
+}
+.countdown {
+  font-family: var(--font-pixel);
+  font-size: 72px;
+  color: var(--primary);
+  text-shadow: 0 0 24px var(--glow);
+  animation: countpop 0.6s var(--ease);
+}
+@keyframes countpop {
+  from {
+    transform: scale(2);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── About screen ── */
+.about-hero {
+  text-align: center;
+  padding: 24px 0 8px;
+}
+.about-hero__logo {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--primary);
+  text-shadow: 0 0 12px var(--glow);
+}
+.about-hero__tag {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 8px 0 4px;
+}
+.about-hero__version {
+  font-family: var(--font-hud);
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.about-tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+.about-tech span {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+}

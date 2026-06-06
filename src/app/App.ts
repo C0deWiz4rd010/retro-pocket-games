@@ -3,8 +3,8 @@ import { pixi } from '@core/PixiManager';
 import { audio } from '@core/AudioManager';
 import { GAMES, GROUP_ORDER, getGame, type GameMeta } from '@core/Registry';
 import { profile, xpForLevel } from '@store/profile';
-import { getBest, getLastPlayed, getCustomBest, preloadScores } from '@store/scores';
-import { currentStreak, playedToday } from '@store/dailyStore';
+import { getBest, getLastPlayed, getCustomBest, preloadScores, clearAllLastPlayed } from '@store/scores';
+import { currentStreak, playedToday, last7Days } from '@store/dailyStore';
 import { isFavorite, toggleFavorite } from '@store/prefs';
 import { GameHost } from './GameHost';
 import { renderSettings } from './views/Settings';
@@ -12,6 +12,7 @@ import { renderBios } from './views/Bios';
 import { renderAchievements } from './views/Achievements';
 import { renderScores } from './views/Scores';
 import { renderProfile } from './views/Profile';
+import { renderAbout } from './views/About';
 import { pickDailyGame, dailySeed, dailyModifier } from './daily';
 import { t } from '@i18n/index';
 
@@ -100,6 +101,8 @@ export class App {
       void this.renderScores(arg);
     } else if (section === 'profile') {
       this.renderProfile();
+    } else if (section === 'about') {
+      this.renderAbout();
     } else if (section === 'bios') {
       this.renderBios();
     } else if (section === 'daily') {
@@ -153,7 +156,9 @@ export class App {
 
     const body = el('div', { class: 'scroll' }, [
       this.heroDaily(),
+      this.dailyHistory(),
       this.statsRow(),
+      ...this.welcomeSection(),
       ...this.continueSection(),
       ...this.favoritesSection(),
       el('div', { class: 'search-wrap' }, [search]),
@@ -161,6 +166,34 @@ export class App {
     ]);
 
     this.view.append(topbar, body);
+  }
+
+  /** A friendly hint shown only to brand-new players (nothing played yet). */
+  private welcomeSection(): HTMLElement[] {
+    if (profile().stats.gamesPlayed > 0) return [];
+    return [
+      el('div', { class: 'welcome' }, [
+        el('div', { class: 'welcome__emoji' }, ['👾']),
+        el('div', { class: 'welcome__title' }, [t('home.welcome')]),
+        el('div', { class: 'welcome__hint' }, [t('home.welcomeHint')]),
+        el('button', { class: 'btn btn--primary', onClick: () => this.surpriseMe() }, [
+          `🎲  ${t('home.surprise')}`,
+        ]),
+      ]),
+    ];
+  }
+
+  /** Last-7-days daily completion strip. */
+  private dailyHistory(): HTMLElement | string {
+    const days = last7Days();
+    if (!days.some((d) => d.played)) return '';
+    const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    return el('div', { class: 'daily-strip' }, days.map((d) =>
+      el('div', { class: `daily-dot${d.played ? ' is-played' : ''}` }, [
+        el('span', { class: 'daily-dot__d' }, [labels[d.weekday] ?? '']),
+        el('span', { class: 'daily-dot__mark' }, [d.played ? '🔥' : '·']),
+      ]),
+    ));
   }
 
   private searchResults(q: string): HTMLElement {
@@ -247,9 +280,31 @@ export class App {
         el('div', { class: 'g' }, [g.glyph]),
         el('div', { class: 't' }, [g.title]),
         el('div', { class: 's' }, [`★ ${getBest(g.id)}`]),
+        el('div', { class: 'ago' }, [this.timeAgo(getLastPlayed(g.id))]),
       ]),
     );
-    return [el('div', { class: 'section-title' }, ['RECENTLY PLAYED']), el('div', { class: 'continue-row' }, cards)];
+    const header = el('div', { class: 'section-title section-title--row' }, [
+      el('span', {}, [t('home.recent')]),
+      el('button', { class: 'section-title__action', onClick: () => this.clearHistory() }, [t('home.clear')]),
+    ]);
+    return [header, el('div', { class: 'continue-row' }, cards)];
+  }
+
+  /** Human "x ago" for the continue cards. */
+  private timeAgo(ts: number): string {
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return t('time.now');
+    const m = Math.floor(s / 60);
+    if (m < 60) return t('time.min', { n: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return t('time.hour', { n: h });
+    return t('time.day', { n: Math.floor(h / 24) });
+  }
+
+  private clearHistory(): void {
+    audio.sfx('select');
+    clearAllLastPlayed();
+    void this.renderHome();
   }
 
   private gamesByGroup(): HTMLElement {
@@ -322,6 +377,7 @@ export class App {
       this.navItem('🏅', t('nav.scores'), () => this.go('scores'), 'scores'),
       this.navItem('🏆', t('nav.achievements'), () => this.go('achievements'), 'achievements'),
       this.navItem('👤', t('nav.profile'), () => this.go('profile'), 'profile'),
+      this.navItem('ℹ', t('nav.about'), () => this.go('about'), 'about'),
       this.navItem('⚙', t('nav.settings'), () => this.go('settings'), 'settings'),
     ];
     for (const group of GROUP_ORDER) {
@@ -438,6 +494,21 @@ export class App {
         el('div', { class: 'topbar__title' }, [t('nav.profile')]),
       ]),
       renderProfile(),
+    );
+  }
+
+  private renderAbout(): void {
+    clear(this.view);
+    this.view.classList.remove('is-game');
+    this.powerOn();
+    this.markActiveNav('about');
+    this.view.append(
+      el('div', { class: 'topbar' }, [
+        el('button', { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() }, ['☰']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, ['‹']),
+        el('div', { class: 'topbar__title' }, [t('nav.about')]),
+      ]),
+      renderAbout(),
     );
   }
 

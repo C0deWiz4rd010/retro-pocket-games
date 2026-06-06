@@ -25,6 +25,20 @@ export function getCustomBest(gameId: string, key: string): number {
 }
 
 /**
+ * Clear the "recently played" markers (lastPlayed) for all games without touching best
+ * scores or history — drives the home "clear" action.
+ */
+export function clearAllLastPlayed(): void {
+  for (const [id, s] of cache) {
+    if (s.lastPlayed > 0) {
+      const next: GameScores = { ...s, lastPlayed: 0 };
+      cache.set(id, next);
+      void write('scores', id, next);
+    }
+  }
+}
+
+/**
  * Record a finished run. Returns whether it's a new personal best.
  * Live in-game score is NOT persisted — only the final result, per docs/07.
  */

@@ -103,6 +103,7 @@ async function main() {
         navItems: document.querySelectorAll('.nav__item').length,
         splashOnly: !!document.querySelector('.boot-splash') && !document.querySelector('.device'),
         canvas: !!document.querySelector('canvas'),
+        title: (document.querySelector('.topbar__title')?.textContent || '').trim(),
       })`,
       returnByValue: true,
     },

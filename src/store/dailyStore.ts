@@ -17,6 +17,26 @@ export const currentStreak = (): number => {
   return displayStreak(d.lastPlayedDate, d.streak, todayKey());
 };
 
+export interface DailyDay {
+  key: string; // YYYY-MM-DD
+  weekday: number; // 0=Sun
+  played: boolean;
+}
+
+/** The last 7 calendar days (oldest → today) with whether the daily was completed. */
+export function last7Days(): DailyDay[] {
+  const results = daily().results;
+  const out: DailyDay[] = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    out.push({ key, weekday: d.getDay(), played: Boolean(results[key]) });
+  }
+  return out;
+}
+
 /**
  * Record completion of today's daily challenge. Extends the streak when consecutive,
  * resets to 1 after a gap. Returns the resulting streak.

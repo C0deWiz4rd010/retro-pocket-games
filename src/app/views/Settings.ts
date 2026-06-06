@@ -1,6 +1,7 @@
 import { el } from '@utils/dom';
 import { settings, updateSettings } from '@store/settings';
 import { audio } from '@core/AudioManager';
+import { haptics } from '@core/Haptics';
 import { exportAll, wipeAll } from '@data/db';
 import { t } from '@i18n/index';
 import type { Settings } from '@data/schemas';
@@ -150,7 +151,19 @@ function rows(rerender: () => void): HTMLElement[] {
     row(t('settings.muteOnBlur'), toggle(s.audio.muteOnBlur, (muteOnBlur) => patchAudio({ muteOnBlur }))),
 
     el('div', { class: 'section-title' }, [t('settings.controls')]),
-    row(t('settings.haptics'), toggle(s.controls.haptics, (haptics) => patchControls({ haptics }))),
+    row(
+      t('settings.haptics'),
+      el('div', { style: 'display:flex;gap:8px;align-items:center' }, [
+        s.controls.haptics
+          ? el('button', {
+              class: 'btn btn--ghost',
+              style: 'min-height:36px;padding:0 12px',
+              onClick: () => haptics.pattern([0, 20, 40, 30]),
+            }, [t('settings.test')])
+          : '',
+        toggle(s.controls.haptics, (h) => patchControls({ haptics: h })),
+      ]),
+    ),
     row(
       t('settings.hand'),
       seg(

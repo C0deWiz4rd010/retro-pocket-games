@@ -5,6 +5,14 @@ import { daily } from '@store/dailyStore';
 import { GAMES, getGame } from '@core/Registry';
 import { t } from '@i18n/index';
 
+/** Compact play-time formatter ("3h 12m" / "12m" / "<1m"). */
+function formatPlayTime(ms: number): string {
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return '<1m';
+  const h = Math.floor(min / 60);
+  return h > 0 ? `${h}h ${min % 60}m` : `${min}m`;
+}
+
 /** Player profile: level/XP, tokens, lifetime stats, favorite game, streak, achievements. */
 export function renderProfile(): HTMLElement {
   const p = profile();
@@ -43,6 +51,7 @@ export function renderProfile(): HTMLElement {
       stat(`${distinct}/${GAMES.filter((g) => g.available).length}`, t('home.unlocked')),
       stat(`🔥 ${daily().bestStreak}`, t('profile.bestStreak')),
       stat(`🏆 ${unlockedCount()}/${ACHIEVEMENTS.length}`, t('nav.achievements')),
+      stat(`⏱ ${formatPlayTime(p.stats.playTimeMs)}`, t('profile.playTime')),
     ]),
     favMeta
       ? el('button', {
@@ -56,5 +65,13 @@ export function renderProfile(): HTMLElement {
           ]),
         ])
       : '',
+    el('div', { class: 'panel__row', style: 'margin-top:14px' }, [
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => (location.hash = '#/achievements') }, [
+        `🏆 ${t('nav.achievements')}`,
+      ]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => (location.hash = '#/scores') }, [
+        `🏅 ${t('nav.scores')}`,
+      ]),
+    ]),
   ]);
 }

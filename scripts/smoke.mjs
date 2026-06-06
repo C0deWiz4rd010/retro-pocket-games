@@ -104,6 +104,8 @@ async function main() {
         splashOnly: !!document.querySelector('.boot-splash') && !document.querySelector('.device'),
         canvas: !!document.querySelector('canvas'),
         title: (document.querySelector('.topbar__title')?.textContent || '').trim(),
+        statcards: document.querySelectorAll('.statcard').length,
+        scrollContent: !!document.querySelector('.scroll'),
       })`,
       returnByValue: true,
     },

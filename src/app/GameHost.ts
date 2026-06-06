@@ -9,7 +9,7 @@ import { perf } from '@core/PerfMonitor';
 import { RNG } from '@utils/rng';
 import { el, clear } from '@utils/dom';
 import { submitScore, getBest, loadScores } from '@store/scores';
-import { awardRun } from '@store/profile';
+import { awardRun, addPlayTime } from '@store/profile';
 import { evaluateAchievements, buildContext, type Achievement } from '@store/achievements';
 import { recordDailyResult, currentStreak } from '@store/dailyStore';
 import { loadLeaderboard, qualifies, addEntry } from '@store/leaderboard';
@@ -17,6 +17,8 @@ import { hasSeenTutorial, markTutorialSeen } from '@store/prefs';
 import { settings, updateSettings } from '@store/settings';
 import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
+import { confettiBurst } from './confetti';
+import { GAMES } from '@core/Registry';
 import { t } from '@i18n/index';
 import type { Game, GameContext, Hud } from '@core/types';
 import type { GameMeta } from '@core/Registry';
@@ -40,6 +42,7 @@ export class GameHost {
   private tickFn: ((t: Ticker) => void) | null = null;
   private running = false;
   private destroyed = false;
+  private startedAt = 0;
   private opts: RunOptions = {};
 
   private hudScore!: HTMLElement;
@@ -56,6 +59,7 @@ export class GameHost {
 
   async start(opts: RunOptions = {}): Promise<void> {
     this.opts = opts;
+    this.startedAt = performance.now();
     await Promise.all([loadScores(this.meta.id), loadLeaderboard(this.meta.id)]);
     audio.unlock();
     void wakeLock.request();
@@ -136,8 +140,18 @@ export class GameHost {
     // Show the current best to beat (if any) as a subtle HUD badge.
     const best = getBest(this.meta.id);
     this.hudBest = el('div', { class: 'hud__best' }, [best > 0 ? `★ ${best}` : '']);
+    const muteBtn = el('button', {
+      class: 'iconbtn',
+      'aria-label': t('settings.sfx'),
+      onClick: (e: Event) => {
+        const on = !settings().audio.sfx;
+        updateSettings({ audio: { ...settings().audio, sfx: on } });
+        (e.currentTarget as HTMLElement).textContent = on ? '🔊' : '🔇';
+        if (on) audio.sfx('blip');
+      },
+    }, [settings().audio.sfx ? '🔊' : '🔇']);
     const pauseBtn = el('button', { class: 'iconbtn', 'aria-label': t('game.paused'), onClick: () => this.pause() }, ['⏸']);
-    const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudBest, this.hudLabel, this.hudLives, pauseBtn]);
+    const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudBest, this.hudLabel, this.hudLives, muteBtn, pauseBtn]);
 
     this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
 
@@ -379,7 +393,7 @@ export class GameHost {
     rows.push(
       el('div', { class: 'panel__row' }, [
         el('button', { class: 'btn btn--primary btn--block', onClick: () => this.restart() }, [`↻  ${t('game.retry')}`]),
-        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [`⌂  ${t('game.home')}`]),
+        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.nextGame() }, [`⏭  ${t('game.next')}`]),
       ]),
       el('div', { class: 'panel__row' }, [
         el('button', {
@@ -394,10 +408,21 @@ export class GameHost {
           onClick: () => void shareScoreCard(this.meta, score, isBest),
         }, [`↗  ${t('game.share')}`]),
       ]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [`⌂  ${t('game.home')}`]),
     );
 
     this.showOverlay(el('div', { class: 'panel' }, rows));
+    // Celebrate a genuine new best with a confetti burst over the screen.
+    if (isBest && prevBest > 0) confettiBurst(this.screenView);
     if (unlocked.length) this.toastAchievements(unlocked);
+  }
+
+  /** Jump to a random different game, keeping the player in flow. */
+  private nextGame(): void {
+    const pool = GAMES.filter((g) => g.available && g.id !== this.meta.id);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    this.teardown();
+    location.hash = pick ? `#/play/${pick.id}` : '#/';
   }
 
   /** Animate a number from 0 → target (respecting reduced-motion). */
@@ -461,6 +486,10 @@ export class GameHost {
 
   private teardown(): void {
     this.running = false;
+    if (this.startedAt > 0) {
+      addPlayTime(performance.now() - this.startedAt);
+      this.startedAt = 0;
+    }
     void wakeLock.release();
     perf.detach();
     if (this.tickFn) pixi.app.ticker.remove(this.tickFn);

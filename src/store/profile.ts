@@ -53,6 +53,13 @@ export function addTokens(n: number): void {
   void persist();
 }
 
+/** Accumulate active play time (ms). Debounced persistence handled by callers. */
+export function addPlayTime(ms: number): void {
+  if (ms <= 0) return;
+  profile.update((p) => ({ ...p, stats: { ...p.stats, playTimeMs: p.stats.playTimeMs + ms } }));
+  void persist();
+}
+
 export function unlock(id: string): void {
   if (profile().unlocks.includes(id)) return;
   profile.update((p) => ({ ...p, unlocks: [...p.unlocks, id] }));

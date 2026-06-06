@@ -78,7 +78,42 @@ export class App {
     window.addEventListener('blur', () => audio.setMutedByBlur(true));
     window.addEventListener('focus', () => audio.setMutedByBlur(false));
 
+    // Global "?" opens the keyboard shortcuts help (ignored while typing).
+    window.addEventListener('keydown', (e) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (e.key === '?' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+        e.preventDefault();
+        this.toggleKeyboardHelp();
+      }
+    });
+
     this.route();
+  }
+
+  private toggleKeyboardHelp(): void {
+    const existing = document.querySelector('.kbd-help');
+    if (existing) {
+      existing.remove();
+      return;
+    }
+    const rowsData: [string, string][] = [
+      ['◀ ▶ ▲ ▼', t('kbd.move')],
+      ['Z / Space', t('kbd.action')],
+      ['X', t('kbd.action2')],
+      ['Enter', t('kbd.start')],
+      ['Esc / P', t('kbd.pause')],
+      ['?', t('kbd.help')],
+    ];
+    const overlay = el('div', { class: 'overlay kbd-help', onClick: () => overlay.remove() }, [
+      el('div', { class: 'panel', role: 'dialog', 'aria-modal': 'true', onClick: (e: Event) => e.stopPropagation() }, [
+        el('div', { class: 'panel__title' }, [t('kbd.title')]),
+        ...rowsData.map(([k, v]) =>
+          el('div', { class: 'kbd-row' }, [el('kbd', {}, [k]), el('span', {}, [v])]),
+        ),
+        el('button', { class: 'btn btn--primary btn--block', onClick: () => overlay.remove() }, [t('game.resume')]),
+      ]),
+    ]);
+    document.querySelector('.screen__view')?.append(overlay);
   }
 
   private route(): void {
@@ -404,6 +439,7 @@ export class App {
       if (!games.length) continue;
       items.push(el('div', { class: 'nav__group' }, [group.toUpperCase()]));
       for (const g of games) {
+        const best = g.available ? getBest(g.id) : 0;
         items.push(
           el(
             'button',
@@ -415,7 +451,11 @@ export class App {
                 if (g.available) this.go(`play/${g.id}`);
               },
             },
-            [el('span', {}, [g.glyph]), el('span', {}, [g.title])],
+            [
+              el('span', {}, [g.glyph]),
+              el('span', { class: 'nav__item-title' }, [g.title]),
+              best > 0 ? el('span', { class: 'nav__item-best' }, [`★${best}`]) : '',
+            ],
           ),
         );
       }

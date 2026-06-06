@@ -62,9 +62,10 @@ export const ProfileSchema = z.object({
     .object({
       gamesPlayed: z.number().int().nonnegative().default(0),
       totalScore: z.number().int().nonnegative().default(0),
+      playTimeMs: z.number().nonnegative().default(0),
       perGamePlays: z.record(z.string(), z.number()).default({}),
     })
-    .default({ gamesPlayed: 0, totalScore: 0, perGamePlays: {} }),
+    .default({ gamesPlayed: 0, totalScore: 0, playTimeMs: 0, perGamePlays: {} }),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 

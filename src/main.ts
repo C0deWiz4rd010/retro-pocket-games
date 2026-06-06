@@ -15,9 +15,12 @@ import { App } from '@app/App';
 async function boot(): Promise<void> {
   await Promise.all([loadSettings(), loadProfile(), loadAchievements(), loadDaily(), loadPrefs()]);
 
-  // First-run locale detection (German user → DE automatically).
+  // First-run system-preference detection (locale + reduced motion).
   if (!localStorage.getItem('rp:localeSet')) {
     updateSettings({ locale: detectLocale() });
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      updateSettings({ a11y: { ...settings().a11y, reducedMotion: true } });
+    }
     localStorage.setItem('rp:localeSet', '1');
   }
 

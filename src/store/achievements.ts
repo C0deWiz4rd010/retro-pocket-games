@@ -2,6 +2,7 @@ import { signal } from './store';
 import { read, write } from '@data/db';
 import { AchievementsSchema, type Achievements } from '@data/schemas';
 import { profile, addTokens } from './profile';
+import { daily } from './dailyStore';
 import { GAMES } from '@core/Registry';
 
 /**
@@ -75,6 +76,35 @@ export async function loadAchievements(): Promise<void> {
 
 export const isUnlocked = (id: string): boolean => Boolean(achievements().unlocked[id]);
 export const unlockedCount = (): number => Object.keys(achievements().unlocked).length;
+
+/**
+ * Progress (cur/target) for the incremental meta achievements, so the screen can show a
+ * "12 / 25" hint on locked ones. Returns null for binary/one-shot achievements.
+ */
+export function achievementProgress(id: string): { cur: number; target: number } | null {
+  const p = profile();
+  const distinct = Object.keys(p.stats.perGamePlays).length;
+  const available = GAMES.filter((g) => g.available).length;
+  const best = daily().bestStreak;
+  switch (id) {
+    case 'play-10':
+      return { cur: Math.min(p.stats.gamesPlayed, 10), target: 10 };
+    case 'play-100':
+      return { cur: Math.min(p.stats.gamesPlayed, 100), target: 100 };
+    case 'sampler':
+      return { cur: Math.min(distinct, 10), target: 10 };
+    case 'collector':
+      return { cur: Math.min(distinct, 25), target: 25 };
+    case 'completionist':
+      return { cur: Math.min(distinct, available), target: available };
+    case 'streak-3':
+      return { cur: Math.min(best, 3), target: 3 };
+    case 'streak-7':
+      return { cur: Math.min(best, 7), target: 7 };
+    default:
+      return null;
+  }
+}
 
 /**
  * Evaluate all achievements after a run. Returns the achievements newly unlocked this call

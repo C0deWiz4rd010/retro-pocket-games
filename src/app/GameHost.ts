@@ -14,6 +14,7 @@ import { evaluateAchievements, buildContext, type Achievement } from '@store/ach
 import { recordDailyResult, currentStreak } from '@store/dailyStore';
 import { loadLeaderboard, qualifies, addEntry } from '@store/leaderboard';
 import { hasSeenTutorial, markTutorialSeen } from '@store/prefs';
+import { settings, updateSettings } from '@store/settings';
 import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
 import { t } from '@i18n/index';
@@ -241,11 +242,39 @@ export class GameHost {
     audio.sfx('select');
     const panel = el('div', { class: 'panel' }, [
       el('div', { class: 'panel__title' }, [t('game.paused')]),
+      this.buildQuickToggles(),
       el('button', { class: 'btn btn--primary btn--block', onClick: () => this.resume() }, [`▶  ${t('game.resume')}`]),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.restart() }, [`↻  ${t('game.restart')}`]),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.confirmQuit() }, [`⌂  ${t('game.home')}`]),
     ]);
     this.showOverlay(panel);
+  }
+
+  /** Inline sound / FX quick-toggles on the pause overlay. */
+  private buildQuickToggles(): HTMLElement {
+    const chip = (on: boolean, label: string, onClick: () => void): HTMLElement =>
+      el('button', {
+        class: `quick-toggle${on ? ' on' : ''}`,
+        'aria-pressed': String(on),
+        onClick,
+      }, [label]);
+    const row = el('div', { class: 'quick-toggles' });
+    const rebuild = (): void => {
+      const s = settings();
+      row.replaceChildren(
+        chip(s.audio.sfx, `🔊 ${t('settings.sfx')}`, () => {
+          updateSettings({ audio: { ...settings().audio, sfx: !settings().audio.sfx } });
+          rebuild();
+        }),
+        chip(s.screenFx.mode !== 'off', '📺 CRT', () => {
+          const mode = settings().screenFx.mode === 'off' ? 'css' : 'off';
+          updateSettings({ screenFx: { ...settings().screenFx, mode } });
+          rebuild();
+        }),
+      );
+    };
+    rebuild();
+    return row;
   }
 
   /** Confirm before leaving an in-progress game, so a stray tap doesn't lose the run. */
@@ -309,8 +338,10 @@ export class GameHost {
     const mult = this.opts.scoreMult ?? 1;
     const score = mult !== 1 ? Math.round(rawScore * mult) : rawScore;
 
+    const prevBest = getBest(this.meta.id);
     const isBest = await submitScore(this.meta.id, score, custom);
-    const { leveledUp, newLevel } = awardRun(this.meta.id, score);
+    const reward = awardRun(this.meta.id, score);
+    const { leveledUp, newLevel, xpGain } = reward;
 
     // Daily streak (only when this run came from the daily challenge).
     let streak = currentStreak();
@@ -321,12 +352,18 @@ export class GameHost {
 
     const scoreEl = el('div', { class: 'panel__score' }, ['0']);
     this.countUp(scoreEl, score);
+    // New-best delta over the previous record (only when it's actually a new best > 0).
+    const bestLine =
+      isBest && prevBest > 0
+        ? `${t('game.newBest')}  (+${(score - prevBest).toLocaleString()})`
+        : isBest
+          ? t('game.newBest')
+          : t('game.best', { n: prevBest });
     const rows: (Node | string)[] = [
       el('div', { class: 'panel__title' }, [t('game.over')]),
       scoreEl,
-      el('div', { style: 'color:var(--text-muted);font-size:13px' }, [
-        isBest ? t('game.newBest') : t('game.best', { n: getBest(this.meta.id) }),
-      ]),
+      el('div', { style: 'color:var(--text-muted);font-size:13px' }, [bestLine]),
+      el('div', { class: 'panel__xp' }, [`+${xpGain} XP`]),
     ];
     if (leveledUp) rows.push(el('div', { style: 'color:var(--ok);font-size:13px' }, [t('game.levelUp', { n: newLevel })]));
 

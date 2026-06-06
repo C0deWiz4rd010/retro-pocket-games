@@ -1138,3 +1138,155 @@
   background: var(--surface);
   border: 1px solid var(--surface-2);
 }
+
+/* ── Fatal error screen ── */
+.fatal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg, #0a0a12);
+  z-index: 999;
+}
+.fatal__box {
+  max-width: 360px;
+  text-align: center;
+  background: var(--surface, #14141f);
+  border: 1px solid var(--surface-2, #2b2b40);
+  border-radius: 16px;
+  padding: 28px 22px;
+}
+.fatal__icon {
+  font-size: 40px;
+}
+.fatal__title {
+  font-weight: 800;
+  font-size: 18px;
+  margin: 8px 0;
+  color: var(--text, #e6e6f0);
+}
+.fatal__hint {
+  font-size: 13px;
+  color: var(--text-muted, #8a8aa3);
+  margin-bottom: 16px;
+}
+.fatal__details {
+  margin-top: 16px;
+  text-align: left;
+  font-size: 11px;
+  color: var(--text-muted, #8a8aa3);
+}
+.fatal__details pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow: auto;
+}
+
+/* ── Pause quick toggles ── */
+.quick-toggles {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.quick-toggle {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.6;
+}
+.quick-toggle.on {
+  opacity: 1;
+  background: color-mix(in srgb, var(--primary) 24%, var(--surface-2));
+  color: var(--text);
+}
+
+/* ── Theme swatches ── */
+.theme-swatches {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0 12px;
+}
+.theme-swatch {
+  flex: 1;
+  display: flex;
+  height: 30px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid transparent;
+}
+.theme-swatch.on {
+  border-color: var(--primary);
+}
+.theme-swatch span {
+  flex: 1;
+}
+
+/* ── Category chips ── */
+.cat-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  scrollbar-width: none;
+}
+.cat-chips::-webkit-scrollbar {
+  display: none;
+}
+.cat-chip {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cat-chip:active {
+  background: var(--primary);
+  color: #04040a;
+}
+
+/* ── Hero next-daily + game-over XP ── */
+.hero__next {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.panel__xp {
+  font-family: var(--font-hud);
+  font-size: 16px;
+  color: var(--ok);
+}
+
+/* ── Achievement progress hint ── */
+.ach-card__prog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.ach-card__progbar {
+  flex: 1;
+  height: 5px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.ach-card__progbar > i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.ach-card__prog span {
+  font-family: var(--font-hud);
+  font-size: 12px;
+  color: var(--text-muted);
+}

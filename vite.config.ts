@@ -68,7 +68,9 @@ export default defineConfig({
         ],
         shortcuts: [
           { name: 'Daily Challenge', url: './#/daily' },
-          { name: 'Continue', url: './#/' },
+          { name: 'Surprise me', url: './#/surprise' },
+          { name: 'Achievements', url: './#/achievements' },
+          { name: 'Scores', url: './#/scores' },
         ],
       },
       workbox: {

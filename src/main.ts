@@ -9,6 +9,7 @@ import { loadDaily } from '@store/dailyStore';
 import { loadPrefs } from '@store/prefs';
 import { detectLocale } from '@i18n/index';
 import { initPwaUx, offlineReadyToast, updateReadyBanner } from '@app/pwa';
+import { showErrorScreen } from '@app/errorScreen';
 import { App } from '@app/App';
 
 async function boot(): Promise<void> {
@@ -48,4 +49,10 @@ const updateSW = registerSW({
   onNeedRefresh: () => updateReadyBanner(() => void updateSW(true)),
 });
 
-void boot();
+// Global safety net — surface a friendly screen instead of a blank page on a fatal error.
+window.addEventListener('error', (e) => showErrorScreen(String(e.error?.stack ?? e.message)));
+window.addEventListener('unhandledrejection', (e) =>
+  showErrorScreen(String((e.reason as Error)?.stack ?? e.reason)),
+);
+
+boot().catch((err: unknown) => showErrorScreen(String((err as Error)?.stack ?? err)));

@@ -1,5 +1,5 @@
 import { el } from '@utils/dom';
-import { ACHIEVEMENTS, achievements, isUnlocked, unlockedCount } from '@store/achievements';
+import { ACHIEVEMENTS, achievements, isUnlocked, unlockedCount, achievementProgress } from '@store/achievements';
 import { audio } from '@core/AudioManager';
 import { t } from '@i18n/index';
 
@@ -81,13 +81,25 @@ export function renderAchievements(): HTMLElement {
 function card(a: (typeof ACHIEVEMENTS)[number], at: number | undefined): HTMLElement {
   const unlocked = Boolean(at);
   const hidden = a.secret && !unlocked;
+  // Progress hint for incremental, not-yet-unlocked meta achievements.
+  const prog = !unlocked && !hidden ? achievementProgress(a.id) : null;
+  const body: (Node | string)[] = [
+    el('div', { class: 'ach-card__title' }, [hidden ? '???' : a.title]),
+    el('div', { class: 'ach-card__desc' }, [hidden ? t('ach.locked') : a.desc]),
+  ];
+  if (unlocked && at) body.push(el('div', { class: 'ach-card__date' }, [new Date(at).toLocaleDateString()]));
+  if (prog && prog.cur > 0) {
+    const pct = Math.round((prog.cur / prog.target) * 100);
+    body.push(
+      el('div', { class: 'ach-card__prog' }, [
+        el('div', { class: 'ach-card__progbar' }, [el('i', { style: `width:${pct}%` })]),
+        el('span', {}, [`${prog.cur}/${prog.target}`]),
+      ]),
+    );
+  }
   return el('div', { class: `ach-card${unlocked ? ' is-unlocked' : ''}` }, [
     el('div', { class: 'ach-card__icon' }, [hidden ? '❔' : a.icon]),
-    el('div', { class: 'ach-card__body' }, [
-      el('div', { class: 'ach-card__title' }, [hidden ? '???' : a.title]),
-      el('div', { class: 'ach-card__desc' }, [hidden ? t('ach.locked') : a.desc]),
-      unlocked && at ? el('div', { class: 'ach-card__date' }, [new Date(at).toLocaleDateString()]) : '',
-    ]),
+    el('div', { class: 'ach-card__body' }, body),
     el('div', { class: 'ach-card__reward' }, [unlocked ? '✓' : `🪙${a.tokens}`]),
   ]);
 }

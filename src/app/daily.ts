@@ -44,3 +44,19 @@ export function dailyModifier(): DailyModifier {
   const rng = new RNG((dailySeed() ^ 0x5bd1e995) >>> 0);
   return rng.pick(MODIFIERS);
 }
+
+/** Milliseconds until local midnight (when the next daily challenge unlocks). */
+export function untilNextDaily(): number {
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(24, 0, 0, 0);
+  return next.getTime() - now.getTime();
+}
+
+/** Formatted "Hh Mm" countdown to the next daily. */
+export function nextDailyLabel(): string {
+  const ms = untilNextDaily();
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  return `${h}h ${m}m`;
+}

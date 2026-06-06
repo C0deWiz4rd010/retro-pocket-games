@@ -17,8 +17,15 @@ async function persist(): Promise<void> {
   await write('profile', '_', profile());
 }
 
+export interface RunReward {
+  leveledUp: boolean;
+  newLevel: number;
+  xpGain: number;
+  tokenGain: number;
+}
+
 /** Award XP + tokens after a run, level up as needed, and persist. */
-export function awardRun(gameId: string, score: number): { leveledUp: boolean; newLevel: number } {
+export function awardRun(gameId: string, score: number): RunReward {
   const p = structuredClone(profile());
   const xpGain = Math.max(5, Math.floor(score / 10));
   const tokenGain = Math.max(1, Math.floor(score / 100));
@@ -38,7 +45,7 @@ export function awardRun(gameId: string, score: number): { leveledUp: boolean; n
 
   profile.set(p);
   void persist();
-  return { leveledUp, newLevel: p.level };
+  return { leveledUp, newLevel: p.level, xpGain, tokenGain };
 }
 
 export function addTokens(n: number): void {

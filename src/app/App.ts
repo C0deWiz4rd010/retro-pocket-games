@@ -13,7 +13,7 @@ import { renderAchievements } from './views/Achievements';
 import { renderScores } from './views/Scores';
 import { renderProfile } from './views/Profile';
 import { renderAbout } from './views/About';
-import { pickDailyGame, dailySeed, dailyModifier } from './daily';
+import { pickDailyGame, dailySeed, dailyModifier, nextDailyLabel } from './daily';
 import { t } from '@i18n/index';
 
 /** Games whose `custom` payload carries a meaningful secondary best worth showing on the tile. */
@@ -103,6 +103,8 @@ export class App {
       this.renderProfile();
     } else if (section === 'about') {
       this.renderAbout();
+    } else if (section === 'surprise') {
+      this.surpriseMe();
     } else if (section === 'bios') {
       this.renderBios();
     } else if (section === 'daily') {
@@ -223,6 +225,10 @@ export class App {
       el('div', { class: 'hero__mod' }, [`✦ ${t(mod.label)}`]),
       el('button', { class: 'btn btn--primary' }, [done ? `✓  ${t('home.done')}` : `▶  ${t('home.playToday')}`]),
     ];
+    // After today's run, show a live countdown to the next challenge instead of a streak only.
+    if (done) {
+      children.push(el('div', { class: 'hero__next' }, [`⏱ ${t('home.next', { t: nextDailyLabel() })}`]));
+    }
     if (streak > 0) children.push(el('div', { class: 'hero__streak' }, [`🔥 ${t('home.streak', { n: streak })}`]));
     return el('div', { class: 'hero', role: 'button', onClick: () => this.go('daily') }, children);
   }
@@ -309,10 +315,23 @@ export class App {
 
   private gamesByGroup(): HTMLElement {
     const wrap = el('div', {});
-    for (const group of GROUP_ORDER) {
+    const groups = GROUP_ORDER.filter((g) => GAMES.some((x) => x.group === g));
+
+    // Category quick-nav chips that scroll to each group.
+    const chips = el('div', { class: 'cat-chips' }, groups.map((group) =>
+      el('button', {
+        class: 'cat-chip',
+        onClick: () => {
+          audio.sfx('blip');
+          document.getElementById(`grp-${group}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+      }, [group]),
+    ));
+    wrap.append(chips);
+
+    for (const group of groups) {
       const games = GAMES.filter((g) => g.group === group);
-      if (!games.length) continue;
-      wrap.append(el('div', { class: 'section-title' }, [group.toUpperCase()]));
+      wrap.append(el('div', { class: 'section-title', id: `grp-${group}` }, [group.toUpperCase()]));
       const grid = el('div', { class: 'tilegrid' }, games.map((g) => this.tile(g)));
       wrap.append(grid);
     }

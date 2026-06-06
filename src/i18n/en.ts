@@ -12,6 +12,7 @@ export const en: Dict = {
   'home.welcome': 'Welcome, Player One!',
   'home.welcomeHint': 'Pick any game below, or let fate decide.',
   'home.clear': 'Clear',
+  'home.next': 'Next in {t}',
   'time.now': 'just now',
   'time.min': '{n}m ago',
   'time.hour': '{n}h ago',

@@ -75,6 +75,29 @@ function rows(rerender: () => void): HTMLElement[] {
   const patchControls = (p: Partial<Settings['controls']>) =>
     updateSettings({ controls: { ...s.controls, ...p } });
 
+  // Theme swatch preview — clickable color chips for an at-a-glance pick.
+  const THEME_COLORS: Record<string, string[]> = {
+    cyberpunk: ['#0a0a12', '#00f7ff', '#ff2e97'],
+    gameboy: ['#0f380f', '#9bbc0f', '#8bac0f'],
+    c64: ['#3e31a2', '#a8a0ff', '#7c70da'],
+    amber: ['#1a1308', '#ffb000', '#ff7b00'],
+  };
+  const swatches = el(
+    'div',
+    { class: 'theme-swatches' },
+    (['cyberpunk', 'gameboy', 'c64', 'amber'] as const).map((th) =>
+      el('button', {
+        class: `theme-swatch${s.theme === th ? ' on' : ''}`,
+        'aria-label': th,
+        onClick: () => {
+          audio.sfx('blip');
+          updateSettings({ theme: th });
+          rerender();
+        },
+      }, THEME_COLORS[th]!.map((c) => el('span', { style: `background:${c}` }))),
+    ),
+  );
+
   return [
     el('div', { class: 'section-title' }, [t('settings.appearance')]),
     row(
@@ -90,6 +113,7 @@ function rows(rerender: () => void): HTMLElement[] {
         (theme) => updateSettings({ theme }),
       ),
     ),
+    swatches,
     row(
       t('settings.skin'),
       seg(

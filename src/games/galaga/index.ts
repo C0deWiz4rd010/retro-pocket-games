@@ -95,8 +95,12 @@ export default function createGame(ctx: GameContext): Game {
           e.y += (e.hy - e.y) * Math.min(1, dt * 4);
         } else {
           e.t += dt;
-          e.y += 160 * dt;
-          e.x += Math.sin(e.t * 5) * 120 * dt;
+          // curved arc: home in on player using gradual steering
+          const dx = player.x - e.x;
+          const targetVx = dx * 2.5;
+          e.x += (targetVx - (e.x - e.hx)) * Math.min(1, dt * 2.5);
+          e.y += (140 + wave * 12) * dt;
+          e.x += Math.sin(e.t * 4) * 80 * dt;
           if (e.y > H + 20) {
             e.diving = false;
             e.y = -20;

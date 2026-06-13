@@ -54,6 +54,8 @@ export default function createGame(ctx: GameContext): Game {
   let over = false;
   let landed = 0;
   let score = 0;
+  let windAngle = 0;
+  const windStrength = (ctx.rng.next() - 0.5) * 14;
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('LAND SOFTLY');
@@ -92,18 +94,20 @@ export default function createGame(ctx: GameContext): Game {
       const [f3x, f3y] = tx(4, 16 + Math.random() * 6);
       g.poly([fx, fy, f2x, f2y, f3x, f3y]).fill({ color: 0xff7b00 });
     }
-    info.text = `FUEL ${Math.max(0, Math.round(ship.fuel))}  VY ${ship.vy.toFixed(0)}  VX ${ship.vx.toFixed(0)}`;
   };
 
   return {
     update(dt) {
       if (over) return;
+      windAngle += dt * 0.4;
+      const windGust = windStrength * (0.8 + 0.2 * Math.sin(windAngle * 2.3));
       const thrusting = (ctx.input.isDown('a') || ctx.input.isDown('up')) && ship.fuel > 0;
       const ax = ctx.input.axis().x;
       ship.a += ax * ROT * dt;
       ship.a = Math.max(-1.2, Math.min(1.2, ship.a));
 
       ship.vy += GRAV * dt;
+      ship.vx += windGust * dt; // wind effect
       if (thrusting) {
         ship.vx += Math.sin(ship.a) * THRUST * dt;
         ship.vy -= Math.cos(ship.a) * THRUST * dt;
@@ -114,6 +118,7 @@ export default function createGame(ctx: GameContext): Game {
       ship.y += ship.vy * dt;
       if (ship.x < 0) ship.x = 0;
       if (ship.x > W) ship.x = W;
+      info.text = `FUEL ${Math.max(0, Math.round(ship.fuel))}  VY ${ship.vy.toFixed(0)}  WIND ${windGust > 0 ? '>' : '<'}${Math.abs(windGust).toFixed(0)}`;
 
       const ground = terrainY(ship.x);
       if (ship.y + 8 >= ground) {

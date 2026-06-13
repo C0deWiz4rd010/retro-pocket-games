@@ -55,10 +55,16 @@ export default function createGame(ctx: GameContext): Game {
 
   const draw = (): void => {
     g.clear();
+    // interpolate wall color from dark-blue → purple → deep-red as speed increases
+    const t = Math.min(1, (speed - 180) / 280);
+    const r = Math.floor(0x1d + t * (0x3d - 0x1d));
+    const gv = Math.floor(0x1d * (1 - t));
+    const bv = Math.floor(0x4e * (1 - t));
+    const wallColor = (r << 16) | (gv << 8) | bv;
     slices.forEach((s, i) => {
       const y = i * sliceH - (scroll % sliceH);
-      g.rect(0, y, s.cx - s.half, sliceH + 1).fill({ color: 0x1d1d4e });
-      g.rect(s.cx + s.half, y, W - (s.cx + s.half), sliceH + 1).fill({ color: 0x1d1d4e });
+      g.rect(0, y, s.cx - s.half, sliceH + 1).fill({ color: wallColor });
+      g.rect(s.cx + s.half, y, W - (s.cx + s.half), sliceH + 1).fill({ color: wallColor });
     });
     g.poly([ship.x, ship.y - ship.r, ship.x - ship.r, ship.y + ship.r, ship.x + ship.r, ship.y + ship.r]).fill({ color: 0x42a5f5 });
     g.circle(ship.x, ship.y + 2, 3).fill({ color: 0x00f7ff });

@@ -18,14 +18,14 @@ export default function createGame(ctx: GameContext): Game {
 
   const GRAV = 1500;
   const FLAP = -430;
-  const GAP = 165;
   const PIPE_W = 56;
-  const SPEED = 150;
 
   const bird = { x: W * 0.28, y: H / 2, vy: 0, r: 13 };
   let pipes: { x: number; gapY: number; scored: boolean }[] = [];
   let spawnT = 0;
   let score = 0;
+  let speed = 150;
+  let gap = 165;
   let started = false;
   let over = false;
 
@@ -45,7 +45,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const addPipe = (): void => {
     const margin = 60;
-    const gapY = margin + ctx.rng.next() * (H - groundH - GAP - margin * 2);
+    const gapY = margin + ctx.rng.next() * (H - groundH - gap - margin * 2);
     pipes.push({ x: W + PIPE_W, gapY, scored: false });
   };
 
@@ -53,9 +53,9 @@ export default function createGame(ctx: GameContext): Game {
     g.clear();
     pipes.forEach((p) => {
       g.rect(p.x, 0, PIPE_W, p.gapY).fill({ color: 0x3ddc84 });
-      g.rect(p.x, p.gapY + GAP, PIPE_W, H - groundH - (p.gapY + GAP)).fill({ color: 0x3ddc84 });
+      g.rect(p.x, p.gapY + gap, PIPE_W, H - groundH - (p.gapY + gap)).fill({ color: 0x3ddc84 });
       g.rect(p.x - 3, p.gapY - 16, PIPE_W + 6, 16).fill({ color: 0x2bb86c });
-      g.rect(p.x - 3, p.gapY + GAP, PIPE_W + 6, 16).fill({ color: 0x2bb86c });
+      g.rect(p.x - 3, p.gapY + gap, PIPE_W + 6, 16).fill({ color: 0x2bb86c });
     });
     g.circle(bird.x, bird.y, bird.r).fill({ color: 0xffd200 });
     g.circle(bird.x + 4, bird.y - 4, 3).fill({ color: 0x101018 });
@@ -86,7 +86,7 @@ export default function createGame(ctx: GameContext): Game {
         spawnT = 0;
         addPipe();
       }
-      pipes.forEach((p) => (p.x -= SPEED * dt));
+      pipes.forEach((p) => (p.x -= speed * dt));
       pipes = pipes.filter((p) => p.x > -PIPE_W);
 
       for (const p of pipes) {
@@ -95,12 +95,17 @@ export default function createGame(ctx: GameContext): Game {
           score++;
           ctx.hud.setScore(score);
           ctx.audio.sfx('coin');
-          if (score === 10) ctx.hud.toast('🥉 BRONZE');
+          // speed up every 10 pipes; gap shrinks slightly until min 110
+          if (score % 10 === 0) {
+            speed += 18;
+            gap = Math.max(110, gap - 8);
+            ctx.hud.toast(`SPEED UP! Lv ${score / 10 + 1}`);
+          } else if (score === 10) ctx.hud.toast('🥉 BRONZE');
           else if (score === 25) ctx.hud.toast('🥈 SILVER');
           else if (score === 50) ctx.hud.toast('🥇 GOLD');
         }
         const inX = bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W;
-        const hitY = bird.y - bird.r < p.gapY || bird.y + bird.r > p.gapY + GAP;
+        const hitY = bird.y - bird.r < p.gapY || bird.y + bird.r > p.gapY + gap;
         if (inX && hitY) return die();
       }
 

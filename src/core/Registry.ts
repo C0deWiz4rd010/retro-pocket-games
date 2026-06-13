@@ -1,4 +1,5 @@
 import type { GameModule } from './types';
+import { controlsForGame, type ControlProfile } from './controlProfiles';
 
 export type Kit = 'grid' | 'shooter' | 'paddle' | 'vector' | 'sidescroll' | 'standalone';
 export type Orientation = 'portrait' | 'landscape' | 'any';
@@ -14,6 +15,13 @@ export interface GameMeta {
   accent: string; // tile accent color
   glyph: string; // short cover glyph/emoji
   blurb: string;
+  controls?: ControlProfile;
+  difficulty?: 'easy' | 'medium' | 'hard' | 'variable';
+  tags?: string[];
+  cover?: { kind: 'generated'; motif: 'grid' | 'paddle' | 'shooter' | 'vector' | 'cards' | 'logic' };
+  assetManifest?: string;
+  defaultHud?: 'score' | 'score-lives' | 'score-level' | 'minimal';
+  tutorialSteps?: string[];
   available: boolean;
   loader?: () => Promise<GameModule>;
 }
@@ -180,7 +188,29 @@ export const GAMES: GameMeta[] = [
   mk('maze', 'Maze Run', 'grid', 'Skill', 'portrait', '#7e57c2', '🌀', 'Escape the maze before time.', () => import('@games/maze')),
   mk('reflex', 'Reflex Grid', 'standalone', 'Skill', 'portrait', '#26a69a', '⚡', 'Tap the target the instant it lights.', () => import('@games/reflex')),
   mk('tunnel', 'Tunnel Flyer', 'sidescroll', 'Skill', 'portrait', '#42a5f5', '🛸', 'Thread the endless tunnel.', () => import('@games/tunnel')),
+
+  // ── Volume III: 5 brand-new games ──
+  mk('battleship', 'Battleship', 'grid', 'Brain', 'portrait', '#1e90ff', '🚢', 'Sink the enemy fleet before they sink yours.', () => import('@games/battleship')),
+  mk('sudoku', 'Sudoku', 'grid', 'Brain', 'portrait', '#b0c4de', '🔢', 'Fill every row, column and box.', () => import('@games/sudoku')),
+  mk('checkers', 'Checkers', 'grid', 'Brain', 'portrait', '#c19a6b', '⚫', 'Jump and capture — beat the AI.', () => import('@games/checkers')),
+  mk('bubble', 'Bubble Shooter', 'standalone', 'Puzzle', 'portrait', '#ff80ab', '🫧', 'Match 3+ bubbles to pop them all.', () => import('@games/bubble')),
+  mk('blackjack', 'Blackjack', 'standalone', 'Brain', 'portrait', '#2e8b57', '🃏', 'Hit, stand or double — beat the dealer.', () => import('@games/blackjack')),
+  // Volume IV: 5 quick-session classics
+  mk('hangman', 'Hangman', 'standalone', 'Brain', 'portrait', '#7dd3fc', 'ABC', 'Guess the hidden word before the chalk runs out.', () => import('@games/hangman')),
+  mk('yahtzee', 'Dice Poker', 'standalone', 'Brain', 'portrait', '#facc15', '5D6', 'Roll, hold, and chase the best dice combo.', () => import('@games/yahtzee')),
+  mk('rps', 'RPS Duel', 'standalone', 'Skill', 'portrait', '#fb7185', 'RPS', 'Read the rival and win a best-of-five duel.', () => import('@games/rps')),
+  mk('targettap', 'Target Tap', 'standalone', 'Skill', 'portrait', '#22d3ee', '+', 'Hit moving targets before time runs out.', () => import('@games/targettap')),
+  mk('chainreaction', 'Chain Reaction', 'grid', 'Puzzle', 'portrait', '#c084fc', 'CR', 'Overload cells and trigger cascading bursts.', () => import('@games/chainreaction')),
 ];
+
+for (const game of GAMES) {
+  game.controls ??= controlsForGame({ id: game.id, kit: game.kit, orientation: game.orientation });
+  game.difficulty ??= 'variable';
+  game.tags ??= [game.group.toLowerCase(), game.kit];
+  game.cover ??= { kind: 'generated', motif: coverMotif(game.kit, game.group) };
+  game.defaultHud ??= defaultHudForKit(game.kit);
+  game.tutorialSteps ??= tutorialFor(game);
+}
 
 function mk(
   id: string,
@@ -204,9 +234,38 @@ function mk(
     accent,
     glyph,
     blurb,
+    controls: controlsForGame({ id, kit, orientation }),
+    difficulty: 'variable',
+    tags: [group.toLowerCase(), kit],
+    cover: { kind: 'generated', motif: coverMotif(kit, group) },
+    defaultHud: defaultHudForKit(kit),
     available: Boolean(loader),
     ...(loader ? { loader } : {}),
   };
+}
+
+function coverMotif(kit: Kit, group: GameMeta['group']): NonNullable<GameMeta['cover']>['motif'] {
+  if (group === 'Brain') return 'logic';
+  if (kit === 'paddle') return 'paddle';
+  if (kit === 'shooter') return 'shooter';
+  if (kit === 'vector') return 'vector';
+  if (kit === 'standalone') return 'cards';
+  return 'grid';
+}
+
+function defaultHudForKit(kit: Kit): NonNullable<GameMeta['defaultHud']> {
+  if (kit === 'paddle' || kit === 'shooter' || kit === 'vector' || kit === 'sidescroll') return 'score-lives';
+  if (kit === 'grid') return 'score-level';
+  return 'score';
+}
+
+function tutorialFor(game: GameMeta): string[] {
+  const hints = game.controls?.hints ?? [];
+  return [
+    game.blurb,
+    hints.length ? `Controls: ${hints.join(' / ')}` : 'Tap the screen targets.',
+    `${game.group} / ${game.kit}`,
+  ];
 }
 
 export const getGame = (id: string): GameMeta | undefined => GAMES.find((g) => g.id === id);

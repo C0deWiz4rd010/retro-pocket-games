@@ -27,6 +27,7 @@ export default function createGame(ctx: GameContext): Game {
   let busy = 0;
   let moves = 30;
   let over = false;
+  let cascade = 0;
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel(`MOVES ${moves}`);
@@ -49,9 +50,12 @@ export default function createGame(ctx: GameContext): Game {
   const resolve = (): boolean => {
     const m = findMatches();
     const count = m.filter(Boolean).length;
-    if (!count) return false;
-    score += count * 10;
+    if (!count) { cascade = 0; return false; }
+    cascade++;
+    const pts = count * 10 * cascade;
+    score += pts;
     ctx.hud.setScore(score);
+    if (cascade >= 2) ctx.hud.toast(`CASCADE x${cascade}! +${pts}`);
     ctx.audio.sfx('coin');
     for (let c = 0; c < N; c++) {
       const kept: number[] = [];
@@ -74,6 +78,7 @@ export default function createGame(ctx: GameContext): Game {
     swap(a, b);
     if (findMatches().some(Boolean)) {
       moves--;
+      cascade = 0;
       ctx.hud.setLabel(`MOVES ${moves}`);
       busy = 0.15;
       ctx.audio.sfx('blip');

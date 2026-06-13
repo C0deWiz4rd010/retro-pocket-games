@@ -79,9 +79,9 @@ export default function createGame(ctx: GameContext): Game {
       const ax = ctx.input.axis().y;
       if (ax) player.y = clamp(player.y + ax * 420 * dt, 0, H - padH);
 
-      // CPU AI: track ball with capped speed + slight lag
+      // CPU AI: track ball with capped speed + slight lag; gets faster as player scores more
       const target = ball.y - padH / 2;
-      const cpuSpeed = 260;
+      const cpuSpeed = 200 + Math.min(pScore, 8) * 15;
       cpu.y += clamp(target - cpu.y, -cpuSpeed * dt, cpuSpeed * dt);
       cpu.y = clamp(cpu.y, 0, H - padH);
 

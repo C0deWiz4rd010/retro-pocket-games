@@ -54,6 +54,7 @@ export default function createGame(ctx: GameContext): Game {
   let timeLeft = 30;
   let over = false;
   let level = 1;
+  let totalScore = 0;
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('30s');
@@ -69,12 +70,21 @@ export default function createGame(ctx: GameContext): Game {
     player.r = nr;
     ctx.audio.sfx('blip');
     if (player.c === exit.c && player.r === exit.r) {
-      level++;
-      const bonus = Math.ceil(timeLeft) * 10;
+      const bonus = Math.ceil(timeLeft) * 10 + level * 100;
+      totalScore += bonus;
       ctx.audio.sfx('levelup');
-      ctx.hud.toast(`LEVEL ${level} +${bonus}`);
-      ctx.gameOver(level * 100 + bonus, { level });
-      over = true;
+      ctx.hud.setScore(totalScore);
+      ctx.hud.toast(`LV ${level} CLEAR! +${bonus}`);
+      level++;
+      // add time bonus, regenerate a larger maze
+      timeLeft = Math.min(timeLeft + 12, 45);
+      // clear and regenerate maze
+      wall.fill(true);
+      carve(1, 1);
+      player.c = 1;
+      player.r = 1;
+      drawMaze();
+      draw();
     }
     draw();
   };
@@ -100,11 +110,11 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       timeLeft -= dt;
-      ctx.hud.setLabel(`${Math.ceil(timeLeft)}s`);
+      ctx.hud.setLabel(`LV${level} ${Math.ceil(timeLeft)}s`);
       if (timeLeft <= 0) {
         over = true;
         ctx.audio.sfx('gameover');
-        ctx.gameOver((level - 1) * 100, { level });
+        ctx.gameOver(totalScore, { level });
       }
     },
     destroy() {

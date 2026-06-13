@@ -11,7 +11,7 @@ type InputEvents = {
   pointermove: { x: number; y: number; down: boolean };
 };
 
-const KEY_MAP: Record<string, Action> = {
+const DEFAULT_KEY_MAP: Record<string, Action> = {
   ArrowUp: 'up',
   ArrowDown: 'down',
   ArrowLeft: 'left',
@@ -49,6 +49,8 @@ const GAMEPAD_BUTTONS: Record<number, Action> = {
 export class InputManager extends Emitter<InputEvents> {
   private pressed = new Set<Action>();
   private gpDirPrev = new Set<Action>();
+  private keyMap: Record<string, Action> = { ...DEFAULT_KEY_MAP };
+  private gamepadDeadzone = 0.5;
   private toVirtual: (clientX: number, clientY: number) => { x: number; y: number } = (x, y) => ({
     x,
     y,
@@ -59,13 +61,13 @@ export class InputManager extends Emitter<InputEvents> {
   private pDown = false;
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    const a = KEY_MAP[e.code];
+    const a = this.keyMap[e.code];
     if (!a) return;
     e.preventDefault();
     if (!e.repeat) this.press(a);
   };
   private onKeyUp = (e: KeyboardEvent): void => {
-    const a = KEY_MAP[e.code];
+    const a = this.keyMap[e.code];
     if (a) this.release(a);
   };
 
@@ -76,6 +78,11 @@ export class InputManager extends Emitter<InputEvents> {
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
     window.addEventListener('pointerup', this.onPointerUp);
+  }
+
+  configure(opts: { keyMap?: Record<string, Action>; gamepadDeadzone?: number }): void {
+    if (opts.keyMap) this.keyMap = { ...DEFAULT_KEY_MAP, ...opts.keyMap };
+    if (opts.gamepadDeadzone !== undefined) this.gamepadDeadzone = opts.gamepadDeadzone;
   }
 
   detach(canvas: HTMLElement): void {
@@ -122,10 +129,10 @@ export class InputManager extends Emitter<InputEvents> {
         if (a && btn.pressed) now.add(a);
       });
       const [ax = 0, ay = 0] = pad.axes;
-      if (ax < -0.5) now.add('left');
-      else if (ax > 0.5) now.add('right');
-      if (ay < -0.5) now.add('up');
-      else if (ay > 0.5) now.add('down');
+      if (ax < -this.gamepadDeadzone) now.add('left');
+      else if (ax > this.gamepadDeadzone) now.add('right');
+      if (ay < -this.gamepadDeadzone) now.add('up');
+      else if (ay > this.gamepadDeadzone) now.add('down');
     }
     for (const a of now) if (!this.gpDirPrev.has(a)) this.press(a);
     for (const a of this.gpDirPrev) if (!now.has(a)) this.release(a);

@@ -16,11 +16,16 @@ interface Brick {
   c: number;
   hp: number;
 }
-type PowerKind = 'multi' | 'wide' | 'slow' | 'life';
+type PowerKind = 'multi' | 'wide' | 'slow' | 'life' | 'laser';
 interface Drop {
   x: number;
   y: number;
   kind: PowerKind;
+}
+
+interface Laser {
+  x: number;
+  y: number;
 }
 
 const POWER_META: Record<PowerKind, { color: number; label: string }> = {
@@ -28,6 +33,7 @@ const POWER_META: Record<PowerKind, { color: number; label: string }> = {
   wide: { color: 0x3ddc84, label: 'WIDE PADDLE' },
   slow: { color: 0xffd200, label: 'SLOW' },
   life: { color: 0xff2e97, label: '+1 LIFE' },
+  laser: { color: 0xff4d4d, label: 'LASER!' },
 };
 
 export default function createGame(ctx: GameContext): Game {
@@ -45,12 +51,14 @@ export default function createGame(ctx: GameContext): Game {
   let balls: Ball[] = [];
   let drops: Drop[] = [];
   let bricks: Brick[] = [];
+  const lasers: Laser[] = [];
   let score = 0;
   let lives = 3;
   let level = 1;
   let over = false;
   let stuck = true;
   let slowT = 0;
+  let laserT = 0;
 
   const buildBricks = (): void => {
     bricks = [];
@@ -94,7 +102,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const maybeDrop = (x: number, y: number): void => {
     if (ctx.rng.next() > 0.16) return;
-    const kinds: PowerKind[] = ['multi', 'wide', 'slow', 'life'];
+    const kinds: PowerKind[] = ['multi', 'wide', 'slow', 'life', 'laser'];
     drops.push({ x, y, kind: ctx.rng.pick(kinds) });
   };
 
@@ -117,6 +125,8 @@ export default function createGame(ctx: GameContext): Game {
     } else if (kind === 'life') {
       lives++;
       ctx.hud.setLives(lives);
+    } else if (kind === 'laser') {
+      laserT = 10;
     }
   };
 
@@ -128,7 +138,14 @@ export default function createGame(ctx: GameContext): Game {
     drops.forEach((d) => {
       g.roundRect(d.x - 9, d.y - 6, 18, 12, 3).fill({ color: POWER_META[d.kind].color });
     });
-    g.roundRect(pad.x, pad.y, pad.w, pad.h, 6).fill({ color: pad.wideT > 0 ? 0x3ddc84 : 0x00f7ff });
+    const padColor = laserT > 0 ? 0xff4d4d : pad.wideT > 0 ? 0x3ddc84 : 0x00f7ff;
+    g.roundRect(pad.x, pad.y, pad.w, pad.h, 6).fill({ color: padColor });
+    // laser cannons visual when active
+    if (laserT > 0) {
+      g.rect(pad.x + 3, pad.y - 5, 4, 6).fill({ color: 0xff4d4d });
+      g.rect(pad.x + pad.w - 7, pad.y - 5, 4, 6).fill({ color: 0xff4d4d });
+    }
+    lasers.forEach((l) => g.rect(l.x - 2, l.y, 4, 12).fill({ color: 0xff4d4d, alpha: 0.9 }));
     balls.forEach((b) => g.circle(b.x, b.y, 6).fill({ color: 0xffffff }));
   };
 
@@ -137,6 +154,32 @@ export default function createGame(ctx: GameContext): Game {
       if (over) return;
       const sdt = dt * (slowT > 0 ? 0.6 : 1);
       if (slowT > 0) slowT -= dt;
+      if (laserT > 0) {
+        laserT -= dt;
+        // auto-fire lasers from paddle edges
+        if (Math.floor(laserT * 3) !== Math.floor((laserT + dt) * 3)) {
+          lasers.push({ x: pad.x + 5, y: pad.y - 6 });
+          lasers.push({ x: pad.x + pad.w - 5, y: pad.y - 6 });
+          ctx.audio.sfx('shoot');
+        }
+      }
+      // move lasers
+      lasers.forEach((l) => (l.y -= 540 * dt));
+      for (let li = lasers.length - 1; li >= 0; li--) {
+        const l = lasers[li]!;
+        if (l.y < -12) { lasers.splice(li, 1); continue; }
+        let hit = false;
+        for (let bi = 0; bi < bricks.length && !hit; bi++) {
+          const b = bricks[bi]!;
+          if (l.x > b.x && l.x < b.x + brickW && l.y > b.y && l.y < b.y + brickH) {
+            b.hp--;
+            if (b.hp <= 0) { bricks.splice(bi, 1); score += 10 * level; ctx.hud.setScore(score); maybeDrop(b.x + brickW / 2, b.y); }
+            lasers.splice(li, 1);
+            hit = true;
+            ctx.audio.sfx('hit');
+          }
+        }
+      }
       if (pad.wideT > 0) {
         pad.wideT -= dt;
         if (pad.wideT <= 0) pad.w = pad.baseW;

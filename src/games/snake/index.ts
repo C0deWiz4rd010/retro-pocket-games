@@ -33,7 +33,11 @@ export default function createGame(ctx: GameContext): Game {
   const food = new Graphics();
   const bonusG = new Graphics();
   const snakeG = new Graphics();
-  layer.addChild(food, bonusG, snakeG);
+  const particleG = new Graphics();
+  layer.addChild(food, bonusG, snakeG, particleG);
+
+  interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+  const particles: Particle[] = [];
 
   const state: SnakeState = createSnake(cols, rows, ctx.rng);
   ctx.hud.setScore(0);
@@ -55,6 +59,33 @@ export default function createGame(ctx: GameContext): Game {
   let bonus: { x: number; y: number; ttl: number } | null = null;
 
   const interval = (): number => Math.max(0.06, 0.16 - state.score * 0.0006);
+
+  const spawnParticles = (gx: number, gy: number, color: number): void => {
+    const cx = gx * cell + cell / 2;
+    const cy = gy * cell + cell / 2;
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const speed = 40 + Math.random() * 60;
+      particles.push({ x: cx, y: cy, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, color });
+    }
+  };
+
+  const drawParticles = (): void => {
+    particleG.clear();
+    for (const p of particles) {
+      particleG.circle(p.x, p.y, cell * 0.18 * p.life).fill({ color: p.color, alpha: p.life });
+    }
+  };
+
+  const updateParticles = (dt: number): void => {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i]!;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt * 2.5;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+  };
 
   const spawnBonus = (): void => {
     const free: { x: number; y: number }[] = [];
@@ -97,6 +128,7 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (dead) return;
       pulse += dt;
+      updateParticles(dt);
       if (comboTimer > 0) comboTimer -= dt;
       else combo = 0;
       if (bonus) {
@@ -106,6 +138,7 @@ export default function createGame(ctx: GameContext): Game {
 
       acc += dt;
       if (acc < interval()) {
+        drawParticles();
         draw();
         return;
       }
@@ -116,6 +149,7 @@ export default function createGame(ctx: GameContext): Game {
       if (bonus && head.x === bonus.x && head.y === bonus.y) {
         const pts = 30 + Math.ceil(bonus.ttl) * 5;
         state.score += pts;
+        spawnParticles(bonus.x, bonus.y, 0xffd200);
         bonus = null;
         combo++;
         comboTimer = 3;
@@ -133,6 +167,7 @@ export default function createGame(ctx: GameContext): Game {
           state.score += combo;
           ctx.hud.toast(`COMBO x${combo}`);
         }
+        spawnParticles(state.food.x, state.food.y, 0xff2e97);
         ctx.audio.sfx('eat');
         ctx.hud.setScore(state.score);
         if (eaten % 5 === 0 && !bonus) spawnBonus();
@@ -142,6 +177,7 @@ export default function createGame(ctx: GameContext): Game {
         ctx.gameOver(state.score, { length: state.body.length });
         return;
       }
+      drawParticles();
       draw();
     },
     destroy() {

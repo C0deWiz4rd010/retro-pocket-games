@@ -154,6 +154,7 @@ function rows(rerender: () => void): HTMLElement[] {
         (mode) => patchScreenFx({ mode }),
       ),
     ),
+    row('CRT intensity', slider(s.screenFx.intensity, (intensity) => patchScreenFx({ intensity }))),
     row(
       t('settings.language'),
       seg(
@@ -203,6 +204,19 @@ function rows(rerender: () => void): HTMLElement[] {
     el('div', { class: 'section-title' }, [t('settings.a11y')]),
     row(t('settings.reducedMotion'), toggle(s.a11y.reducedMotion, (reducedMotion) => patchA11y({ reducedMotion }))),
     row(t('settings.highContrast'), toggle(s.a11y.highContrast, (highContrast) => patchA11y({ highContrast }))),
+    row(
+      'Colorblind palette',
+      seg(
+        s.a11y.colorblind,
+        [
+          { value: 'off', label: 'Off' },
+          { value: 'protan', label: 'Protan' },
+          { value: 'deutan', label: 'Deutan' },
+          { value: 'tritan', label: 'Tritan' },
+        ],
+        (colorblind) => patchA11y({ colorblind }),
+      ),
+    ),
     row(t('settings.largeTargets'), toggle(s.a11y.largeTargets, (largeTargets) => patchA11y({ largeTargets }))),
 
     el('div', { class: 'section-title' }, [t('settings.data')]),

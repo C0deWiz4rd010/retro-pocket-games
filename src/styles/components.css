@@ -63,6 +63,11 @@
   font-size: 20px;
   background: color-mix(in srgb, var(--surface-2) 70%, transparent);
 }
+.lucide-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
 .iconbtn:active {
   transform: scale(0.92);
 }
@@ -239,6 +244,96 @@
   overflow: hidden;
   transition: transform 0.1s var(--ease);
 }
+.tile__cover {
+  position: absolute;
+  inset: 8px 8px auto 8px;
+  height: 46%;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 70% 32%, color-mix(in srgb, var(--tile-accent) 70%, white) 0 10%, transparent 11%),
+    linear-gradient(135deg, color-mix(in srgb, var(--tile-accent) 40%, #000), rgba(255, 255, 255, 0.05));
+  border: 1px solid color-mix(in srgb, var(--tile-accent) 46%, transparent);
+  opacity: 0.94;
+}
+.tile__cover i {
+  position: absolute;
+  display: block;
+  background: color-mix(in srgb, var(--tile-accent) 70%, #fff);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--tile-accent) 60%, transparent);
+}
+.tile__cover--grid i {
+  width: 16%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+}
+.tile__cover--grid i:nth-child(1) { left: 18%; top: 20%; }
+.tile__cover--grid i:nth-child(2) { left: 38%; top: 42%; }
+.tile__cover--grid i:nth-child(3) { left: 58%; top: 20%; }
+.tile__cover--grid i:nth-child(4) { left: 62%; top: 58%; }
+.tile__cover--paddle i:nth-child(1),
+.tile__cover--paddle i:nth-child(2) {
+  width: 5px;
+  height: 54%;
+  top: 24%;
+  border-radius: 6px;
+}
+.tile__cover--paddle i:nth-child(1) { left: 18%; }
+.tile__cover--paddle i:nth-child(2) { right: 18%; }
+.tile__cover--paddle i:nth-child(3) {
+  width: 12px;
+  height: 12px;
+  left: 48%;
+  top: 44%;
+  border-radius: 50%;
+}
+.tile__cover--shooter i,
+.tile__cover--vector i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.tile__cover--shooter i:nth-child(1) { left: 24%; top: 24%; }
+.tile__cover--shooter i:nth-child(2) { left: 46%; top: 24%; }
+.tile__cover--shooter i:nth-child(3) { left: 68%; top: 24%; }
+.tile__cover--shooter i:nth-child(4) {
+  left: 46%;
+  top: 66%;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.tile__cover--vector i:nth-child(1) {
+  width: 22px;
+  height: 22px;
+  left: 42%;
+  top: 40%;
+  clip-path: polygon(50% 0, 100% 100%, 50% 78%, 0 100%);
+}
+.tile__cover--vector i:nth-child(2),
+.tile__cover--vector i:nth-child(3),
+.tile__cover--vector i:nth-child(4) {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.tile__cover--vector i:nth-child(2) { left: 20%; top: 22%; }
+.tile__cover--vector i:nth-child(3) { left: 70%; top: 26%; }
+.tile__cover--vector i:nth-child(4) { left: 30%; top: 68%; }
+.tile__cover--cards i,
+.tile__cover--logic i {
+  width: 22%;
+  height: 34%;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.tile__cover--cards i:nth-child(1),
+.tile__cover--logic i:nth-child(1) { left: 22%; top: 28%; transform: rotate(-10deg); }
+.tile__cover--cards i:nth-child(2),
+.tile__cover--logic i:nth-child(2) { left: 42%; top: 22%; transform: rotate(8deg); }
+.tile__glyph {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+}
 .tile:active {
   transform: scale(0.95);
 }
@@ -255,6 +350,19 @@
   font-family: var(--font-hud);
   font-size: 13px;
   color: var(--text-muted);
+}
+.tile__meta {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tile-accent) 18%, transparent);
+  color: color-mix(in srgb, var(--tile-accent) 72%, var(--text));
+  font-size: 10px;
+  line-height: 1.1;
+  text-transform: uppercase;
 }
 .tile--soon {
   opacity: 0.5;
@@ -441,6 +549,30 @@
   padding: 0 18px calc(18px + var(--safe-b));
   z-index: 10;
 }
+.touch--swipe,
+.touch--tap,
+.touch--none {
+  display: none;
+}
+.touch--drag .dpad {
+  display: none;
+}
+.touch--drag .actionbtns {
+  opacity: 0.82;
+}
+.touch--left {
+  flex-direction: row-reverse;
+}
+.touch-hint {
+  align-self: center;
+  margin: 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  color: var(--text-muted);
+  font-size: 12px;
+  pointer-events: none;
+}
 /* on-screen controls are shown during play in both skins (v1) */
 .dpad {
   display: grid;
@@ -495,6 +627,19 @@
 }
 .actionbtns button:active {
   transform: scale(0.9);
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--surface);
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 /* Settings */
@@ -763,6 +908,11 @@
   border-radius: var(--radius);
   padding: 10px 14px;
   margin: 6px 0;
+}
+.tut__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* ── Dev FPS meter ── */

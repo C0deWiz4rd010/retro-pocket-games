@@ -56,6 +56,9 @@ export default function createGame(ctx: GameContext): Game {
   let over = false;
   let dropAcc = 0;
   let softDrop = false;
+  let lastClearWasTetris = false;
+  let flashRows: number[] = [];
+  let flashT = 0;
 
   const makePiece = (id: number): Piece => {
     const s = SHAPES[id]!;
@@ -87,31 +90,42 @@ export default function createGame(ctx: GameContext): Game {
       }),
     );
     clearLines();
-    piece = spawn();
-    if (collides(piece)) {
-      over = true;
-      ctx.gameOver(score, { lines, level });
+    // if no flash pending, spawn immediately; otherwise update() handles it after flash
+    if (flashT <= 0) {
+      piece = spawn();
+      if (collides(piece)) {
+        over = true;
+        ctx.gameOver(score, { lines, level });
+      }
     }
   };
 
   const clearLines = (): void => {
     let cleared = 0;
+    flashRows = [];
     for (let y = ROWS - 1; y >= 0; y--) {
       if (board.slice(y * COLS, y * COLS + COLS).every((c) => c !== 0)) {
-        board.splice(y * COLS, COLS);
-        board.unshift(...new Array(COLS).fill(0));
+        flashRows.push(y);
         cleared++;
-        y++;
       }
     }
     if (cleared) {
+      flashT = 0.18;
       lines += cleared;
-      score += [0, 100, 300, 500, 800][cleared]! * level;
+      const isTetris = cleared >= 4;
+      const b2b = isTetris && lastClearWasTetris;
+      const base = [0, 100, 300, 500, 800][cleared]! * level;
+      const pts = b2b ? Math.floor(base * 1.5) : base;
+      score += pts;
+      lastClearWasTetris = isTetris;
       level = 1 + Math.floor(lines / 10);
       ctx.hud.setScore(score);
       ctx.hud.setLabel(`LV ${level}`);
-      if (cleared >= 4) ctx.hud.toast('TETRIS!');
-      ctx.audio.sfx(cleared >= 4 ? 'powerup' : 'clear');
+      if (b2b) ctx.hud.toast('B2B TETRIS! x1.5');
+      else if (isTetris) ctx.hud.toast('TETRIS!');
+      ctx.audio.sfx(isTetris ? 'powerup' : 'clear');
+    } else {
+      lastClearWasTetris = false;
     }
   };
 
@@ -198,7 +212,9 @@ export default function createGame(ctx: GameContext): Game {
       if (!c) return;
       const x = (i % COLS) * cell;
       const y = Math.floor(i / COLS) * cell;
-      g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: c });
+      const row = Math.floor(i / COLS);
+      const flashing = flashRows.includes(row) && flashT > 0;
+      g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: flashing ? 0xffffff : c });
     });
     let gy = piece.y;
     while (!collides(piece, piece.x, gy + 1)) gy++;
@@ -224,6 +240,28 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update(dt) {
       if (over) return;
+      if (flashT > 0) {
+        flashT -= dt;
+        if (flashT <= 0) {
+          // actually remove the flashed rows
+          for (let y = ROWS - 1; y >= 0; ) {
+            if (board.slice(y * COLS, y * COLS + COLS).every((c) => c !== 0)) {
+              board.splice(y * COLS, COLS);
+              board.unshift(...new Array(COLS).fill(0));
+            } else {
+              y--;
+            }
+          }
+          flashRows = [];
+          piece = spawn();
+          if (collides(piece)) {
+            over = true;
+            ctx.gameOver(score, { lines, level });
+          }
+        }
+        draw();
+        return;
+      }
       dropAcc += dt;
       const speed = softDrop ? 0.05 : Math.max(0.08, 0.8 - (level - 1) * 0.07);
       if (dropAcc >= speed) {

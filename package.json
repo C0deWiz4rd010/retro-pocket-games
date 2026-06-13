@@ -26,12 +26,16 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
     "idb-keyval": "^6.2.1",
+    "lucide": "^1.18.0",
+    "motion": "^12.40.0",
     "pixi.js": "^8.6.6",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.10.5",
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.17.0",

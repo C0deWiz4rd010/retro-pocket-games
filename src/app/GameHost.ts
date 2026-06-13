@@ -1,6 +1,8 @@
 import { Container, Ticker } from 'pixi.js';
 import { pixi } from '@core/PixiManager';
 import { InputManager, type Action } from '@core/InputManager';
+import { controlsForGame } from '@core/controlProfiles';
+import { GameFX } from '@core/GameFX';
 import { audio } from '@core/AudioManager';
 import { haptics } from '@core/Haptics';
 import { wakeLock } from '@core/WakeLock';
@@ -20,6 +22,9 @@ import { shareScoreCard } from './shareCard';
 import { confettiBurst } from './confetti';
 import { GAMES } from '@core/Registry';
 import { t } from '@i18n/index';
+import { icon } from '@ui/icons';
+import { enterPop } from '@ui/motion';
+import { attachTooltip } from '@ui/tooltip';
 import type { Game, GameContext, Hud } from '@core/types';
 import type { GameMeta } from '@core/Registry';
 
@@ -37,6 +42,7 @@ export interface RunOptions {
  */
 export class GameHost {
   private input = new InputManager();
+  private fx = new GameFX();
   private game: Game | null = null;
   private root = new Container();
   private tickFn: ((t: Ticker) => void) | null = null;
@@ -67,8 +73,11 @@ export class GameHost {
     pixi.clearWorld();
     this.root = new Container();
     pixi.world.addChild(this.root);
+    this.fx.attach(this.root);
 
     this.buildChrome();
+    const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
+    this.input.configure({ gamepadDeadzone: profile.gamepadDeadzone });
     this.input.attach(pixi.canvas, pixi.screenToVirtual);
 
     const ctx: GameContext = {
@@ -79,6 +88,7 @@ export class GameHost {
       audio,
       rng: new RNG(opts.seed ?? (Date.now() & 0xffffffff)),
       hud: this.makeHud(),
+      fx: this.fx,
       timeScale: opts.timeScale ?? 1,
       gameOver: (score, custom) => void this.handleGameOver(score, custom),
     };
@@ -102,6 +112,7 @@ export class GameHost {
       const dt = Math.min(tk.deltaMS / 1000, 0.05);
       screenFX.tick(dt);
       perf.tick(dt);
+      this.fx.update(dt);
       if (!this.running || !this.game) return;
       // Fold the daily time-scale in, but keep the per-step dt clamped for stability.
       this.game.update(Math.min(dt * timeScale, 0.05));
@@ -151,6 +162,13 @@ export class GameHost {
       },
     }, [settings().audio.sfx ? '🔊' : '🔇']);
     const pauseBtn = el('button', { class: 'iconbtn', 'aria-label': t('game.paused'), onClick: () => this.pause() }, ['⏸']);
+    muteBtn.replaceChildren(icon(settings().audio.sfx ? 'soundOn' : 'soundOff'));
+    attachTooltip(muteBtn, t('settings.sfx'));
+    muteBtn.addEventListener('click', () => {
+      window.setTimeout(() => muteBtn.replaceChildren(icon(settings().audio.sfx ? 'soundOn' : 'soundOff')));
+    });
+    pauseBtn.replaceChildren(icon('pause'));
+    attachTooltip(pauseBtn, t('game.paused'));
     const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudBest, this.hudLabel, this.hudLives, muteBtn, pauseBtn]);
 
     this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
@@ -169,6 +187,7 @@ export class GameHost {
   }
 
   private buildControls(): HTMLElement {
+    const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
     const dirBtn = (dir: Action, glyph: string) =>
       el('button', {
         class: dir,
@@ -207,7 +226,10 @@ export class GameHost {
       actBtn('a', 'a', 'A'),
     ]);
 
-    return el('div', { class: 'touch' }, [dpad, actions]);
+    return el('div', {
+      class: `touch touch--${profile.preset} touch--${settings().controls.touchLayout}`,
+      'data-pointer': profile.pointerMode,
+    }, [dpad, actions]);
   }
 
   private makeHud(): Hud {
@@ -476,6 +498,7 @@ export class GameHost {
     const ov = el('div', { class: 'overlay' }, [panel]);
     ov.dataset.overlay = '1';
     this.screenView.append(ov);
+    enterPop(panel);
     // Move focus into the dialog for keyboard + screen-reader users.
     const focusable = panel.querySelector<HTMLElement>('button, input, [tabindex]');
     focusable?.focus();
@@ -496,6 +519,7 @@ export class GameHost {
     this.tickFn = null;
     this.game?.destroy();
     this.game = null;
+    this.fx.clear();
     this.input.detach(pixi.canvas);
     pixi.clearWorld();
   }

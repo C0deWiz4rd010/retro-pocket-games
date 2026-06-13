@@ -44,6 +44,8 @@ export default function createGame(ctx: GameContext): Game {
   let over = false;
   let won = false;
   let prev: { grid: number[]; score: number } | null = null;
+  // per-cell scale for merge bounce animation [0,1] => 1 when idle
+  const cellScale: number[] = new Array(N * N).fill(1);
   const at = (x: number, y: number): number => grid[y * N + x] as number;
   const set = (x: number, y: number, v: number): void => {
     grid[y * N + x] = v;
@@ -57,18 +59,20 @@ export default function createGame(ctx: GameContext): Game {
     grid[idx] = ctx.rng.next() < 0.9 ? 2 : 4;
   };
 
-  const line = (vals: number[]): { row: number[]; gained: number } => {
+  const line = (vals: number[]): { row: number[]; gained: number; mergedAt: number[] } => {
     const f = vals.filter((v) => v !== 0);
     let gained = 0;
+    const mergedAt: number[] = [];
     for (let i = 0; i < f.length - 1; i++) {
       if (f[i] === f[i + 1]) {
         f[i] = (f[i] as number) * 2;
         gained += f[i] as number;
+        mergedAt.push(i);
         f.splice(i + 1, 1);
       }
     }
     while (f.length < N) f.push(0);
-    return { row: f, gained };
+    return { row: f, gained, mergedAt };
   };
 
   const move = (dir: 'up' | 'down' | 'left' | 'right'): boolean => {
@@ -84,14 +88,16 @@ export default function createGame(ctx: GameContext): Game {
         else if (dir === 'up') vals.push(at(i, j));
         else vals.push(at(i, N - 1 - j));
       }
-      const { row, gained: g } = line(vals);
+      const { row, gained: g, mergedAt } = line(vals);
       gained += g;
       for (let j = 0; j < N; j++) {
         const v = row[j] as number;
-        if (dir === 'left') set(j, i, v);
-        else if (dir === 'right') set(N - 1 - j, i, v);
-        else if (dir === 'up') set(i, j, v);
-        else set(i, N - 1 - j, v);
+        let idx = -1;
+        if (dir === 'left') { set(j, i, v); idx = i * N + j; }
+        else if (dir === 'right') { set(N - 1 - j, i, v); idx = i * N + (N - 1 - j); }
+        else if (dir === 'up') { set(i, j, v); idx = j * N + i; }
+        else { set(i, N - 1 - j, v); idx = (N - 1 - j) * N + i; }
+        if (mergedAt.includes(j) && idx >= 0) cellScale[idx] = 1.25;
       }
     }
     const moved = grid.join(',') !== before;
@@ -151,7 +157,9 @@ export default function createGame(ctx: GameContext): Game {
         label.text = '';
         return;
       }
-      tilesG.roundRect(px, py, cell, cell, 8).fill({ color: COLORS[v] ?? 0xedc22e });
+      const sc = cellScale[i] ?? 1;
+      const off = ((sc - 1) * cell) / 2;
+      tilesG.roundRect(px - off, py - off, cell * sc, cell * sc, 8).fill({ color: COLORS[v] ?? 0xedc22e });
       label.text = String(v);
       label.style.fill = v <= 4 ? 0xcadc9f : 0x101018;
       label.position.set(px + cell / 2, py + cell / 2);
@@ -173,7 +181,17 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setLabel('SWIPE • B=UNDO');
 
   return {
-    update() {},
+    update(dt) {
+      // decay merge bounce scale back to 1
+      let needRedraw = false;
+      for (let i = 0; i < N * N; i++) {
+        if (cellScale[i]! > 1) {
+          cellScale[i] = Math.max(1, cellScale[i]! - dt * 4);
+          needRedraw = true;
+        }
+      }
+      if (needRedraw) draw();
+    },
     destroy() {
       offDown();
       offSwipe();

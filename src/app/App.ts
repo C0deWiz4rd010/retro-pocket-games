@@ -388,16 +388,28 @@ export class App {
       [
         g.available ? '' : el('span', { class: 'tile__badge' }, ['SOON']),
         g.available ? this.favStar(g.id) : '',
+        this.tileCover(g),
         el('div', { class: 'tile__glyph' }, [g.glyph]),
         el('div', {}, [
           el('div', { class: 'tile__title' }, [g.title]),
           el('div', { class: 'tile__best' }, [
             g.available ? (best ? `★ ${best}` : '—') : 'Coming soon',
           ]),
+          el('div', { class: 'tile__meta' }, [g.tags?.[1] ?? g.kit]),
           g.available ? this.customBestLabel(g.id) : '',
         ]),
       ],
     );
+  }
+
+  private tileCover(g: GameMeta): HTMLElement {
+    const motif = g.cover?.motif ?? (g.kit === 'paddle' ? 'paddle' : g.kit === 'shooter' ? 'shooter' : g.kit === 'vector' ? 'vector' : 'grid');
+    return el('div', { class: `tile__cover tile__cover--${motif}`, 'aria-hidden': 'true' }, [
+      el('i', {}),
+      el('i', {}),
+      el('i', {}),
+      el('i', {}),
+    ]);
   }
 
   /** A second line with a game-specific personal best (e.g. "lvl 7", "len 42"). */

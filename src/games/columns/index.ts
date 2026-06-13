@@ -1,13 +1,28 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
+import {
+  COLS,
+  ROWS,
+  at,
+  canFall,
+  createColumns,
+  cyclePiece,
+  hardDrop,
+  lockPiece,
+  movePiece,
+  resolveMatches,
+  spawnPiece,
+} from './core';
 
-const COLORS = [0xff4d4d, 0xffd200, 0x3ddc84, 0x00f7ff, 0xb388ff, 0xff80ab];
-const COLS = 7;
-const ROWS = 14;
+const DEFAULT_COLORS = [0xff4d4d, 0xffd200, 0x3ddc84, 0x00f7ff, 0xb388ff, 0xff80ab];
+const COLORBLIND_COLORS = [0xe69f00, 0x56b4e9, 0x009e73, 0xf0e442, 0x0072b2, 0xcc79a7];
 
 export default function createGame(ctx: GameContext): Game {
-  const cell = Math.floor(Math.min(ctx.width / COLS, ctx.height / ROWS));
+  const state = createColumns(ctx.rng);
+  const colors = document.documentElement.dataset.colorblind === 'off' ? DEFAULT_COLORS : COLORBLIND_COLORS;
+
+  const cell = Math.floor(Math.min(ctx.width / COLS, (ctx.height - 22) / ROWS));
   const fieldW = COLS * cell;
   const fieldH = ROWS * cell;
   const ox = (ctx.width - fieldW) / 2;
@@ -16,150 +31,157 @@ export default function createGame(ctx: GameContext): Game {
   const layer = new Container();
   layer.position.set(ox, oy);
   ctx.stage.addChild(layer);
+
   const g = new Graphics();
   layer.addChild(g);
 
-  const board: number[] = new Array(COLS * ROWS).fill(-1);
-  const at = (c: number, r: number): number => board[r * COLS + c]!;
-  const set = (c: number, r: number, v: number): void => {
-    board[r * COLS + c] = v;
-  };
-
-  // falling triple
-  let piece = { col: 3, row: 0, cells: [0, 0, 0] };
-  const newPiece = (): void => {
-    piece = { col: 3, row: 0, cells: [ctx.rng.int(0, 5), ctx.rng.int(0, 5), ctx.rng.int(0, 5)] };
-    if (at(piece.col, 0) !== -1) {
-      over = true;
-      ctx.audio.sfx('gameover');
-      ctx.gameOver(score, { level });
-    }
-  };
-
-  let score = 0;
-  let level = 1;
-  let over = false;
   let dropAcc = 0;
   let settleT = 0;
+  let locked = false;
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('LV 1');
-  newPiece();
 
-  const canFall = (): boolean => piece.row + 3 <= ROWS - 1 && at(piece.col, piece.row + 3) === -1;
-
-  const lockPiece = (): void => {
-    for (let i = 0; i < 3; i++) {
-      const r = piece.row + i;
-      if (r >= 0 && r < ROWS) set(piece.col, r, piece.cells[i]!);
-    }
-    settleT = 0.01;
+  const syncHud = (): void => {
+    ctx.hud.setScore(state.score);
+    ctx.hud.setLabel(state.combo > 1 ? `LV ${state.level}  x${state.combo}` : `LV ${state.level}`);
   };
 
-  const clearMatches = (): boolean => {
-    const mark = new Set<number>();
-    const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
-    for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++) {
-        const v = at(c, r);
-        if (v < 0) continue;
-        for (const [dx, dy] of dirs) {
-          const run = [r * COLS + c];
-          let cc = c + dx!;
-          let rr = r + dy!;
-          while (cc >= 0 && cc < COLS && rr >= 0 && rr < ROWS && at(cc, rr) === v) {
-            run.push(rr * COLS + cc);
-            cc += dx!;
-            rr += dy!;
-          }
-          if (run.length >= 3) run.forEach((i) => mark.add(i));
-        }
-      }
-    if (!mark.size) return false;
-    mark.forEach((i) => (board[i] = -1));
-    score += mark.size * 20 * level;
-    ctx.hud.setScore(score);
-    level = 1 + Math.floor(score / 1000);
-    ctx.hud.setLabel(`LV ${level}`);
-    ctx.audio.sfx('clear');
-    return true;
+  const finishRun = (): void => {
+    ctx.audio.sfx('gameover');
+    ctx.gameOver(state.score, { level: state.level, combo: state.combo });
   };
 
-  const collapse = (): void => {
-    for (let c = 0; c < COLS; c++) {
-      const stack: number[] = [];
-      for (let r = ROWS - 1; r >= 0; r--) if (at(c, r) >= 0) stack.push(at(c, r));
-      for (let r = ROWS - 1; r >= 0; r--) set(c, r, stack[ROWS - 1 - r] ?? -1);
+  const beginResolve = (): void => {
+    locked = true;
+    settleT = 0.08;
+  };
+
+  const lockCurrent = (): void => {
+    lockPiece(state);
+    beginResolve();
+  };
+
+  const dropAndLock = (): void => {
+    const rows = hardDrop(state);
+    if (rows > 0) {
+      state.score += rows * state.level;
+      syncHud();
     }
+    ctx.fx.screenShake(3, 0.1);
+    beginResolve();
   };
 
   const cycle = (): void => {
-    piece.cells = [piece.cells[2]!, piece.cells[0]!, piece.cells[1]!];
+    cyclePiece(state);
     ctx.audio.sfx('blip');
   };
 
-  const offDown = ctx.input.on('down', (a: Action) => {
-    if (over || settleT > 0) return;
-    if (a === 'left' && piece.col > 0 && at(piece.col - 1, piece.row) === -1) piece.col--;
-    else if (a === 'right' && piece.col < COLS - 1 && at(piece.col + 1, piece.row) === -1) piece.col++;
-    else if (a === 'a' || a === 'up') cycle();
-    else if (a === 'down') {
-      while (canFall()) piece.row++;
-      lockPiece();
+  const onDown = (a: Action): void => {
+    if (state.over || locked) return;
+    if (a === 'left') {
+      if (movePiece(state, -1)) ctx.audio.sfx('blip');
+    } else if (a === 'right') {
+      if (movePiece(state, 1)) ctx.audio.sfx('blip');
+    } else if (a === 'a' || a === 'up') {
+      cycle();
+    } else if (a === 'b' || a === 'down') {
+      dropAndLock();
     }
     draw();
-  });
+  };
+
+  const offDown = ctx.input.on('down', onDown);
   const offSwipe = ctx.input.on('swipe', (d) => {
-    if (over || settleT > 0) return;
-    if (d === 'left' && piece.col > 0) piece.col--;
-    else if (d === 'right' && piece.col < COLS - 1) piece.col++;
+    if (state.over || locked) return;
+    if (d === 'left') movePiece(state, -1);
+    else if (d === 'right') movePiece(state, 1);
     else if (d === 'up') cycle();
-    else if (d === 'down') {
-      while (canFall()) piece.row++;
-      lockPiece();
-    }
+    else if (d === 'down') dropAndLock();
     draw();
   });
 
+  const ghostRow = (): number => {
+    const old = state.piece.row;
+    while (canFall(state)) state.piece.row++;
+    const row = state.piece.row;
+    state.piece.row = old;
+    return row;
+  };
+
+  const drawJewel = (c: number, r: number, value: number, alpha = 1): void => {
+    const x = c * cell;
+    const y = r * cell;
+    const color = colors[value] ?? colors[0]!;
+    g.roundRect(x + 2, y + 2, cell - 4, cell - 4, Math.max(4, cell * 0.14)).fill({ color, alpha });
+    g.circle(x + cell * 0.34, y + cell * 0.28, Math.max(2, cell * 0.1)).fill({ color: 0xffffff, alpha: alpha * 0.36 });
+    g.roundRect(x + cell * 0.18, y + cell * 0.68, cell * 0.64, Math.max(2, cell * 0.08), 2).fill({
+      color: 0x000000,
+      alpha: alpha * 0.18,
+    });
+  };
+
   function draw(): void {
     g.clear();
-    g.rect(0, 0, fieldW, fieldH).fill({ color: 0x0a0a12, alpha: 0.6 });
-    for (let r = 0; r < ROWS; r++)
+    g.roundRect(-5, -5, fieldW + 10, fieldH + 10, 10).fill({ color: 0x1d1d2b, alpha: 0.75 });
+    g.rect(0, 0, fieldW, fieldH).fill({ color: 0x060611, alpha: 0.86 });
+    for (let c = 1; c < COLS; c++) {
+      g.rect(c * cell, 0, 1, fieldH).fill({ color: 0xffffff, alpha: 0.05 });
+    }
+    for (let r = 1; r < ROWS; r++) {
+      g.rect(0, r * cell, fieldW, 1).fill({ color: 0xffffff, alpha: 0.04 });
+    }
+    for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        const v = at(c, r);
-        if (v >= 0) g.roundRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2, 3).fill({ color: COLORS[v]! });
+        const v = at(state, c, r);
+        if (v >= 0) drawJewel(c, r, v);
       }
-    if (!over)
-      for (let i = 0; i < 3; i++) {
-        const r = piece.row + i;
-        if (r >= 0 && r < ROWS) g.roundRect(piece.col * cell + 1, r * cell + 1, cell - 2, cell - 2, 3).fill({ color: COLORS[piece.cells[i]!]! });
+    }
+    if (!state.over) {
+      const gy = ghostRow();
+      for (let i = 0; i < state.piece.cells.length; i++) {
+        const r = gy + i;
+        if (r >= 0 && r < ROWS) drawJewel(state.piece.col, r, state.piece.cells[i]!, 0.2);
       }
+      for (let i = 0; i < state.piece.cells.length; i++) {
+        const r = state.piece.row + i;
+        if (r >= 0 && r < ROWS) drawJewel(state.piece.col, r, state.piece.cells[i]!);
+      }
+    }
   }
   draw();
 
   return {
     update(dt) {
-      if (over) return;
-      if (settleT > 0) {
+      if (state.over) return;
+      if (locked) {
         settleT -= dt;
         if (settleT <= 0) {
-          collapse();
-          if (clearMatches()) {
-            collapse();
-            settleT = 0.12;
+          const result = resolveMatches(state);
+          syncHud();
+          if (result.cleared > 0) {
+            ctx.audio.sfx(result.combo > 1 ? 'powerup' : 'clear');
+            ctx.fx.flashRect(0, 0, fieldW, fieldH, 0xffffff);
+            ctx.fx.floatingText(result.combo > 1 ? `CASCADE x${result.combo}` : `+${result.scoreDelta}`, fieldW / 2, fieldH * 0.18, 0xffd200);
+            ctx.fx.screenShake(Math.min(8, 2 + result.combo * 1.6), 0.14);
+            settleT = 0.18;
           } else {
-            newPiece();
+            state.combo = 0;
+            spawnPiece(state, ctx.rng);
+            locked = false;
+            if (state.over) finishRun();
           }
           draw();
         }
         return;
       }
+
       dropAcc += dt;
-      const speed = Math.max(0.1, 0.6 - (level - 1) * 0.05);
+      const speed = Math.max(0.09, 0.62 - (state.level - 1) * 0.045);
       if (dropAcc >= speed) {
         dropAcc = 0;
-        if (canFall()) piece.row++;
-        else lockPiece();
+        if (canFall(state)) state.piece.row++;
+        else lockCurrent();
         draw();
       }
     },

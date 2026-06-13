@@ -201,6 +201,12 @@ export const GAMES: GameMeta[] = [
   mk('rps', 'RPS Duel', 'standalone', 'Skill', 'portrait', '#fb7185', 'RPS', 'Read the rival and win a best-of-five duel.', () => import('@games/rps')),
   mk('targettap', 'Target Tap', 'standalone', 'Skill', 'portrait', '#22d3ee', '+', 'Hit moving targets before time runs out.', () => import('@games/targettap')),
   mk('chainreaction', 'Chain Reaction', 'grid', 'Puzzle', 'portrait', '#c084fc', 'CR', 'Overload cells and trigger cascading bursts.', () => import('@games/chainreaction')),
+  // Volume V: 5 one-minute skill and brain challenges
+  mk('quickmath', 'Quick Math', 'standalone', 'Brain', 'portrait', '#38bdf8', '123', 'Solve fast arithmetic before the timer runs out.', () => import('@games/quickmath')),
+  mk('higherlower', 'Higher Lower', 'standalone', 'Brain', 'portrait', '#f97316', 'H/L', 'Predict the next card and build a streak.', () => import('@games/higherlower')),
+  mk('colorclash', 'Color Clash', 'standalone', 'Skill', 'portrait', '#22c55e', 'RGB', 'Ignore the word and tap the ink color.', () => import('@games/colorclash')),
+  mk('orbit', 'Orbit Dodge', 'vector', 'Skill', 'portrait', '#22d3ee', 'ORB', 'Circle the core and dodge incoming debris.', () => import('@games/orbit')),
+  mk('lockpick', 'Lockpick', 'standalone', 'Skill', 'portrait', '#facc15', 'PIN', 'Time each pin inside the golden arc.', () => import('@games/lockpick')),
 ];
 
 for (const game of GAMES) {

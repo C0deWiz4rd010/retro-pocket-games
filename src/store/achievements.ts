@@ -62,7 +62,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'play-100', title: 'Arcade Regular', desc: 'Play 100 games', icon: '🏆', tokens: 15, test: (x) => x.gamesPlayed >= 100 },
   { id: 'sampler', title: 'Variety Pack', desc: 'Try 10 different games', icon: '🎲', tokens: 8, test: (x) => x.distinctGames >= 10 },
   { id: 'collector', title: 'Cartridge Collector', desc: 'Try 25 different games', icon: '📼', tokens: 15, test: (x) => x.distinctGames >= 25 },
-  { id: 'completionist', title: 'The Whole Pocket', desc: 'Play all 40 games', icon: '💎', tokens: 40, test: (x) => x.distinctGames >= GAMES.filter((g) => g.available).length },
+  { id: 'completionist', title: 'The Whole Pocket', desc: 'Play every available game', icon: '💎', tokens: 40, test: (x) => x.distinctGames >= GAMES.filter((g) => g.available).length },
   { id: 'streak-3', title: 'On a Roll', desc: '3-day daily streak', icon: '🔥', tokens: 10, test: (x) => x.streak >= 3 },
   { id: 'streak-7', title: 'Daily Devotion', desc: '7-day daily streak', icon: '🔥', tokens: 20, test: (x) => x.streak >= 7 },
 ];

@@ -207,6 +207,12 @@ export const GAMES: GameMeta[] = [
   mk('colorclash', 'Color Clash', 'standalone', 'Skill', 'portrait', '#22c55e', 'RGB', 'Ignore the word and tap the ink color.', () => import('@games/colorclash')),
   mk('orbit', 'Orbit Dodge', 'vector', 'Skill', 'portrait', '#22d3ee', 'ORB', 'Circle the core and dodge incoming debris.', () => import('@games/orbit')),
   mk('lockpick', 'Lockpick', 'standalone', 'Skill', 'portrait', '#facc15', 'PIN', 'Time each pin inside the golden arc.', () => import('@games/lockpick')),
+  // Volume VI: 5 memory, timing and deduction minis
+  mk('numberhunt', 'Number Hunt', 'grid', 'Brain', 'portrait', '#34d399', '1-16', 'Tap the numbers in order before time runs out.', () => import('@games/numberhunt')),
+  mk('wordmix', 'Word Mix', 'standalone', 'Brain', 'portrait', '#a78bfa', 'ABC', 'Unscramble the arcade word under pressure.', () => import('@games/wordmix')),
+  mk('pulsecatch', 'Pulse Catch', 'standalone', 'Skill', 'portrait', '#fb7185', '!!!', 'Stop the pulse inside the scoring zone.', () => import('@games/pulsecatch')),
+  mk('memorypath', 'Memory Path', 'grid', 'Brain', 'portrait', '#60a5fa', '3x3', 'Watch the path and replay it from memory.', () => import('@games/memorypath')),
+  mk('hotcold', 'Hot Cold', 'standalone', 'Skill', 'portrait', '#f97316', 'SCAN', 'Use hot and cold pings to find hidden signals.', () => import('@games/hotcold')),
 ];
 
 for (const game of GAMES) {

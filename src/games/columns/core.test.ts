@@ -1,9 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { RNG } from '@utils/rng';
 import { EMPTY, idx } from '@kits/grid/core';
-import { createColumns, hardDrop, resolveMatches, spawnPiece } from './core';
+import { createColumns, hardDrop, resolveMatches, softDrop, spawnPiece } from './core';
 
 describe('columns core', () => {
+  it('starts with a deterministic active piece and next queue', () => {
+    const stack = (rng: RNG): number[] => [rng.int(0, 5), rng.int(0, 5), rng.int(0, 5)];
+    const state = createColumns(new RNG(12));
+    const expected = new RNG(12);
+    const first = stack(expected);
+    const second = stack(expected);
+    const third = stack(expected);
+
+    expect(state.piece.cells).toEqual(first);
+    expect(state.next).toEqual(second);
+
+    const spawnRng = new RNG(12);
+    stack(spawnRng);
+    stack(spawnRng);
+    spawnPiece(state, spawnRng);
+
+    expect(state.piece.cells).toEqual(second);
+    expect(state.next).toEqual(third);
+  });
+
   it('hard-drops and locks a vertical triple', () => {
     const state = createColumns(new RNG(1));
     state.piece = { col: 2, row: 0, cells: [1, 2, 3] };
@@ -57,5 +77,26 @@ describe('columns core', () => {
     state.board[idx(state.cols, state.piece.col, 0)] = 1;
     spawnPiece(state, new RNG(5));
     expect(state.over).toBe(true);
+  });
+
+  it('marks game over when any spawn cell is blocked', () => {
+    const state = createColumns(new RNG(8));
+    state.board[idx(state.cols, state.piece.col, 2)] = 1;
+    spawnPiece(state, new RNG(9));
+    expect(state.over).toBe(true);
+  });
+
+  it('soft-drops without locking until the piece reaches the floor', () => {
+    const state = createColumns(new RNG(10));
+    state.piece = { col: 3, row: 0, cells: [1, 2, 3] };
+
+    expect(softDrop(state)).toBe(true);
+    expect(state.piece.row).toBe(1);
+    expect(state.board.filter((v) => v !== EMPTY)).toHaveLength(0);
+
+    expect(hardDrop(state)).toBe(10);
+    expect(state.board[idx(state.cols, 3, 11)]).toBe(1);
+    expect(state.board[idx(state.cols, 3, 12)]).toBe(2);
+    expect(state.board[idx(state.cols, 3, 13)]).toBe(3);
   });
 });

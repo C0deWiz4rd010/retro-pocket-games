@@ -1,87 +1,71 @@
-# 00 — Vision & Branding
+# 00 - Vision & Branding
 
 ## Elevator pitch
 
-> **Retro Pocket** is a pocket arcade that lives in your browser. One installable app, twenty
-> hand-crafted retro classics, zero downloads from a store, fully playable offline. It looks
-> and feels like a native handheld console — but it *is* the open web.
+> **Retro Pocket** is a pocket arcade that lives in your browser. One installable app, dozens of hand-crafted retro and original games, zero downloads from a store, and full offline play. It looks and feels like a native handheld console, but it is built on the open web.
 
 ## The problem we're solving
 
-Classic arcade games are scattered across ad-riddled sites, abandoned Flash ports, or native
+Classic arcade games are scattered across ad-heavy sites, abandoned Flash ports, or native
 apps that demand installs and permissions. There is no single, beautiful, fast, offline-first
 place to play the canon of retro games on a phone. Retro Pocket is that place.
 
 ## Product principles
 
-1. **Mobile-first, not mobile-also.** Every screen is designed for a thumb first, a mouse
-   second. Touch targets ≥ 44 px, primary actions in the thumb zone.
-2. **Feels native.** Installable, fullscreen, offline, haptic, no rubber-band scroll, no
-   accidental zoom. On the home screen it's indistinguishable from a store app.
-3. **Fast or it doesn't ship.** Home loads in < 1 s; games hold 60 FPS on mid-range Android.
-   Each game is code-split and lazy-loaded.
-4. **Authentic, not kitsch.** Retro aesthetics (CRT, neon, chiptune) are tasteful and always
-   *toggleable* — never at the cost of readability or accessibility.
-5. **Respect the player.** No ads, no dark patterns, no accounts required. Everything is
-   stored locally and owned by the player.
+1. **Mobile-first, not mobile-also.** Every screen is designed for a thumb first and a mouse second.
+2. **Feels native.** Installable, fullscreen, offline, haptic, no rubber-band scroll, no accidental zoom.
+3. **Fast or it does not ship.** Home loads quickly, games hold 60 FPS, and every game is lazy-loaded.
+4. **Authentic, not kitsch.** Retro aesthetics are flavorful but never allowed to hurt readability.
+5. **Respect the player.** No ads, no dark patterns, no accounts required. Data stays local.
 
 ## Brand: "RETRO POCKET"
 
-- **Name:** Retro Pocket. Internal device codename: **RP-20** (the "20" nods to the catalog).
-- **Tagline:** *"Twenty classics. One pocket."*
-- **Personality:** nostalgic, playful, crafted, a little neon. Think a boutique handheld
-  console reimagined for the web.
-- **Logo concept:** a stylized handheld silhouette with a glowing screen; the "O" in POCKET
-  doubles as a D-pad or power button.
+- **Name:** Retro Pocket. Internal device codename: **RP**.
+- **Tagline:** *"Seventy games. One pocket."*
+- **Personality:** nostalgic, playful, crafted, and a little neon.
+- **Logo concept:** a stylized handheld silhouette with a glowing screen; the "O" in POCKET can double as a D-pad or power button.
 
-### Two faces, one app (skin modes)
+### Two faces, one app
 
-Retro Pocket ships with **two interchangeable skins**, switchable in Settings (decided with
-the user — *"both as a mode"*):
+Retro Pocket ships with **two interchangeable skins**, switchable in Settings:
 
-- **Handheld Console** *(default, immersive):* the whole app is framed as a virtual device —
-  bezel, speaker grille, brand label, power LED, and a tactile D-pad + A/B + Start/Select.
-  Games render on the device "screen".
-- **Clean Arcade Launcher** *(focused):* a chromeless, full-bleed launcher with a side nav and
-  a home dashboard. Maximizes screen area; ideal for larger phones, tablets and desktop.
+- **Handheld Console** - immersive device shell with bezel, speaker grille, branding, power LED, and tactile controls.
+- **Clean Arcade Launcher** - chromeless launcher and dashboard with more space for browsing and progression.
 
-The skin only changes the *frame and chrome* — game rendering, controls and logic are
-identical underneath.
+The skin changes the frame and chrome, not the gameplay itself.
 
-## Target users (personas)
+## Target users
 
 | Persona | Context | What they want |
 |---------|---------|----------------|
 | **Commuter Casey** | 25, plays on the train, spotty signal | Quick sessions, offline, resume-where-I-left-off |
-| **Nostalgic Nina** | 38, grew up on arcades | Authentic feel, the *real* classics, satisfying SFX |
+| **Nostalgic Nina** | 38, grew up on arcades | Authentic feel, recognizable classics, satisfying SFX |
 | **Completionist Cole** | 19, leaderboard chaser | High scores, achievements, daily challenge, streaks |
-| **Tinkerer Tom** | 30, dev, reads the source | Clean code, strict TS, good docs, hackable |
+| **Tinkerer Tom** | 30, dev, reads the source | Clean code, strict TS, solid docs, hackable systems |
 
 ## Goals & non-goals
 
 **Goals**
-- 20 polished, faithful retro games in a single installable PWA.
-- Native-grade mobile feel (offline, fullscreen, haptics, save-states).
-- A cohesive meta layer (XP, achievements, daily challenge) that increases retention.
-- A codebase clean enough to be a portfolio/reference project.
 
-**Non-goals (for v1)**
-- Online multiplayer / accounts / cloud sync (local-only; sync is a future option).
-- A backend server (the app is 100% static, deployable to GitHub Pages).
-- Exact ROM-accurate emulation — these are faithful *re-implementations*, not emulators.
+- 70 polished retro and original games in a single installable PWA.
+- Native-grade mobile feel with offline play, fullscreen behavior, haptics, and save-state friendly UX.
+- A cohesive meta layer with XP, achievements, daily challenge, and leaderboards.
+- A codebase clean enough to serve as a portfolio and reference project.
+
+**Non-goals (for v1/vcurrent architecture)**
+
+- Online multiplayer, accounts, or cloud sync.
+- A backend server; the app remains static and GitHub Pages friendly.
+- ROM-accurate emulation; these are faithful re-implementations, not emulators.
 - Monetization, ads, or telemetry.
 
 ## Success criteria
 
-- **Performance:** Lighthouse (mobile) > 90 across Performance, Accessibility, Best Practices,
-  PWA; sustained 60 FPS on a Pixel 6a; first home paint < 1 s on 4G.
-- **Quality:** 100% TypeScript strict, no `any`; core game logic unit-tested; E2E smoke tests
-  green in CI.
-- **Feel:** Installs to home screen; launches fullscreen; playable in airplane mode; passes a
-  manual "does this feel native on iOS Safari?" check (no bounce, no zoom).
-- **Completeness:** all 20 games shipped with pause, game-over, tutorial and persisted high
-  scores.
+- **Performance:** Lighthouse mobile > 90 across Performance, Accessibility, Best Practices, and PWA.
+- **Quality:** TypeScript strict, no `any` creep, tested core logic, and green smoke coverage.
+- **Feel:** Installs to home screen, launches cleanly, works in airplane mode, and feels native on mobile browsers.
+- **Completeness:** the shipped catalog includes pause, tutorial, game-over flow, and persisted scoring.
 
 ## One-line for the README
 
-*A pocket arcade in your browser — 20 retro classics, one installable PWA.*
+*A pocket arcade in your browser - 70 retro games, one installable PWA.*

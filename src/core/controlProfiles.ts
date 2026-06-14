@@ -105,6 +105,13 @@ const explicit: Record<string, ControlProfile> = {
   missile: CONTROL_PROFILES.tap,
   asteroids: CONTROL_PROFILES.vector,
   lander: CONTROL_PROFILES.vector,
+  crystalvault: CONTROL_PROFILES.tap,
+  starforge: CONTROL_PROFILES.tap,
+  runereactor: CONTROL_PROFILES.tap,
+  cometsweep: CONTROL_PROFILES.tap,
+  gearlock: CONTROL_PROFILES.tap,
+  echorunner: CONTROL_PROFILES.tap,
+  driftracer: CONTROL_PROFILES.vector,
   pinball: base({
     preset: 'dual',
     surfaces: ['actions'],

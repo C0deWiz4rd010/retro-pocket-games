@@ -5,10 +5,12 @@ export const COLS = 7;
 export const ROWS = 14;
 export const JEWELS = 6;
 
+export type JewelStack = [number, number, number];
+
 export interface ColumnsPiece {
   col: number;
   row: number;
-  cells: [number, number, number];
+  cells: JewelStack;
 }
 
 export interface ColumnsState {
@@ -16,6 +18,7 @@ export interface ColumnsState {
   rows: number;
   board: number[];
   piece: ColumnsPiece;
+  next: JewelStack;
   score: number;
   level: number;
   combo: number;
@@ -29,6 +32,7 @@ export function createColumns(rng: RNG, cols = COLS, rows = ROWS): ColumnsState 
     rows,
     board: new Array(cols * rows).fill(EMPTY),
     piece: nextPiece(rng, cols),
+    next: nextCells(rng),
     score: 0,
     level: 1,
     combo: 0,
@@ -41,12 +45,24 @@ export function nextPiece(rng: RNG, cols = COLS): ColumnsPiece {
   return {
     col: Math.floor(cols / 2),
     row: 0,
-    cells: [rng.int(0, JEWELS - 1), rng.int(0, JEWELS - 1), rng.int(0, JEWELS - 1)],
+    cells: nextCells(rng),
   };
+}
+
+export function nextCells(rng: RNG): JewelStack {
+  return [rng.int(0, JEWELS - 1), rng.int(0, JEWELS - 1), rng.int(0, JEWELS - 1)];
 }
 
 export function at(s: ColumnsState, c: number, r: number): number {
   return s.board[idx(s.cols, c, r)] ?? EMPTY;
+}
+
+export function pieceCells(s: ColumnsState, piece = s.piece): { c: number; r: number; value: number }[] {
+  return piece.cells.map((value, i) => ({ c: piece.col, r: piece.row + i, value }));
+}
+
+export function pieceOverlapsBoard(s: ColumnsState, piece = s.piece): boolean {
+  return pieceCells(s, piece).some(({ c, r }) => r >= 0 && r < s.rows && at(s, c, r) !== EMPTY);
 }
 
 export function canFall(s: ColumnsState): boolean {
@@ -85,6 +101,12 @@ export function hardDrop(s: ColumnsState): number {
   return rows;
 }
 
+export function softDrop(s: ColumnsState): boolean {
+  if (!canFall(s)) return false;
+  s.piece.row++;
+  return true;
+}
+
 export function lockPiece(s: ColumnsState): void {
   for (let i = 0; i < s.piece.cells.length; i++) {
     const r = s.piece.row + i;
@@ -93,8 +115,9 @@ export function lockPiece(s: ColumnsState): void {
 }
 
 export function spawnPiece(s: ColumnsState, rng: RNG): void {
-  s.piece = nextPiece(rng, s.cols);
-  if (at(s, s.piece.col, 0) !== EMPTY) s.over = true;
+  s.piece = { col: Math.floor(s.cols / 2), row: 0, cells: [...s.next] };
+  s.next = nextCells(rng);
+  if (pieceOverlapsBoard(s)) s.over = true;
 }
 
 export interface ResolveResult {

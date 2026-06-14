@@ -213,6 +213,17 @@ export const GAMES: GameMeta[] = [
   mk('pulsecatch', 'Pulse Catch', 'standalone', 'Skill', 'portrait', '#fb7185', '!!!', 'Stop the pulse inside the scoring zone.', () => import('@games/pulsecatch')),
   mk('memorypath', 'Memory Path', 'grid', 'Brain', 'portrait', '#60a5fa', '3x3', 'Watch the path and replay it from memory.', () => import('@games/memorypath')),
   mk('hotcold', 'Hot Cold', 'standalone', 'Skill', 'portrait', '#f97316', 'SCAN', 'Use hot and cold pings to find hidden signals.', () => import('@games/hotcold')),
+  // Volume VII: 10 animated neon challenges
+  mk('neonrush', 'Neon Rush', 'sidescroll', 'Skill', 'portrait', '#00f7ff', 'NR', 'Dodge blocks, grab coins, and ride shield boosts.', () => import('@games/neonrush')),
+  mk('crystalvault', 'Crystal Vault', 'grid', 'Puzzle', 'portrait', '#b388ff', 'CV', 'Pop crystal clusters, trigger cascades, and spend moves wisely.', () => import('@games/crystalvault')),
+  mk('lasermaze', 'Laser Maze', 'grid', 'Skill', 'portrait', '#ff2d75', 'LM', 'Steal the key and slip past sweeping security beams.', () => import('@games/lasermaze')),
+  mk('starforge', 'Star Forge', 'standalone', 'Skill', 'portrait', '#ffd200', 'SF', 'Tap the right falling stars and forge rising combos.', () => import('@games/starforge')),
+  mk('driftracer', 'Drift Racer', 'vector', 'Skill', 'portrait', '#22d3ee', 'DR', 'Thread neon gates with momentum and boost control.', () => import('@games/driftracer')),
+  mk('runereactor', 'Rune Reactor', 'grid', 'Puzzle', 'portrait', '#c084fc', 'RR', 'Charge runes until the board erupts in chain reactions.', () => import('@games/runereactor')),
+  mk('cometsweep', 'Comet Sweep', 'standalone', 'Shooter', 'portrait', '#38bdf8', 'CS', 'Tap blast zones to protect the glowing core from comets.', () => import('@games/cometsweep')),
+  mk('prismdash', 'Prism Dash', 'sidescroll', 'Skill', 'portrait', '#fb7185', 'PD', 'Match your prism color while dodging shifting gates.', () => import('@games/prismdash')),
+  mk('gearlock', 'Gear Lock', 'standalone', 'Skill', 'portrait', '#facc15', 'GL', 'Time each lock pin inside the golden gear window.', () => import('@games/gearlock')),
+  mk('echorunner', 'Echo Runner', 'grid', 'Brain', 'portrait', '#60a5fa', 'ER', 'Watch the echo path, then replay it under pressure.', () => import('@games/echorunner')),
 ];
 
 for (const game of GAMES) {

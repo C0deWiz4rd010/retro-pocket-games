@@ -3,7 +3,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { readFileSync } from 'node:fs';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// GitHub Pages serves the project at /<repo>/ — keep this in sync with the repo name.
+// GitHub Pages serves the project at /<repo>/ - keep this in sync with the repo name.
 const BASE = '/retro-pocket-games/';
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
   version: string;
@@ -47,7 +47,7 @@ export default defineConfig({
       manifest: {
         name: 'Retro Pocket',
         short_name: 'RetroPocket',
-        description: 'A pocket arcade — 20 retro classics in one installable PWA.',
+        description: 'A pocket arcade - 70 retro games in one installable PWA.',
         start_url: './?source=pwa',
         scope: './',
         display: 'standalone',
@@ -78,7 +78,7 @@ export default defineConfig({
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
-            // Lazy-loaded game chunks & atlases: cache on first play → offline thereafter.
+            // Lazy-loaded game chunks and atlases: cache on first play -> offline thereafter.
             urlPattern: ({ url }) => url.pathname.includes('/assets/'),
             handler: 'CacheFirst',
             options: {

@@ -47,7 +47,7 @@ export default defineConfig({
       manifest: {
         name: 'Retro Pocket',
         short_name: 'RetroPocket',
-        description: 'A pocket arcade - 70 retro games in one installable PWA.',
+        description: 'A pocket arcade - 74 retro games in one installable PWA.',
         start_url: './?source=pwa',
         scope: './',
         display: 'standalone',

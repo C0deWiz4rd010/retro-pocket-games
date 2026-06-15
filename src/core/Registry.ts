@@ -32,6 +32,19 @@ export interface GameMeta {
  * as "Coming soon" tiles and follow the same contract once built.
  */
 export const GAMES: GameMeta[] = [
+  // Concept-art collection from the launcher mockup.
+  mk('pixeldash', 'Pixel Dash', 'sidescroll', 'Skill', 'portrait', '#ff7043', 'PD', 'Run the neon rooftops, grab coins, and clear hazards.', () => import('@games/pixeldash')),
+  mk('neonrider', 'Neon Rider', 'sidescroll', 'Skill', 'portrait', '#ff2e97', 'NR', 'Thread traffic lanes at sunset speed.', () => import('@games/neonrider')),
+  mk('blockcollapse', 'Block Collapse', 'grid', 'Puzzle', 'portrait', '#ffd200', 'BC', 'Pop connected blocks and trigger high-value collapses.', () => import('@games/blockcollapse')),
+  mk('spaceblaster', 'Space Blaster', 'shooter', 'Shooter', 'portrait', '#42a5f5', 'SB', 'Blast bugs, rocks, and saucers before they breach.', () => import('@games/spaceblaster')),
+  mk('jumpquest', 'Jump Quest', 'sidescroll', 'Jump', 'portrait', '#8bc34a', 'JQ', 'Climb platforms, collect gems, and avoid patrols.', () => import('@games/jumpquest')),
+  mk('retrosnake', 'Retro Snake', 'grid', 'Arcade', 'portrait', '#3ddc84', 'RS', 'A glowing snake grid with wraparound danger.', () => import('@games/retrosnake')),
+  mk('dotcollector', 'Dot Collector', 'grid', 'Arcade', 'portrait', '#ffd200', 'DC', 'Clear the maze dots while chasers close in.', () => import('@games/dotcollector')),
+  mk('memorymatch', 'Memory Match', 'standalone', 'Brain', 'portrait', '#ff80ab', 'MM', 'Flip neon cards and chain perfect pairs.', () => import('@games/memorymatch')),
+  mk('brickbreaker', 'Brick Breaker', 'paddle', 'Paddle', 'portrait', '#00f7ff', 'BB', 'Shatter glowing brick walls with a charged paddle.', () => import('@games/brickbreaker')),
+  mk('turbodrift', 'Turbo Drift', 'vector', 'Skill', 'portrait', '#22c55e', 'TD', 'Slide through neon gates with momentum.', () => import('@games/turbodrift')),
+  mk('colorswitch', 'Color Switch', 'standalone', 'Skill', 'portrait', '#c084fc', 'CS', 'Swap colors to pass rotating neon rings.', () => import('@games/colorswitch')),
+  mk('galacticinvaders', 'Galactic Invaders', 'shooter', 'Shooter', 'portrait', '#7c70da', 'GI', 'Formation invaders with modern pixel polish.', () => import('@games/galacticinvaders')),
   {
     id: 'snake',
     title: 'Snake',

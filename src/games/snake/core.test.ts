@@ -25,14 +25,15 @@ describe('snake core', () => {
     expect(s.nextDir).toEqual({ x: 1, y: 0 });
   });
 
-  it('dies on wall collision', () => {
+  it('wraps through walls instead of dying', () => {
     const s = createSnake(6, 6, new RNG(1));
     s.food = { x: 0, y: 0 };
     let r = step(s, new RNG(1)); // x:3->4
     r = step(s, new RNG(1)); // 4->5
-    r = step(s, new RNG(1)); // 5->6 out of bounds (cols 6 => valid 0..5)
-    expect(r).toBe('dead');
-    expect(s.alive).toBe(false);
+    r = step(s, new RNG(1)); // 5->0 via wraparound
+    expect(r).toBe('move');
+    expect(s.body[0]).toEqual({ x: 0, y: 3 });
+    expect(s.alive).toBe(true);
   });
 
   it('grows and scores when eating', () => {

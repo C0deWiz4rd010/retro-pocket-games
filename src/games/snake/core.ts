@@ -64,13 +64,8 @@ export function step(s: SnakeState, rng: RNG): StepResult {
   if (!s.alive) return 'dead';
   s.dir = s.nextDir;
   const head = s.body[0] as Vec;
-  const nx = head.x + s.dir.x;
-  const ny = head.y + s.dir.y;
-
-  if (nx < 0 || ny < 0 || nx >= s.cols || ny >= s.rows) {
-    s.alive = false;
-    return 'dead';
-  }
+  const nx = (head.x + s.dir.x + s.cols) % s.cols;
+  const ny = (head.y + s.dir.y + s.rows) % s.rows;
   // self collision (tail tip moves away unless growing — but classic uses full body)
   if (s.body.some((b, i) => i < s.body.length - 1 && b.x === nx && b.y === ny)) {
     s.alive = false;

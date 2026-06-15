@@ -41,6 +41,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const state: SnakeState = createSnake(cols, rows, ctx.rng);
   ctx.hud.setScore(0);
+  ctx.hud.setLabel('WRAP + BONUS');
 
   const turn = (a: Action): void => {
     const d = DIRS[a];

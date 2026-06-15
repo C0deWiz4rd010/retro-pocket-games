@@ -56,6 +56,8 @@ export class GameHost {
   private hudLives!: HTMLElement;
   private hudBest!: HTMLElement;
   private overlayHost!: HTMLElement;
+  private lastHudScore = 0;
+  private lastHudLives = 0;
 
   constructor(
     private screenView: HTMLElement,
@@ -148,6 +150,8 @@ export class GameHost {
     const labelText = this.opts.label ? `${this.opts.label} · ${this.meta.title.toUpperCase()}` : this.meta.title.toUpperCase();
     this.hudLabel = el('div', { class: 'hud__label' }, [labelText]);
     this.hudLives = el('div', { class: 'hud__lives' });
+    this.lastHudScore = 0;
+    this.lastHudLives = 0;
     // Show the current best to beat (if any) as a subtle HUD badge.
     const best = getBest(this.meta.id);
     this.hudBest = el('div', { class: 'hud__best' }, [best > 0 ? `★ ${best}` : '']);
@@ -235,16 +239,34 @@ export class GameHost {
   private makeHud(): Hud {
     return {
       setScore: (n) => {
+        const delta = n - this.lastHudScore;
         this.hudScore.textContent = String(n);
+        if (delta > 0) this.pulseHud(this.hudScore, 'is-up', delta >= 100 ? `+${delta}` : '');
+        this.lastHudScore = n;
       },
       setLives: (n) => {
         this.hudLives.textContent = '♥'.repeat(Math.max(0, n));
+        if (this.lastHudLives > 0 && n < this.lastHudLives) this.pulseHud(this.hudLives, 'is-hit');
+        else if (n > this.lastHudLives) this.pulseHud(this.hudLives, 'is-up');
+        this.lastHudLives = n;
       },
       setLabel: (txt) => {
+        if (this.hudLabel.textContent !== txt) this.pulseHud(this.hudLabel, 'is-change');
         this.hudLabel.textContent = txt;
       },
       toast: (txt) => this.toast(txt),
     };
+  }
+
+  private pulseHud(node: HTMLElement, cls: string, delta = ''): void {
+    node.classList.remove(cls);
+    void node.offsetWidth;
+    node.classList.add(cls);
+    window.setTimeout(() => node.classList.remove(cls), 360);
+    if (!delta) return;
+    const badge = el('span', { class: 'hud-delta' }, [delta]);
+    node.append(badge);
+    window.setTimeout(() => badge.remove(), 720);
   }
 
   private toast(text: string): void {

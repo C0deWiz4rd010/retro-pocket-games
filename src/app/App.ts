@@ -15,6 +15,7 @@ import { renderProfile } from './views/Profile';
 import { renderAbout } from './views/About';
 import { pickDailyGame, dailySeed, dailyModifier, nextDailyLabel } from './daily';
 import { t } from '@i18n/index';
+import { icon } from '@ui/icons';
 
 /** Games whose `custom` payload carries a meaningful secondary best worth showing on the tile. */
 const CUSTOM_BEST: Record<string, { key: string; label: string }> = {
@@ -38,6 +39,7 @@ export class App {
   private rail!: HTMLElement; // persistent launcher rail
   private scrim!: HTMLElement;
   private host: GameHost | null = null;
+  private homeFilter: GameMeta['group'] | 'all' = 'all';
 
   async init(): Promise<void> {
     const screen = el('div', { class: 'screen' });
@@ -121,6 +123,7 @@ export class App {
     const [section, arg] = hash.split('/');
     this.teardownGame();
     this.closeNav();
+    this.view.classList.remove('is-home');
 
     // Menu music plays everywhere except inside an active game.
     if (section === 'play' || section === 'daily') audio.stopMusic();
@@ -167,18 +170,19 @@ export class App {
 
     clear(this.view);
     this.view.classList.remove('is-game');
+    this.view.classList.add('is-home');
     this.powerOn();
     this.markActiveNav('home');
 
     const topbar = el('div', { class: 'topbar' }, [
-      el('button', { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() }, ['☰']),
+      el('button', { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() }, [icon('menu')]),
       el('div', { class: 'topbar__title' }, ['RETRO POCKET']),
-      el('button', { class: 'iconbtn', 'aria-label': t('home.surprise'), onClick: () => this.surpriseMe() }, ['🎲']),
-      el('button', { class: 'iconbtn', 'aria-label': 'Settings', onClick: () => this.go('settings') }, ['⚙']),
+      el('button', { class: 'iconbtn', 'aria-label': t('home.surprise'), onClick: () => this.surpriseMe() }, [icon('surprise')]),
+      el('button', { class: 'iconbtn', 'aria-label': 'Settings', onClick: () => this.go('settings') }, [icon('settings')]),
     ]);
 
     // Live search: when non-empty, the grouped grid collapses to a flat filtered result.
-    const gamesHost = el('div', {});
+    const gamesHost = el('div', { class: 'library-stage' });
     const search = el('input', {
       class: 'search',
       type: 'search',
@@ -186,20 +190,35 @@ export class App {
       'aria-label': t('home.search'),
       onInput: (e: Event) => {
         const q = (e.target as HTMLInputElement).value.trim().toLowerCase();
-        gamesHost.replaceChildren(q ? this.searchResults(q) : this.gamesByGroup());
+        gamesHost.replaceChildren(q ? this.searchResults(q) : this.gamesByGroup(this.homeFilter));
       },
     });
-    gamesHost.append(this.gamesByGroup());
+    const filters = this.libraryFilters((group) => {
+      this.homeFilter = group;
+      search.value = '';
+      gamesHost.replaceChildren(this.gamesByGroup(group));
+      filters.querySelectorAll('.cat-chip').forEach((chip) => chip.classList.remove('is-active'));
+      filters.querySelector(`[data-filter="${group}"]`)?.classList.add('is-active');
+    });
+    gamesHost.append(this.gamesByGroup(this.homeFilter));
 
-    const body = el('div', { class: 'scroll' }, [
+    const body = el('div', { class: 'scroll landing' }, [
       this.heroDaily(),
       this.dailyHistory(),
       this.statsRow(),
-      ...this.welcomeSection(),
       ...this.continueSection(),
       ...this.favoritesSection(),
-      el('div', { class: 'search-wrap' }, [search]),
+      el('div', { class: 'library-head' }, [
+        el('div', {}, [
+          el('div', { class: 'section-title' }, [t('home.library')]),
+          el('h2', { class: 'library-head__title' }, [t('home.libraryTitle')]),
+        ]),
+        el('button', { class: 'btn btn--ghost', onClick: () => this.surpriseMe() }, [icon('surprise'), t('home.surprise')]),
+      ]),
+      el('div', { class: 'search-wrap' }, [el('span', { class: 'search-wrap__icon' }, [icon('search')]), search]),
+      filters,
       gamesHost,
+      ...this.welcomeSection(),
     ]);
 
     this.view.append(topbar, body);
@@ -254,17 +273,23 @@ export class App {
     const streak = currentStreak();
     const done = playedToday();
     const children: (Node | string)[] = [
-      el('div', { class: 'hero__tag' }, [`★ ${t('home.daily')}`]),
-      el('div', { class: 'hero__title' }, [meta.title]),
-      el('div', { class: 'hero__sub' }, [meta.blurb]),
-      el('div', { class: 'hero__mod' }, [`✦ ${t(mod.label)}`]),
-      el('button', { class: 'btn btn--primary' }, [done ? `✓  ${t('home.done')}` : `▶  ${t('home.playToday')}`]),
+      el('div', { class: 'hero__visual', style: `--tile-accent:${meta.accent}` }, [
+        this.tileCover(meta),
+        el('div', { class: 'hero__glyph' }, [meta.glyph]),
+      ]),
+      el('div', { class: 'hero__content' }, [
+        el('div', { class: 'hero__tag' }, [t('home.daily')]),
+        el('div', { class: 'hero__title' }, [meta.title]),
+        el('div', { class: 'hero__sub' }, [meta.blurb]),
+        el('div', { class: 'hero__mod' }, [t(mod.label)]),
+        el('button', { class: 'btn btn--primary' }, [icon('play'), done ? t('home.done') : t('home.playToday')]),
+      ]),
     ];
     // After today's run, show a live countdown to the next challenge instead of a streak only.
     if (done) {
-      children.push(el('div', { class: 'hero__next' }, [`⏱ ${t('home.next', { t: nextDailyLabel() })}`]));
+      children.push(el('div', { class: 'hero__next' }, [t('home.next', { t: nextDailyLabel() })]));
     }
-    if (streak > 0) children.push(el('div', { class: 'hero__streak' }, [`🔥 ${t('home.streak', { n: streak })}`]));
+    if (streak > 0) children.push(el('div', { class: 'hero__streak' }, [t('home.streak', { n: streak })]));
     return el('div', { class: 'hero', role: 'button', onClick: () => this.go('daily') }, children);
   }
 
@@ -348,21 +373,23 @@ export class App {
     void this.renderHome();
   }
 
-  private gamesByGroup(): HTMLElement {
-    const wrap = el('div', {});
-    const groups = GROUP_ORDER.filter((g) => GAMES.some((x) => x.group === g));
-
-    // Category quick-nav chips that scroll to each group.
-    const chips = el('div', { class: 'cat-chips' }, groups.map((group) =>
+  private libraryFilters(onPick: (group: GameMeta['group'] | 'all') => void): HTMLElement {
+    const filters: (GameMeta['group'] | 'all')[] = ['all', ...GROUP_ORDER];
+    return el('div', { class: 'cat-chips cat-chips--library' }, filters.map((group) =>
       el('button', {
-        class: 'cat-chip',
+        class: `cat-chip${group === this.homeFilter ? ' is-active' : ''}`,
+        'data-filter': group,
         onClick: () => {
           audio.sfx('blip');
-          document.getElementById(`grp-${group}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          onPick(group);
         },
-      }, [group]),
+      }, [group === 'all' ? t('home.allGames') : group]),
     ));
-    wrap.append(chips);
+  }
+
+  private gamesByGroup(filter: GameMeta['group'] | 'all' = 'all'): HTMLElement {
+    const wrap = el('div', {});
+    const groups = GROUP_ORDER.filter((g) => (filter === 'all' || g === filter) && GAMES.some((x) => x.group === g));
 
     for (const group of groups) {
       const games = GAMES.filter((g) => g.group === group);
@@ -437,14 +464,17 @@ export class App {
   // ───────────────────────────── navigation ─────────────────────────────
   private navItems(): (Node | string)[] {
     const items: (Node | string)[] = [
-      el('div', { class: 'nav__head' }, ['● RETRO POCKET']),
-      this.navItem('⌂', t('nav.home'), () => this.go(''), 'home'),
-      this.navItem('★', t('nav.daily'), () => this.go('daily'), 'daily'),
-      this.navItem('🏅', t('nav.scores'), () => this.go('scores'), 'scores'),
-      this.navItem('🏆', t('nav.achievements'), () => this.go('achievements'), 'achievements'),
-      this.navItem('👤', t('nav.profile'), () => this.go('profile'), 'profile'),
-      this.navItem('ℹ', t('nav.about'), () => this.go('about'), 'about'),
-      this.navItem('⚙', t('nav.settings'), () => this.go('settings'), 'settings'),
+      el('div', { class: 'nav__head' }, [
+        el('span', { class: 'nav__mark' }, ['RP']),
+        el('span', {}, ['RETRO POCKET']),
+      ]),
+      this.navItem(icon('home'), t('nav.home'), () => this.go(''), 'home'),
+      this.navItem(icon('daily'), t('nav.daily'), () => this.go('daily'), 'daily'),
+      this.navItem(icon('leaderboard'), t('nav.scores'), () => this.go('scores'), 'scores'),
+      this.navItem(icon('trophy'), t('nav.achievements'), () => this.go('achievements'), 'achievements'),
+      this.navItem(icon('profile'), t('nav.profile'), () => this.go('profile'), 'profile'),
+      this.navItem(icon('info'), t('nav.about'), () => this.go('about'), 'about'),
+      this.navItem(icon('settings'), t('nav.settings'), () => this.go('settings'), 'settings'),
     ];
     for (const group of GROUP_ORDER) {
       const games = GAMES.filter((g) => g.group === group);
@@ -481,9 +511,9 @@ export class App {
     this.rail.replaceChildren(...this.navItems());
   }
 
-  private navItem(icon: string, label: string, onClick: () => void, id: string): HTMLElement {
+  private navItem(iconNode: Node | string, label: string, onClick: () => void, id: string): HTMLElement {
     return el('button', { class: 'nav__item', 'data-nav': id, onClick }, [
-      el('span', {}, [icon]),
+      el('span', { class: 'nav__icon' }, [iconNode]),
       el('span', {}, [label]),
     ]);
   }

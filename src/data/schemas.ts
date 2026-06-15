@@ -15,7 +15,7 @@ export type ShellId = z.infer<typeof ShellId>;
 
 export const SettingsSchema = z.object({
   theme: ThemeId.default('cyberpunk'),
-  skin: SkinId.default('console'),
+  skin: SkinId.default('launcher'),
   shell: ShellId.default('brick'),
   screenFx: z
     .object({

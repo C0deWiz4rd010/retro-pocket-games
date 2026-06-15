@@ -27,9 +27,14 @@ async function boot(): Promise<void> {
   // Count sessions (drives the delayed install banner).
   localStorage.setItem('rp:sessions', String(Number(localStorage.getItem('rp:sessions') ?? '0') + 1));
 
-  // Show the BIOS boot on the very first launch, or whenever the user opts in.
-  const firstLaunch = !localStorage.getItem('rp:seen');
-  if ((firstLaunch || settings().bios.showEachLaunch) && !location.hash) {
+  // Move older installs that still carried the old console default onto the new launcher landing.
+  if (!location.hash && !localStorage.getItem('rp:launcherDefaultApplied') && settings().skin === 'console') {
+    updateSettings({ skin: 'launcher' });
+    localStorage.setItem('rp:launcherDefaultApplied', '1');
+  }
+
+  // Keep the launcher as the default landing page. BIOS remains opt-in.
+  if (settings().bios.showEachLaunch && !location.hash) {
     location.hash = '#/bios';
   }
   localStorage.setItem('rp:seen', '1');

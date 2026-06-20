@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { burst, dist, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
 
-type Star = { x: number; y: number; r: number; vy: number; color: number; power: boolean; spin: number };
+type Star = { x: number; y: number; r: number; vy: number; color: number; power: boolean; time: boolean; spin: number };
 const COLORS = [0x22d3ee, 0xff4d8d, 0xffd200, 0x3ddc84];
 
 export default function createGame(ctx: GameContext): Game {
@@ -18,6 +18,7 @@ export default function createGame(ctx: GameContext): Game {
   let score = 0;
   let combo = 0;
   let time = 45;
+  let frenzy = 0; // Feature: frenzy — any colour matches
   let spawn = 0;
   let t = 0;
   let over = false;
@@ -28,7 +29,8 @@ export default function createGame(ctx: GameContext): Game {
   const targetLabel = (): string => ['CYAN', 'PINK', 'GOLD', 'GREEN'][target]!;
   const addStar = (): void => {
     const color = ctx.rng.int(0, COLORS.length - 1);
-    stars.push({ x: 28 + ctx.rng.next() * (W - 56), y: 82, r: 14 + ctx.rng.next() * 8, vy: 72 + ctx.rng.next() * 70, color, power: ctx.rng.next() > 0.88, spin: ctx.rng.next() * 6 });
+    const roll = ctx.rng.next();
+    stars.push({ x: 28 + ctx.rng.next() * (W - 56), y: 82, r: 14 + ctx.rng.next() * 8, vy: 72 + ctx.rng.next() * 70, color, power: roll > 0.9, time: roll > 0.8 && roll <= 0.9, spin: ctx.rng.next() * 6 });
   };
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
@@ -37,9 +39,23 @@ export default function createGame(ctx: GameContext): Game {
       const s = stars[i]!;
       if (dist(x, y, s.x, s.y) > s.r + 10) continue;
       stars.splice(i, 1);
-      if (s.color === target || s.power) {
+      if (s.time) {
+        // Feature: time star adds seconds and keeps the combo
+        time = Math.min(60, time + 5);
         combo++;
-        const pts = (s.power ? 180 : 70) + combo * 12;
+        score += 50;
+        ctx.hud.setScore(score);
+        ctx.hud.toast('+5s');
+        ctx.fx.floatingText('+5s', s.x, s.y, 0x3ddc84);
+        ctx.audio.sfx('powerup');
+        burst(sparks, ctx.rng, s.x, s.y, 0x3ddc84, 16, 130);
+        return;
+      }
+      if (s.color === target || s.power || frenzy > 0) {
+        combo++;
+        if (combo % 8 === 0) { frenzy = 4; ctx.hud.toast('FORGE FRENZY!'); } // Feature: frenzy at combo tiers
+        const mult = 1 + Math.floor(combo / 6); // Feature: combo multiplier
+        const pts = ((s.power ? 180 : 70) + combo * 12) * mult;
         score += pts;
         target = (target + 1) % COLORS.length;
         ctx.hud.setScore(score);
@@ -76,8 +92,12 @@ export default function createGame(ctx: GameContext): Game {
         const a = s.spin + (Math.PI * p) / points;
         g.lineTo(s.x + Math.cos(a) * rr, s.y + Math.sin(a) * rr);
       }
-      g.fill({ color: COLORS[s.color]!, alpha: s.power ? 1 : 0.9 });
+      g.fill({ color: s.time ? 0x3ddc84 : COLORS[s.color]!, alpha: s.power ? 1 : 0.9 });
       if (s.power) g.circle(s.x, s.y, s.r + 7).stroke({ width: 2, color: 0xffffff, alpha: 0.45 + Math.sin(t * 10) * 0.2 });
+      if (s.time) {
+        g.circle(s.x, s.y, s.r * 0.42).stroke({ width: 2, color: 0xffffff, alpha: 0.8 });
+        g.moveTo(s.x, s.y).lineTo(s.x, s.y - s.r * 0.32).moveTo(s.x, s.y).lineTo(s.x + s.r * 0.22, s.y).stroke({ width: 2, color: 0xffffff });
+      }
     }
     drawSparks(g, sparks);
   }
@@ -88,6 +108,7 @@ export default function createGame(ctx: GameContext): Game {
       t += dt;
       updateSparks(sparks, dt);
       time -= dt;
+      frenzy = Math.max(0, frenzy - dt);
       spawn -= dt;
       if (spawn <= 0) {
         spawn = Math.max(0.22, 0.64 - score / 16000);
@@ -105,7 +126,7 @@ export default function createGame(ctx: GameContext): Game {
           }
         }
       }
-      ctx.hud.setLabel(`${targetLabel()} ${Math.ceil(time)}s x${combo}`);
+      ctx.hud.setLabel(frenzy > 0 ? `FRENZY! ${Math.ceil(time)}s x${combo}` : `${targetLabel()} ${Math.ceil(time)}s x${combo}`);
       if (time <= 0) {
         over = true;
         ctx.gameOver(score, { combo });

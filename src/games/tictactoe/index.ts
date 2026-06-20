@@ -20,13 +20,25 @@ export default function createGame(ctx: GameContext): Game {
 
   const board = new Array(9).fill(0); // 0 empty, 1 player(X), 2 cpu(O)
   let over = false;
+  // Feature: best-of-5 series with scoreboard + winning-line highlight
+  const SERIES = 5;
+  let gameNo = 1;
+  let pWins = 0;
+  let cWins = 0;
+  let score = 0;
+  let winLine: number[] = [];
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('YOU ARE X');
+  const setLabel = (): void => ctx.hud.setLabel(`GAME ${gameNo}/${SERIES} · YOU ${pWins}-${cWins} CPU`);
+  setLabel();
 
+  const winLineOf = (b: number[]): number[] | null => {
+    for (const line of LINES) { const [a, c, d] = line; if (b[a!] && b[a!] === b[c!] && b[a!] === b[d!]) return line; }
+    return null;
+  };
   const winner = (b: number[]): number => {
-    for (const [a, c, d] of LINES) if (b[a!] && b[a!] === b[c!] && b[a!] === b[d!]) return b[a!]!;
-    return 0;
+    const l = winLineOf(b);
+    return l ? b[l[0]!]! : 0;
   };
 
   // minimax → an unbeatable CPU
@@ -46,34 +58,55 @@ export default function createGame(ctx: GameContext): Game {
     return best;
   };
 
+  const nextGame = (): void => {
+    board.fill(0);
+    winLine = [];
+    gameNo++;
+    over = false;
+    setLabel();
+    draw();
+    // Feature: alternate who starts; CPU opens every other game
+    if (gameNo % 2 === 0) window.setTimeout(cpu, 400);
+  };
+
   const finish = (): boolean => {
     const w = winner(board);
     if (w || board.every((v) => v)) {
       over = true;
-      if (w === 1) {
-        ctx.audio.sfx('levelup');
-        ctx.hud.toast('YOU WIN!');
-      } else if (w === 2) {
-        ctx.audio.sfx('gameover');
-        ctx.hud.toast('CPU WINS');
+      winLine = winLineOf(board) ?? [];
+      if (w === 1) { pWins++; score += 1000; ctx.audio.sfx('levelup'); ctx.hud.toast('YOU WIN!'); }
+      else if (w === 2) { cWins++; score += 100; ctx.audio.sfx('gameover'); ctx.hud.toast('CPU WINS'); }
+      else { score += 400; ctx.hud.toast('DRAW'); }
+      ctx.hud.setScore(score);
+      setLabel();
+      draw();
+      if (pWins > SERIES / 2 || cWins > SERIES / 2 || gameNo >= SERIES) {
+        const bonus = pWins > cWins ? 1500 : 0;
+        ctx.hud.toast(pWins > cWins ? 'SERIES WON!' : pWins < cWins ? 'SERIES LOST' : 'SERIES TIED');
+        window.setTimeout(() => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }), 900);
       } else {
-        ctx.hud.toast('DRAW');
+        window.setTimeout(nextGame, 1100);
       }
-      ctx.gameOver(w === 1 ? 1000 : w === 2 ? 100 : 400, { won: w === 1 ? 1 : 0 });
       return true;
     }
     return false;
   };
 
-  const cpu = (): void => {
-    const { move } = minimax([...board], 2);
+  function cpu(): void {
+    if (over) return;
+    // Feature: difficulty ramp — early games have a chance of a non-optimal move (winnable)
+    const mistakeChance = Math.max(0, 0.4 - (gameNo - 1) * 0.12);
+    const empties = board.map((v, i) => (v ? -1 : i)).filter((i) => i >= 0);
+    let move: number;
+    if (empties.length && ctx.rng.next() < mistakeChance) move = ctx.rng.pick(empties);
+    else move = minimax([...board], 2).move;
     if (move >= 0) {
       board[move] = 2;
       ctx.audio.sfx('blip');
     }
     draw();
     finish();
-  };
+  }
 
   const play = (i: number): void => {
     if (over || board[i]) return;
@@ -103,6 +136,7 @@ export default function createGame(ctx: GameContext): Game {
       const cx = ox + c * cell + cell / 2;
       const cy = oy + r * cell + cell / 2;
       const m = cell * 0.28;
+      if (winLine.includes(i)) g.roundRect(ox + c * cell + 4, oy + r * cell + 4, cell - 8, cell - 8, 8).fill({ color: 0x3ddc84, alpha: 0.22 });
       if (board[i] === 1) {
         g.moveTo(cx - m, cy - m).lineTo(cx + m, cy + m).moveTo(cx + m, cy - m).lineTo(cx - m, cy + m).stroke({ width: 6, color: 0x00f7ff });
       } else if (board[i] === 2) {

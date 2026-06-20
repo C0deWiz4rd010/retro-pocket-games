@@ -25,6 +25,7 @@ export default function createGame(ctx: GameContext): Game {
   let over = false;
   let score = 0;
   let camY = 0;
+  let combo = 0; // Feature: perfect-drop combo
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('TAP TO DROP');
@@ -34,22 +35,38 @@ export default function createGame(ctx: GameContext): Game {
     const below = stack[stack.length - 1]!;
     const left = Math.max(current.x, below.x);
     const right = Math.min(current.x + current.w, below.x + below.w);
-    const overlap = right - left;
+    let overlap = right - left;
     if (overlap <= 0) {
       over = true;
       ctx.audio.sfx('explosion');
       ctx.gameOver(score, { height: stack.length });
       return;
     }
-    const placed: Block = { x: left, w: overlap, color: current.color };
+    // Feature: perfect drop — near-exact alignment keeps full width (and can grow it)
+    const perfect = Math.abs(current.x - below.x) < 6;
+    let placedX = left;
+    if (perfect) {
+      combo++;
+      placedX = below.x;
+      overlap = below.w;
+      if (combo % 3 === 0) overlap = Math.min(W * 0.7, overlap + 8); // Feature: width bonus on a streak
+      ctx.fx.floatingText(combo >= 3 ? `PERFECT x${1 + Math.floor(combo / 3)}` : 'PERFECT', W / 2, H * 0.3, 0x3ddc84);
+      ctx.fx.screenShake(3, 0.08);
+    } else {
+      combo = 0;
+    }
+    const placed: Block = { x: placedX, w: overlap, color: current.color };
     stack.push(placed);
-    score += Math.round(overlap);
-    ctx.hud.setScore(stack.length - 1);
-    ctx.audio.sfx(overlap > below.w - 4 ? 'coin' : 'blip');
+    // Feature: combo multiplier scoring
+    const mult = 1 + Math.floor(combo / 3);
+    score += Math.round(overlap * (perfect ? mult : 0.5));
+    ctx.hud.setScore(score);
+    ctx.audio.sfx(perfect ? 'coin' : 'blip');
     speed += 8;
     camY = Math.max(0, (stack.length - 8) * blockH);
     current = { x: 0, w: overlap, color: PALETTE[stack.length % PALETTE.length]! };
     dir = 1;
+    ctx.hud.setLabel(combo >= 3 ? `H ${stack.length - 1} · x${mult}` : `H ${stack.length - 1}`);
   };
   const offTap = ctx.input.on('tap', drop);
   const offDown = ctx.input.on('down', (a) => {

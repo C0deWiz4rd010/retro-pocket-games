@@ -1323,11 +1323,15 @@ export function createMemoryMatch(ctx: GameContext): Game {
   let moves = 0;
   let score = 1200;
   let streak = 0;
-  let peek = 0;
+  let peek = 1.6; // Feature: start-of-round preview (all cards briefly shown)
   let t = 0;
   let complete = false;
+  // Feature: countdown timer (match adds time, mismatch costs time)
+  const maxTime = 45;
+  let timeLeft = maxTime;
+  let started = false;
   ctx.hud.setScore(score);
-  ctx.hud.setLabel('MATCH');
+  ctx.hud.setLabel('MEMORIZE…');
   const colors = [PINK, CYAN, GOLD, GREEN, VIOLET, BLUE, 0xff7b00, 0xffffff];
   const offDown = ctx.input.on('down', (a) => {
     if (a === 'b' && peek <= 0 && score >= 100) {
@@ -1355,15 +1359,17 @@ export function createMemoryMatch(ctx: GameContext): Game {
         first = null;
         streak++;
         score += 180 + streak * 45;
+        timeLeft = Math.min(maxTime, timeLeft + 3); // matches add time
         ctx.audio.sfx('coin');
-        ctx.fx.floatingText(`x${streak}`, ox + (i % cols) * card + card / 2, oy + Math.floor(i / cols) * card, GOLD);
+        ctx.fx.floatingText(`x${streak} +3s`, ox + (i % cols) * card + card / 2, oy + Math.floor(i / cols) * card, GOLD);
       } else {
         streak = 0;
         lock = 0.72;
         score = Math.max(0, score - 35);
+        timeLeft = Math.max(0, timeLeft - 2); // mismatches cost time
       }
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(streak > 1 ? `STREAK x${streak}` : 'MATCH');
+      ctx.hud.setLabel(streak > 1 ? `STREAK x${streak}` : `${Math.ceil(timeLeft)}s`);
     }
     draw();
   });
@@ -1384,6 +1390,10 @@ export function createMemoryMatch(ctx: GameContext): Game {
         g.rect(x + card * 0.36, y + card * 0.36, card * 0.28, card * 0.28).stroke({ width: 2, color: PINK, alpha: 0.6 });
       }
     }
+    // timer bar
+    const tw = size * (timeLeft / maxTime);
+    g.rect(ox, oy - 12, size, 5).fill({ color: 0x000000, alpha: 0.4 });
+    g.rect(ox, oy - 12, tw, 5).fill({ color: timeLeft < 10 ? PINK : GREEN });
     drawSparks(g, sparks);
   }
   draw();
@@ -1393,8 +1403,19 @@ export function createMemoryMatch(ctx: GameContext): Game {
       updateSparks(sparks, dt);
       if (peek > 0) {
         peek -= dt;
-        if (peek <= 0) draw();
+        if (peek <= 0) { started = true; ctx.hud.setLabel(`${Math.ceil(timeLeft)}s`); draw(); }
+      } else if (!complete) {
+        // Feature: countdown runs once the preview ends
+        started = true;
+        timeLeft -= dt;
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          complete = true;
+          ctx.hud.toast("TIME'S UP!");
+          ctx.gameOver(score, { moves, streak });
+        }
       }
+      if (started && Math.floor(t * 2) % 2 === 0) ctx.hud.setLabel(streak > 1 ? `STREAK x${streak}` : `${Math.ceil(timeLeft)}s`);
       if (lock > 0) {
         lock -= dt;
         if (lock <= 0) {
@@ -1406,7 +1427,10 @@ export function createMemoryMatch(ctx: GameContext): Game {
       }
       if (!complete && found.size === vals.length) {
         complete = true;
-        ctx.hud.toast('PERFECT MATCH!');
+        const bonus = Math.ceil(timeLeft) * 15; // Feature: time bonus on completion
+        score += bonus;
+        ctx.hud.setScore(score);
+        ctx.hud.toast(`PERFECT! +${bonus}`);
         ctx.gameOver(score, { moves, streak });
       }
     },

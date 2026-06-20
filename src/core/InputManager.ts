@@ -11,7 +11,16 @@ type InputEvents = {
   pointermove: { x: number; y: number; down: boolean };
 };
 
-const DEFAULT_KEY_MAP: Record<string, Action> = {
+/** Build a code→action override map from action→code user bindings (Settings rebinding UI). */
+export function keyMapFromBindings(bindings: Record<string, string>): Record<string, Action> {
+  const out: Record<string, Action> = {};
+  for (const [action, code] of Object.entries(bindings)) {
+    if (code) out[code] = action as Action;
+  }
+  return out;
+}
+
+export const DEFAULT_KEY_MAP: Record<string, Action> = {
   ArrowUp: 'up',
   ArrowDown: 'down',
   ArrowLeft: 'left',

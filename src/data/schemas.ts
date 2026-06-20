@@ -47,6 +47,8 @@ export const SettingsSchema = z.object({
     })
     .default({ reducedMotion: false, highContrast: false, colorblind: 'off', largeTargets: false }),
   locale: z.enum(['en', 'de']).default('en'),
+  /** Desktop key rebindings: action name → KeyboardEvent.code override (empty = defaults). */
+  keyBindings: z.record(z.string(), z.string()).default({}),
   bios: z
     .object({ showEachLaunch: z.boolean().default(false) })
     .default({ showEachLaunch: false }),

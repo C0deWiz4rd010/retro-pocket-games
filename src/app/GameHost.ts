@@ -1,6 +1,6 @@
 import { Container, Ticker } from 'pixi.js';
 import { pixi } from '@core/PixiManager';
-import { InputManager, type Action } from '@core/InputManager';
+import { InputManager, keyMapFromBindings, type Action } from '@core/InputManager';
 import { controlsForGame } from '@core/controlProfiles';
 import { GameFX } from '@core/GameFX';
 import { audio } from '@core/AudioManager';
@@ -82,7 +82,7 @@ export class GameHost {
 
     this.buildChrome();
     const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
-    this.input.configure({ gamepadDeadzone: profile.gamepadDeadzone });
+    this.input.configure({ gamepadDeadzone: profile.gamepadDeadzone, keyMap: keyMapFromBindings(settings().keyBindings) });
     this.input.attach(pixi.canvas, pixi.screenToVirtual);
 
     const ctx: GameContext = {

@@ -3,6 +3,7 @@ import { settings, updateSettings } from '@store/settings';
 import { audio } from '@core/AudioManager';
 import { haptics } from '@core/Haptics';
 import { exportAll, importAll, wipeAll } from '@data/db';
+import type { Action } from '@core/InputManager';
 import { t } from '@i18n/index';
 import type { Settings } from '@data/schemas';
 
@@ -202,6 +203,34 @@ function rows(rerender: () => void): HTMLElement[] {
       ),
     ),
 
+    el('div', { class: 'section-title' }, [t('settings.keyBindings')]),
+    ...REBINDABLE.map(({ action, label, def }) => {
+      const code = s.keyBindings[action] ?? def;
+      const btn = el('button', {
+        class: 'btn btn--ghost',
+        style: 'min-width:74px',
+        onClick: () => {
+          btn.textContent = `· ${t('settings.pressKey')} ·`;
+          const onKey = (e: KeyboardEvent): void => {
+            e.preventDefault();
+            window.removeEventListener('keydown', onKey, true);
+            if (e.code !== 'Escape') {
+              updateSettings({ keyBindings: { ...settings().keyBindings, [action]: e.code } });
+            }
+            rerender();
+          };
+          window.addEventListener('keydown', onKey, true);
+        },
+      }, [codeLabel(code)]);
+      return row(label, btn);
+    }),
+    el('div', { class: 'panel__row', style: 'padding:2px 0 6px' }, [
+      el('button', {
+        class: 'btn btn--ghost btn--block',
+        onClick: () => { updateSettings({ keyBindings: {} }); rerender(); },
+      }, [t('settings.resetKeys')]),
+    ]),
+
     el('div', { class: 'section-title' }, [t('settings.a11y')]),
     row(t('settings.reducedMotion'), toggle(s.a11y.reducedMotion, (reducedMotion) => patchA11y({ reducedMotion }))),
     row(t('settings.highContrast'), toggle(s.a11y.highContrast, (highContrast) => patchA11y({ highContrast }))),
@@ -235,6 +264,26 @@ function rows(rerender: () => void): HTMLElement[] {
       `${t('settings.footer')} · v${import.meta.env.VITE_APP_VERSION ?? '0.0.0'}`,
     ]),
   ];
+}
+
+/** Rebindable gameplay actions and their default key codes (shown in the rebinding UI). */
+const REBINDABLE: { action: Action; label: string; def: string }[] = [
+  { action: 'up', label: '▲ Up', def: 'ArrowUp' },
+  { action: 'down', label: '▼ Down', def: 'ArrowDown' },
+  { action: 'left', label: '◀ Left', def: 'ArrowLeft' },
+  { action: 'right', label: '▶ Right', def: 'ArrowRight' },
+  { action: 'a', label: 'A · Action', def: 'Space' },
+  { action: 'b', label: 'B · Secondary', def: 'KeyX' },
+];
+
+/** Friendly label for a KeyboardEvent.code (e.g. KeyZ → Z, ArrowUp → ↑). */
+function codeLabel(code: string): string {
+  const arrows: Record<string, string> = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
+  if (arrows[code]) return arrows[code]!;
+  if (code === 'Space') return 'Space';
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  return code;
 }
 
 async function doExport(): Promise<void> {

@@ -450,12 +450,14 @@ export function createBlockCollapse(ctx: GameContext): Game {
   const grid = Array.from({ length: N * N }, () => ctx.rng.int(0, COLORS.length - 1));
   let score = 0;
   let moves = 34;
+  let level = 1; // Feature: level progression
+  let target = 4000;
   let t = 0;
   let over = false;
   const at = (c: number, r: number): number => grid[r * N + c]!;
   const set = (c: number, r: number, v: number): void => { grid[r * N + c] = v; };
   ctx.hud.setScore(0);
-  ctx.hud.setLabel(`MOVES ${moves}`);
+  ctx.hud.setLabel(`MOVES ${moves} · L1`);
 
   const groupAt = (c: number, r: number): number[] => {
     const color = at(c, r);
@@ -495,6 +497,7 @@ export function createBlockCollapse(ctx: GameContext): Game {
       return;
     }
     moves--;
+    const color = at(c, r);
     const cleared = new Set(group);
     if (group.length >= 6) {
       for (let rr = r - 1; rr <= r + 1; rr++) {
@@ -504,7 +507,18 @@ export function createBlockCollapse(ctx: GameContext): Game {
       }
       ctx.hud.toast('BLAST!');
     }
-    const pts = cleared.size * cleared.size * (group.length >= 6 ? 16 : 12);
+    // Feature: color-bomb chain — a huge group also clears every same-colour block
+    if (group.length >= 9) {
+      for (let i = 0; i < N * N; i++) if (grid[i] === color) cleared.add(i);
+      ctx.hud.toast('COLOR BOMB!');
+      ctx.fx.screenShake(6, 0.18);
+    }
+    // Feature: large clears refund moves
+    if (group.length >= 7) {
+      moves += 2;
+      ctx.fx.floatingText('+2 MOVES', ox + c * cell + cell / 2, oy + r * cell - 26, GREEN);
+    }
+    const pts = cleared.size * cleared.size * (group.length >= 9 ? 22 : group.length >= 6 ? 16 : 12);
     score += pts;
     ctx.fx.floatingText(`+${pts}`, ox + c * cell + cell / 2, oy + r * cell - 10, group.length >= 6 ? GOLD : WHITE);
     for (const i of cleared) {
@@ -515,11 +529,19 @@ export function createBlockCollapse(ctx: GameContext): Game {
     }
     collapse();
     ctx.audio.sfx(group.length > 5 ? 'powerup' : 'coin');
+    // Feature: level progression — hit the target to advance with bonus moves
+    if (score >= target) {
+      level++;
+      moves += 14;
+      target += 4000 + level * 1500;
+      ctx.hud.toast(`LEVEL ${level}! +14 MOVES`);
+      ctx.audio.sfx('levelup');
+    }
     ctx.hud.setScore(score);
-    ctx.hud.setLabel(`MOVES ${moves}`);
+    ctx.hud.setLabel(`MOVES ${moves} · L${level}`);
     if (moves <= 0) {
       over = true;
-      ctx.gameOver(score, { blocks: group.length });
+      ctx.gameOver(score, { blocks: group.length, level });
     }
     draw();
   });

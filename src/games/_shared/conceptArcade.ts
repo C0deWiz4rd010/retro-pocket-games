@@ -1169,10 +1169,22 @@ export function createDotCollector(ctx: GameContext): Game {
   let tick = 0;
   let t = 0;
   let over = false;
+  // Feature: bonus fruit, power-mode chain, speed pellet
+  let fruit: { x: number; y: number; t: number } | null = null;
+  let fruitTimer = 8;
+  let chain = 0;
+  let speedT = 0;
+  let speedPellet: { x: number; y: number } | null = null;
+  let speedTimer = 12;
   ctx.hud.setScore(0);
   ctx.hud.setLives(lives);
   ctx.hud.setLabel('DOTS');
   const can = (x: number, y: number): boolean => !walls.has(`${x},${y}`);
+  const freeFloor = (): { x: number; y: number } => {
+    let c: { x: number; y: number };
+    do { c = { x: ctx.rng.int(1, cols - 2), y: ctx.rng.int(1, rows - 2) }; } while (walls.has(`${c.x},${c.y}`));
+    return c;
+  };
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.78);
@@ -1190,7 +1202,15 @@ export function createDotCollector(ctx: GameContext): Game {
       const pulse = 1 + Math.sin(t * 8 + x!) * 0.18;
       g.circle(ox + x! * cell + cell / 2, oy + y! * cell + cell / 2, cell * 0.24 * pulse).fill({ color: power > 0 ? CYAN : VIOLET });
     }
-    g.circle(ox + player.x * cell + cell / 2, oy + player.y * cell + cell / 2, cell * 0.38).fill({ color: 0xffeb3b });
+    if (fruit) {
+      g.circle(ox + fruit.x * cell + cell / 2, oy + fruit.y * cell + cell / 2, cell * 0.3).fill({ color: 0xff2e44 });
+      g.rect(ox + fruit.x * cell + cell / 2 - 1, oy + fruit.y * cell + cell * 0.18, 2, cell * 0.2).fill({ color: GREEN });
+    }
+    if (speedPellet) {
+      const pul = 1 + Math.sin(t * 9) * 0.2;
+      g.star(ox + speedPellet.x * cell + cell / 2, oy + speedPellet.y * cell + cell / 2, 4, cell * 0.26 * pul, cell * 0.12).fill({ color: GREEN });
+    }
+    g.circle(ox + player.x * cell + cell / 2, oy + player.y * cell + cell / 2, cell * 0.38).fill({ color: speedT > 0 ? GREEN : 0xffeb3b });
     for (const f of foes) {
       g.roundRect(ox + f.x * cell + 2, oy + f.y * cell + 2, cell - 4, cell - 4, 6).fill({ color: power > 0 ? CYAN : PINK });
     }
@@ -1201,9 +1221,18 @@ export function createDotCollector(ctx: GameContext): Game {
       if (over) return;
       t += dt;
       updateSparks(sparks, dt);
+      const wasPower = power > 0;
       power = Math.max(0, power - dt);
+      if (wasPower && power <= 0) chain = 0; // chain resets when power ends
+      speedT = Math.max(0, speedT - dt);
+      // Feature: spawn bonus fruit + speed pellet on timers
+      fruitTimer -= dt;
+      if (!fruit && fruitTimer <= 0) { fruit = { ...freeFloor(), t: 8 }; fruitTimer = 12 + ctx.rng.next() * 6; }
+      if (fruit) { fruit.t -= dt; if (fruit.t <= 0) fruit = null; }
+      speedTimer -= dt;
+      if (!speedPellet && speedTimer <= 0) { speedPellet = freeFloor(); speedTimer = 16 + ctx.rng.next() * 8; }
       tick += dt;
-      if (tick > 0.14) {
+      if (tick > (speedT > 0 ? 0.09 : 0.14)) {
         tick = 0;
         const a = ctx.input.axis();
         const nx = player.x + Math.sign(a.x);
@@ -1214,8 +1243,21 @@ export function createDotCollector(ctx: GameContext): Game {
           score += 20;
           ctx.audio.sfx('coin');
         }
+        if (fruit && player.x === fruit.x && player.y === fruit.y) {
+          score += 300;
+          fruit = null;
+          ctx.audio.sfx('coin');
+          ctx.fx.floatingText('+300', ox + player.x * cell + cell / 2, oy + player.y * cell, GOLD);
+        }
+        if (speedPellet && player.x === speedPellet.x && player.y === speedPellet.y) {
+          speedT = 6;
+          speedPellet = null;
+          ctx.audio.sfx('powerup');
+          ctx.hud.toast('SPEED BOOST');
+        }
         if (powers.delete(k)) {
           power = 6;
+          chain = 0;
           score += 120;
           ctx.audio.sfx('powerup');
           ctx.hud.toast('POWER MODE');
@@ -1229,9 +1271,11 @@ export function createDotCollector(ctx: GameContext): Game {
           f.y += pick[1]!;
           if (f.x === player.x && f.y === player.y) {
             if (power > 0) {
-              score += 260;
+              chain++;
+              const pts = 260 * Math.pow(2, Math.min(chain - 1, 3)); // 260/520/1040/2080
+              score += pts;
               ctx.audio.sfx('explosion');
-              ctx.fx.floatingText('+260', ox + f.x * cell + cell / 2, oy + f.y * cell, CYAN);
+              ctx.fx.floatingText(`+${pts}`, ox + f.x * cell + cell / 2, oy + f.y * cell, CYAN);
               f.x = cols - 2;
               f.y = f.phase > 1 ? 1 : rows - 2;
             } else {
@@ -1251,7 +1295,7 @@ export function createDotCollector(ctx: GameContext): Game {
           ctx.gameOver(score + 1000);
         }
         ctx.hud.setScore(score);
-        ctx.hud.setLabel(power > 0 ? `POWER ${Math.ceil(power)}` : `DOTS ${dots.size}`);
+        ctx.hud.setLabel(power > 0 ? `POWER ${Math.ceil(power)}${chain > 1 ? ` x${chain}` : ''}` : speedT > 0 ? `SPEED ${Math.ceil(speedT)}` : `DOTS ${dots.size}`);
         draw();
       }
     },

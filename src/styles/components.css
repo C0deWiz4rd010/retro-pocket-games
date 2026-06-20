@@ -1421,6 +1421,36 @@
   color: var(--text);
 }
 
+/* ── Pause sub-panels (controls / rules / accessibility) ── */
+.pause-list {
+  list-style: none;
+  margin: 4px 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+.pause-list li {
+  position: relative;
+  padding: 7px 10px 7px 22px;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border-radius: 8px;
+}
+.pause-list li::before {
+  content: '▸';
+  position: absolute;
+  left: 8px;
+  color: var(--primary);
+}
+.btn.is-on {
+  border-color: color-mix(in srgb, var(--ok) 60%, transparent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface-2));
+}
+
 /* ── Theme swatches ── */
 .theme-swatches {
   display: flex;

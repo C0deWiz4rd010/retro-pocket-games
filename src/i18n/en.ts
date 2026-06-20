@@ -108,6 +108,8 @@ export const en: Dict = {
   'game.quitConfirm': 'Quit this game?',
   'game.quit': 'Quit',
   'game.keepPlaying': 'Keep playing',
+  'game.rules': 'How to play',
+  'game.back': 'Back',
   'home.search': 'Search games…',
   'home.favorites': 'FAVORITES',
   'home.library': 'LIBRARY',

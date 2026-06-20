@@ -305,8 +305,58 @@ export class GameHost {
       this.buildQuickToggles(),
       el('button', { class: 'btn btn--primary btn--block', onClick: () => this.resume() }, [`▶  ${t('game.resume')}`]),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.restart() }, [`↻  ${t('game.restart')}`]),
+      el('div', { class: 'panel__row' }, [
+        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showControlsPanel() }, [`🎮  ${t('settings.controls')}`]),
+        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showRulesPanel() }, [`📖  ${t('game.rules')}`]),
+      ]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showAccessibilityPanel() }, [`♿  ${t('settings.a11y')}`]),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.confirmQuit() }, [`⌂  ${t('game.home')}`]),
     ]);
+    this.showOverlay(panel);
+  }
+
+  /** Pause sub-panel: the current game's control hints. */
+  private showControlsPanel(): void {
+    const hints = this.meta.controls?.hints ?? [];
+    const rows: (Node | string)[] = [el('div', { class: 'panel__title' }, [t('settings.controls')])];
+    if (hints.length) {
+      rows.push(el('ul', { class: 'pause-list' }, hints.map((h) => el('li', {}, [h]))));
+    } else {
+      rows.push(el('div', { style: 'color:var(--text-muted);font-size:13px' }, ['Tap / swipe the screen targets.']));
+    }
+    rows.push(el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [`←  ${t('game.back')}`]));
+    this.showOverlay(el('div', { class: 'panel' }, rows));
+  }
+
+  /** Pause sub-panel: a short rules / how-to-play blurb. */
+  private showRulesPanel(): void {
+    const steps = this.meta.tutorialSteps ?? [];
+    const rows: (Node | string)[] = [
+      el('div', { class: 'panel__title' }, [t('game.rules')]),
+      el('div', { class: 'run-comment' }, [this.meta.blurb]),
+    ];
+    if (steps.length) rows.push(el('ul', { class: 'pause-list' }, steps.map((s) => el('li', {}, [s]))));
+    rows.push(el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [`←  ${t('game.back')}`]));
+    this.showOverlay(el('div', { class: 'panel' }, rows));
+  }
+
+  /** Pause sub-panel: accessibility toggles mirrored from the main settings. */
+  private showAccessibilityPanel(): void {
+    const panel = el('div', { class: 'panel' });
+    const render = (): void => {
+      const a = settings().a11y;
+      const toggle = (on: boolean, label: string, onClick: () => void): HTMLElement =>
+        el('button', { class: `btn btn--ghost btn--block${on ? ' is-on' : ''}`, 'aria-pressed': String(on), onClick }, [`${on ? '☑' : '☐'}  ${label}`]);
+      clear(panel);
+      panel.append(
+        el('div', { class: 'panel__title' }, [t('settings.a11y')]),
+        toggle(a.reducedMotion, t('settings.reducedMotion'), () => { updateSettings({ a11y: { ...settings().a11y, reducedMotion: !a.reducedMotion } }); render(); }),
+        toggle(a.highContrast, t('settings.highContrast'), () => { updateSettings({ a11y: { ...settings().a11y, highContrast: !a.highContrast } }); render(); }),
+        toggle(a.largeTargets, t('settings.largeTargets'), () => { updateSettings({ a11y: { ...settings().a11y, largeTargets: !a.largeTargets } }); render(); }),
+        el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [`←  ${t('game.back')}`]),
+      );
+    };
+    render();
     this.showOverlay(panel);
   }
 
@@ -324,6 +374,11 @@ export class GameHost {
       row.replaceChildren(
         chip(s.audio.sfx, `🔊 ${t('settings.sfx')}`, () => {
           updateSettings({ audio: { ...settings().audio, sfx: !settings().audio.sfx } });
+          rebuild();
+        }),
+        chip(s.controls.haptics, `📳 ${t('settings.haptics')}`, () => {
+          updateSettings({ controls: { ...settings().controls, haptics: !settings().controls.haptics } });
+          if (settings().controls.haptics) haptics.bump();
           rebuild();
         }),
         chip(s.screenFx.mode !== 'off', '📺 CRT', () => {

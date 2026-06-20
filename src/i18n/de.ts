@@ -108,6 +108,8 @@ export const de: Dict = {
   'game.quitConfirm': 'Spiel beenden?',
   'game.quit': 'Beenden',
   'game.keepPlaying': 'Weiterspielen',
+  'game.rules': 'Spielregeln',
+  'game.back': 'Zurück',
   'home.search': 'Spiele suchen…',
   'home.favorites': 'FAVORITEN',
   'home.library': 'BIBLIOTHEK',

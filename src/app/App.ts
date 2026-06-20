@@ -85,7 +85,10 @@ export class App {
         audio.setMutedByBlur(false);
       }
     });
-    window.addEventListener('blur', () => audio.setMutedByBlur(true));
+    window.addEventListener('blur', () => {
+      this.host?.pauseExternal();
+      audio.setMutedByBlur(true);
+    });
     window.addEventListener('focus', () => audio.setMutedByBlur(false));
 
     // Global "?" opens the keyboard shortcuts help (ignored while typing).

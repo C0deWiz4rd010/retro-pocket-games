@@ -60,6 +60,33 @@ export default function createGame(ctx: GameContext): Game {
   let settleT = 0;
   let locked = false;
   let softDropBonus = 0;
+  let heldCells: number[] | null = null; // Feature: hold piece
+  let holdUsed = false;
+  let wasDanger = false; // Feature: danger-zone warning
+
+  const boardEmpty = (): boolean => {
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (at(state, c, r) >= 0) return false;
+    return true;
+  };
+  const inDanger = (): boolean => {
+    for (let r = 0; r < 3; r++) for (let c = 0; c < COLS; c++) if (at(state, c, r) >= 0) return true;
+    return false;
+  };
+  const hold = (): void => {
+    if (state.over || locked || holdUsed) return;
+    holdUsed = true;
+    if (heldCells === null) {
+      heldCells = [...state.piece.cells];
+      spawnPiece(state, ctx.rng);
+    } else {
+      const tmp = [...state.piece.cells];
+      state.piece.cells = heldCells as typeof state.piece.cells;
+      heldCells = tmp;
+      state.piece.row = 0;
+    }
+    ctx.audio.sfx('select');
+    draw();
+  };
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('LV 1');
@@ -135,6 +162,8 @@ export default function createGame(ctx: GameContext): Game {
       if (stepDown(true)) showSoftDropBonus();
     } else if (a === 'b') {
       dropAndLock();
+    } else if (a === 'select' || a === 'start') {
+      hold();
     }
     draw();
   };
@@ -227,12 +256,22 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < state.next.length; i++) {
       drawJewelAt(previewX + 9, previewY + 7 + i * previewCell, previewCell, state.next[i]!, 0.92);
     }
+    // Feature: hold piece preview
+    const holdY = previewY + previewCell * 3 + 30;
+    g.roundRect(previewX, holdY, previewW, previewCell * 3 + 14, 8).fill({ color: 0x101020, alpha: 0.6 }).stroke({ width: 1, color: holdUsed ? 0x444466 : 0xb388ff, alpha: 0.6 });
+    if (heldCells) for (let i = 0; i < heldCells.length; i++) drawJewelAt(previewX + 9, holdY + 7 + i * previewCell, previewCell, heldCells[i]!, holdUsed ? 0.4 : 0.92);
+    // Feature: danger-zone warning border
+    if (inDanger()) g.rect(0, 0, fieldW, fieldH).stroke({ width: 3, color: 0xff4d4d, alpha: 0.4 + Math.sin(performance.now() / 120) * 0.3 });
   }
   draw();
 
   return {
     update(dt) {
       if (state.over) return;
+      // Feature: play a warning the moment the stack enters the danger band
+      const danger = inDanger();
+      if (danger && !wasDanger) ctx.audio.sfx('hit');
+      wasDanger = danger;
       if (locked) {
         settleT -= dt;
         if (settleT <= 0) {
@@ -243,10 +282,19 @@ export default function createGame(ctx: GameContext): Game {
             ctx.fx.flashRect(0, 0, fieldW, fieldH, 0xffffff);
             ctx.fx.floatingText(result.combo > 1 ? `CASCADE x${result.combo}` : `+${result.scoreDelta}`, fieldW / 2, fieldH * 0.18, 0xffd200);
             ctx.fx.screenShake(Math.min(8, 2 + result.combo * 1.6), 0.14);
+            // Feature: all-clear bonus
+            if (boardEmpty()) {
+              const bonus = 500 * state.level;
+              state.score += bonus;
+              ctx.hud.toast(`ALL CLEAR! +${bonus}`);
+              ctx.fx.screenShake(9, 0.2);
+              syncHud();
+            }
             settleT = 0.18;
           } else {
             state.combo = 0;
             spawnPiece(state, ctx.rng);
+            holdUsed = false; // a fresh piece re-enables hold
             locked = false;
             if (state.over) finishRun();
           }

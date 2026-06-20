@@ -87,8 +87,16 @@ export default function createGame(ctx: GameContext): Game {
     const r = Math.floor((vy - oy) / cell);
     if (c < 0 || r < 0 || c >= N || r >= N) return;
     press(c, r);
-    ctx.hud.setLabel(`L${level} · MOVES ${moves}`);
+    const budget = 12 + level * 3; // Feature: per-level move budget — overshoot ends the run
     draw();
+    if (!lights.every((l) => !l) && moves > budget) {
+      over = true;
+      ctx.audio.sfx('gameover');
+      ctx.hud.toast('OUT OF MOVES');
+      ctx.gameOver(score, { level });
+      return;
+    }
+    ctx.hud.setLabel(`L${level} · ${moves}/${budget}`);
     if (lights.every((l) => !l)) {
       // Feature: efficiency bonus + level progression
       const bonus = Math.max(50, 600 - moves * 15) + level * 100;

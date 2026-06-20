@@ -31,22 +31,29 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   // shuffle by valid moves (always solvable)
-  for (let i = 0; i < 200; i++) {
-    const b = blankIdx();
-    const bc = b % N;
-    const br = Math.floor(b / N);
-    const opts: number[] = [];
-    if (bc > 0) opts.push(b - 1);
-    if (bc < N - 1) opts.push(b + 1);
-    if (br > 0) opts.push(b - N);
-    if (br < N - 1) opts.push(b + N);
-    swap(b, ctx.rng.pick(opts));
-  }
+  const reshuffle = (): void => {
+    for (let i = 0; i < 200; i++) {
+      const b = blankIdx();
+      const bc = b % N;
+      const br = Math.floor(b / N);
+      const opts: number[] = [];
+      if (bc > 0) opts.push(b - 1);
+      if (bc < N - 1) opts.push(b + 1);
+      if (br > 0) opts.push(b - N);
+      if (br < N - 1) opts.push(b + N);
+      swap(b, ctx.rng.pick(opts));
+    }
+  };
+  reshuffle();
 
   let moves = 0;
   let over = false;
+  let score = 0;
+  let level = 1; // Feature: level progression
+  const maxTime = 120;
+  let timeLeft = maxTime; // Feature: shared countdown + time bonus
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('ORDER 1-15');
+  ctx.hud.setLabel(`ORDER 1-15 · L1`);
 
   const solved = (): boolean => tiles.every((v, i) => v === (i + 1) % (N * N));
 
@@ -65,13 +72,20 @@ export default function createGame(ctx: GameContext): Game {
     swap(b, from);
     moves++;
     ctx.audio.sfx('blip');
-    ctx.hud.setLabel(`MOVES ${moves}`);
+    ctx.hud.setLabel(`L${level} · MOVES ${moves}`);
     draw();
     if (solved()) {
-      over = true;
+      // Feature: efficiency bonus + extra time, then a fresh harder board
+      const bonus = Math.max(50, 1500 - moves * 10) + level * 120;
+      score += bonus;
+      timeLeft = Math.min(maxTime + 40, timeLeft + 20);
+      level++;
+      moves = 0;
+      ctx.hud.setScore(score);
       ctx.audio.sfx('levelup');
-      ctx.hud.toast('SOLVED!');
-      ctx.gameOver(Math.max(50, 2000 - moves * 10), { moves });
+      ctx.hud.toast(`SOLVED! +${bonus}`);
+      reshuffle();
+      draw();
     }
   };
   const offDown = ctx.input.on('down', move);
@@ -102,7 +116,8 @@ export default function createGame(ctx: GameContext): Game {
         lbl.visible = false;
         return;
       }
-      g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).fill({ color: 0x90caf9 });
+      const correct = v === (i + 1) % (N * N); // Feature: highlight tiles in their final spot
+      g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).fill({ color: correct ? 0x9bffce : 0x90caf9 });
       lbl.text = String(v);
       lbl.position.set(c * cell + cell / 2, r * cell + cell / 2);
       lbl.visible = true;
@@ -110,8 +125,24 @@ export default function createGame(ctx: GameContext): Game {
   }
   draw();
 
+  let labelAcc = 0;
   return {
-    update() {},
+    update(dt) {
+      if (over) return;
+      timeLeft -= dt;
+      if (timeLeft <= 0) {
+        over = true;
+        ctx.audio.sfx('gameover');
+        ctx.hud.toast("TIME'S UP!");
+        ctx.gameOver(score, { level });
+        return;
+      }
+      labelAcc += dt;
+      if (labelAcc >= 0.25) {
+        labelAcc = 0;
+        ctx.hud.setLabel(`L${level} · ${Math.ceil(timeLeft)}s`);
+      }
+    },
     destroy() {
       offDown();
       offSwipe();

@@ -22,9 +22,17 @@ export default function createGame(ctx: GameContext): Game {
   let cursor = 3;
   let over = false;
   let turn = 1;
+  // Feature: best-of-5 series with running score + winning-line highlight
+  const SERIES = 5;
+  let gameNo = 1;
+  let pWins = 0;
+  let cWins = 0;
+  let score = 0;
+  let winLine: number[] = [];
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('CONNECT 4');
+  const setLabel = (): void => ctx.hud.setLabel(`GAME ${gameNo}/${SERIES} · YOU ${pWins}-${cWins} CPU`);
+  setLabel();
 
   const drop = (col: number, who: number): number => {
     for (let r = ROWS - 1; r >= 0; r--)
@@ -35,40 +43,54 @@ export default function createGame(ctx: GameContext): Game {
     return -1;
   };
 
-  const wins = (who: number): boolean => {
+  const winningLine = (who: number): number[] | null => {
     const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
         if (at(c, r) === who)
           for (const [dx, dy] of dirs) {
-            let n = 1;
+            const line = [r * COLS + c];
             let cc = c + dx!;
             let rr = r + dy!;
             while (cc >= 0 && cc < COLS && rr >= 0 && rr < ROWS && at(cc, rr) === who) {
-              n++;
+              line.push(rr * COLS + cc);
               cc += dx!;
               rr += dy!;
             }
-            if (n >= 4) return true;
+            if (line.length >= 4) return line.slice(0, 4);
           }
-    return false;
+    return null;
   };
+  const wins = (who: number): boolean => winningLine(who) !== null;
 
   const full = (): boolean => board.every((v) => v !== 0);
 
-  const endGame = (winner: number): void => {
-    over = true;
+  const nextGame = (): void => {
+    board.fill(0);
+    winLine = [];
+    gameNo++;
+    turn = 1;
+    over = false;
+    setLabel();
     draw();
-    if (winner === 1) {
-      ctx.audio.sfx('levelup');
-      ctx.hud.toast('YOU WIN!');
-      ctx.gameOver(1000, { won: 1 });
-    } else if (winner === 2) {
-      ctx.audio.sfx('gameover');
-      ctx.gameOver(100, { won: 0 });
+  };
+
+  const endGame = (winner: number): void => {
+    if (winner === 1) { pWins++; score += 1000; winLine = winningLine(1) ?? []; ctx.audio.sfx('levelup'); ctx.hud.toast('YOU WIN!'); }
+    else if (winner === 2) { cWins++; score += 100; winLine = winningLine(2) ?? []; ctx.audio.sfx('gameover'); ctx.hud.toast('CPU WINS'); }
+    else { score += 300; ctx.hud.toast('DRAW'); }
+    ctx.hud.setScore(score);
+    setLabel();
+    draw();
+    // series ends when someone clinches a majority or all games are played
+    if (pWins > SERIES / 2 || cWins > SERIES / 2 || gameNo >= SERIES) {
+      over = true;
+      const bonus = pWins > cWins ? 1500 : 0;
+      ctx.hud.toast(pWins > cWins ? 'SERIES WON!' : pWins < cWins ? 'SERIES LOST' : 'SERIES TIED');
+      window.setTimeout(() => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }), 900);
     } else {
-      ctx.hud.toast('DRAW');
-      ctx.gameOver(300, { draw: 1 });
+      over = true; // block input until the next game starts
+      window.setTimeout(nextGame, 1100);
     }
   };
 
@@ -86,7 +108,21 @@ export default function createGame(ctx: GameContext): Game {
     };
     let col = tryCol(2);
     if (col < 0) col = tryCol(1);
-    if (col < 0) col = [3, 2, 4, 1, 5, 0, 6].filter((c) => at(c, 0) === 0)[0] ?? 0;
+    if (col < 0) {
+      const order = [3, 2, 4, 1, 5, 0, 6].filter((c) => at(c, 0) === 0);
+      // Feature: avoid a column that hands the player a winning reply
+      const safe = order.filter((c) => {
+        const r = drop(c, 2);
+        let bad = false;
+        for (let pc = 0; pc < COLS && !bad; pc++) {
+          const pr = drop(pc, 1);
+          if (pr >= 0) { if (wins(1)) bad = true; board[pr * COLS + pc] = 0; }
+        }
+        board[r * COLS + c] = 0;
+        return !bad;
+      });
+      col = (safe[0] ?? order[0]) ?? 0;
+    }
     const r = drop(col, 2);
     if (r >= 0) {
       ctx.audio.sfx('blip');
@@ -133,6 +169,9 @@ export default function createGame(ctx: GameContext): Game {
         const v = at(c, r);
         const col = v === 1 ? 0xffca28 : v === 2 ? 0xff4d4d : 0x0a0a12;
         g.circle(ox + c * size + size / 2, oy + r * size + size / 2, size * 0.4).fill({ color: col });
+        if (winLine.includes(r * COLS + c)) {
+          g.circle(ox + c * size + size / 2, oy + r * size + size / 2, size * 0.4).stroke({ width: 4, color: 0xffffff });
+        }
       }
   }
   draw();

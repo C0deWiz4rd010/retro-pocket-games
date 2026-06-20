@@ -60,6 +60,7 @@ export class GameHost {
   private overlayHost!: HTMLElement;
   private lastHudScore = 0;
   private lastHudLives = 0;
+  private cleanups: (() => void)[] = [];
 
   constructor(
     private screenView: HTMLElement,
@@ -175,7 +176,21 @@ export class GameHost {
     });
     pauseBtn.replaceChildren(icon('pause'));
     attachTooltip(pauseBtn, t('game.paused'));
-    const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudBest, this.hudLabel, this.hudLives, muteBtn, pauseBtn]);
+    // Fullscreen toggle for a more app-like, immersive mobile feel (#10/#22).
+    const fsGlyph = (): string => (document.fullscreenElement ? '⛗' : '⛶');
+    const fsBtn = el('button', {
+      class: 'iconbtn',
+      'aria-label': t('settings.fullscreen'),
+      onClick: () => {
+        if (document.fullscreenElement) void document.exitFullscreen?.();
+        else void document.documentElement.requestFullscreen?.().catch(() => {});
+      },
+    }, [fsGlyph()]);
+    attachTooltip(fsBtn, t('settings.fullscreen'));
+    const onFsChange = (): void => { fsBtn.textContent = fsGlyph(); };
+    document.addEventListener('fullscreenchange', onFsChange);
+    this.cleanups.push(() => document.removeEventListener('fullscreenchange', onFsChange));
+    const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudBest, this.hudLabel, this.hudLives, muteBtn, fsBtn, pauseBtn]);
 
     this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
 
@@ -680,6 +695,8 @@ export class GameHost {
 
   private teardown(): void {
     this.running = false;
+    this.cleanups.forEach((fn) => fn());
+    this.cleanups = [];
     if (this.startedAt > 0) {
       addPlayTime(performance.now() - this.startedAt);
       this.startedAt = 0;

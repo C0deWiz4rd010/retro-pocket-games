@@ -110,6 +110,7 @@ export const en: Dict = {
   'game.keepPlaying': 'Keep playing',
   'game.rules': 'How to play',
   'game.back': 'Back',
+  'settings.fullscreen': 'Fullscreen',
   'home.search': 'Search games…',
   'home.favorites': 'FAVORITES',
   'home.library': 'LIBRARY',

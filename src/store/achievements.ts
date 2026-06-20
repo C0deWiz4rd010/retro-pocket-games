@@ -55,6 +55,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'lightsout-solve', title: 'Lights Out', desc: 'Solve a Lights Out board', icon: '💡', tokens: 6, test: (x) => x.gameId === 'lightsout' && (x.custom.moves ?? 99) >= 0 && x.score >= 50 },
   { id: 'pinball-5k', title: 'Silver Ball', desc: 'Score 5,000 in Pinball', icon: '🎰', tokens: 8, test: (x) => x.gameId === 'pinball' && x.score >= 5000 },
   { id: 'stacker-15', title: 'Sky High', desc: 'Stack 15 blocks', icon: '🧱', tokens: 6, test: (x) => x.gameId === 'stacker' && x.score >= 15 },
+  { id: 'galaga-w5', title: 'Wing Commander', desc: 'Reach wave 5 in Galaga', icon: '🛸', tokens: 8, test: (x) => x.gameId === 'galaga' && (x.custom.wave ?? 0) >= 5 },
+  { id: 'missile-w5', title: 'City Saviour', desc: 'Defend through wave 5 in Missile Command', icon: '🚨', tokens: 8, test: (x) => x.gameId === 'missile' && (x.custom.wave ?? 0) >= 5 },
+  { id: 'doodle-100', title: 'To the Moon', desc: 'Reach height 100 in Doodle Jump', icon: '⬆️', tokens: 8, test: (x) => x.gameId === 'doodle' && (x.custom.height ?? 0) >= 100 },
+  { id: 'tron-5wins', title: 'Light Cycle Legend', desc: 'Win 5 rounds in one Tron run', icon: '🏍️', tokens: 10, test: (x) => x.gameId === 'tron' && (x.custom.wins ?? 0) >= 5 },
+  { id: 'secret-marathon', title: 'Insert Coin Forever', desc: 'Play 250 games', icon: '🪙', tokens: 30, secret: true, test: (x) => x.gamesPlayed >= 250 },
 
   ...GAMES.filter((g) => g.polish?.release === 'featured').map((g): Achievement => ({
     id: `${g.id}-signature`,

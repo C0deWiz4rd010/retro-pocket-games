@@ -146,7 +146,7 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx('hit');
     if (lives <= 0) {
       over = true;
-      ctx.gameOver(score, { dots: dotCount });
+      ctx.gameOver(score, { dots: dotCount, cleared: level - 1 });
       return;
     }
     pac.x = start.x;

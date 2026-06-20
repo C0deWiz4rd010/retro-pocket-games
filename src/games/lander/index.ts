@@ -36,6 +36,7 @@ export default function createGame(ctx: GameContext): Game {
   let level = 1;
   let lives = 3;
   let landedCount = 0;
+  let bestLandFuel = 0;
   let score = 0;
   let windStrength = (ctx.rng.next() - 0.5) * 14;
   let windAngle = 0;
@@ -210,6 +211,7 @@ export default function createGame(ctx: GameContext): Game {
         const soft = ship.vy < 32 && Math.abs(ship.vx) < 22 && Math.abs(ship.a) < 0.25;
         if (onPad && soft) {
           landedCount++;
+          bestLandFuel = Math.max(bestLandFuel, Math.round(ship.fuel));
           const gain = 100 * padMult + Math.round(ship.fuel) * 2;
           score += gain;
           ctx.hud.setScore(score);
@@ -224,7 +226,7 @@ export default function createGame(ctx: GameContext): Game {
           ctx.hud.setLives(lives);
           if (lives <= 0) {
             over = true;
-            ctx.gameOver(score, { landed: landedCount, level });
+            ctx.gameOver(score, { landed: landedCount, level, fuel: bestLandFuel });
           } else {
             ctx.hud.toast('CRASHED!');
             resetShip();

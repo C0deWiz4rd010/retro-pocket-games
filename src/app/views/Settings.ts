@@ -173,6 +173,7 @@ function rows(rerender: () => void): HTMLElement[] {
     el('div', { class: 'section-title' }, [t('settings.audio')]),
     row(t('settings.volume'), slider(s.audio.master, (master) => patchAudio({ master }))),
     row(t('settings.sfx'), toggle(s.audio.sfx, (sfx) => patchAudio({ sfx }))),
+    row(t('settings.music'), toggle(s.audio.music, (music) => patchAudio({ music }))),
     row(t('settings.muteOnBlur'), toggle(s.audio.muteOnBlur, (muteOnBlur) => patchAudio({ muteOnBlur }))),
 
     el('div', { class: 'section-title' }, [t('settings.controls')]),
@@ -228,7 +229,7 @@ function rows(rerender: () => void): HTMLElement[] {
       }, [`⟲ ${t('settings.reset')}`]),
     ]),
     el('div', { style: 'text-align:center;color:var(--text-muted);font-size:11px;padding-bottom:20px' }, [
-      t('settings.footer'),
+      `${t('settings.footer')} · v${import.meta.env.VITE_APP_VERSION ?? '0.0.0'}`,
     ]),
   ];
 }

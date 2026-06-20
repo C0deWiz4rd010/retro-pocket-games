@@ -24,11 +24,13 @@ export default function createGame(ctx: GameContext): Game {
   let score = 0;
   let moves = 24;
   let combo = 0;
+  let level = 1; // Feature: level progression
+  let target = 3500;
   let t = 0;
   let over = false;
 
   ctx.hud.setScore(score);
-  ctx.hud.setLabel(`MOVES ${moves}`);
+  ctx.hud.setLabel(`MOVES ${moves} · L1`);
 
   const at = (c: number, r: number): number => board[idx(COLS, c, r)] ?? -1;
   const collectGroup = (c: number, r: number): number[] => {
@@ -74,22 +76,43 @@ export default function createGame(ctx: GameContext): Game {
     }
     moves--;
     combo++;
-    const pts = group.length * group.length * 8 * combo;
+    const color = at(c, r);
+    const cells = new Set(group);
+    // Feature: color-bomb chain — a huge group also clears every same-colour crystal
+    if (group.length >= 8) {
+      for (let i = 0; i < COLS * ROWS; i++) if (board[i] === color) cells.add(i);
+      ctx.hud.toast('COLOR BOMB!');
+      ctx.fx.screenShake(5, 0.16);
+    }
+    // Feature: large clears refund moves
+    if (group.length >= 7) {
+      moves += 2;
+      ctx.fx.floatingText('+2 MOVES', W / 2, oy - 44, 0x3ddc84);
+    }
+    const pts = cells.size * cells.size * (group.length >= 8 ? 11 : 8) * combo;
     score += pts;
-    for (const i of group) {
+    for (const i of cells) {
       const gx = ox + (i % COLS) * cell + cell / 2;
       const gy = oy + Math.floor(i / COLS) * cell + cell / 2;
-      burst(sparks, ctx.rng, gx, gy, COLORS[board[i]!]!, 4, 90);
+      burst(sparks, ctx.rng, gx, gy, COLORS[board[i]!] ?? 0xffffff, 4, 90);
       board[i] = -1;
     }
     collapse();
+    // Feature: level progression — hit the target to advance with bonus moves
+    if (score >= target) {
+      level++;
+      moves += 12;
+      target += 3500 + level * 1200;
+      ctx.hud.toast(`LEVEL ${level}! +12 MOVES`);
+      ctx.audio.sfx('levelup');
+    }
     ctx.hud.setScore(score);
-    ctx.hud.setLabel(`MOVES ${moves} x${combo}`);
+    ctx.hud.setLabel(`MOVES ${moves} · L${level} x${combo}`);
     ctx.fx.floatingText(`+${pts}`, W / 2, oy - 22, 0xffd200);
     ctx.audio.sfx(group.length >= 6 ? 'powerup' : 'clear');
     if (moves <= 0) {
       over = true;
-      ctx.gameOver(score, { combo });
+      ctx.gameOver(score, { combo, level });
     }
   });
 

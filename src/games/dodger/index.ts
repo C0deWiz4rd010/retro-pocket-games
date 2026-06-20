@@ -21,7 +21,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const player = { x: W / 2, y: H - 50, r: 12 };
   let meteors: Meteor[] = [];
-  let pickups: Pickup[] = []; // Feature: power-ups + coins
+  const pickups: Pickup[] = []; // Feature: power-ups + coins
   const stars: { x: number; y: number; s: number }[] = [];
   for (let i = 0; i < 40; i++) stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 2 + 0.5 });
   let score = 0;

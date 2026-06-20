@@ -1421,6 +1421,63 @@
   color: var(--text);
 }
 
+/* ── First-run onboarding ── */
+.onboard__card {
+  position: relative;
+  width: min(340px, 86vw);
+  padding: 28px 24px 22px;
+  text-align: center;
+  background: var(--surface);
+  border: var(--border);
+  border-radius: 16px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+}
+.onboard__skip {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.onboard__glyph {
+  font-size: 46px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.onboard__title {
+  font-weight: 800;
+  font-size: 19px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.onboard__body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  min-height: 64px;
+  margin-bottom: 14px;
+}
+.onboard__dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.onboard__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  transition: background 0.2s, transform 0.2s;
+}
+.onboard__dot.is-on {
+  background: var(--primary);
+  transform: scale(1.25);
+}
+
 /* ── Pause sub-panels (controls / rules / accessibility) ── */
 .pause-list {
   list-style: none;

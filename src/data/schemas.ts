@@ -99,6 +99,8 @@ export type Leaderboard = z.infer<typeof LeaderboardSchema>;
 export const PrefsSchema = z.object({
   favorites: z.array(z.string()).default([]),
   tutorialsSeen: z.array(z.string()).default([]),
+  /** First-run app onboarding completed (bump the suffix to re-show after a redesign). */
+  onboardedV1: z.boolean().default(false),
 });
 export type Prefs = z.infer<typeof PrefsSchema>;
 

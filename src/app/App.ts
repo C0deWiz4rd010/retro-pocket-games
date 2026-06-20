@@ -5,7 +5,8 @@ import { COLLECTIONS, GAMES, GROUP_ORDER, getGame, type GameCollection, type Gam
 import { profile, xpForLevel } from '@store/profile';
 import { getBest, getLastPlayed, getCustomBest, preloadScores, clearAllLastPlayed } from '@store/scores';
 import { currentStreak, playedToday, last7Days } from '@store/dailyStore';
-import { isFavorite, toggleFavorite } from '@store/prefs';
+import { isFavorite, toggleFavorite, hasOnboarded, markOnboarded } from '@store/prefs';
+import { showOnboarding } from './onboarding';
 import { GameHost } from './GameHost';
 import { renderSettings } from './views/Settings';
 import { renderBios } from './views/Bios';
@@ -101,6 +102,12 @@ export class App {
     });
 
     this.route();
+
+    // First-run onboarding (5 screens) over the home screen.
+    if (!hasOnboarded() && (location.hash === '' || location.hash === '#/')) {
+      const ov = showOnboarding(() => markOnboarded());
+      (document.querySelector('.screen') ?? document.body).append(ov);
+    }
   }
 
   private toggleKeyboardHelp(): void {

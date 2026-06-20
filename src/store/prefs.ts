@@ -23,6 +23,14 @@ export function toggleFavorite(id: string): boolean {
   return next.includes(id);
 }
 
+export const hasOnboarded = (): boolean => prefs().onboardedV1;
+
+export function markOnboarded(): void {
+  if (prefs().onboardedV1) return;
+  prefs.set({ ...prefs(), onboardedV1: true });
+  persist();
+}
+
 export const hasSeenTutorial = (id: string): boolean => prefs().tutorialsSeen.includes(id);
 
 export function markTutorialSeen(id: string): void {

@@ -34,7 +34,10 @@ export default function createGame(ctx: GameContext): Game {
   let ox = 0;
   let oy = 0;
   let totalPushes = 0;
+  let steps = 0;
   let over = false;
+  // Feature: undo history (snapshots of box layout + player + counters)
+  const history: { boxes: boolean[][]; px: number; py: number; pushes: number; steps: number }[] = [];
 
   const load = (li: number): void => {
     const map = LEVELS[li]!;
@@ -65,11 +68,28 @@ export default function createGame(ctx: GameContext): Game {
   load(0);
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel(`LEVEL 1`);
 
   const solved = (): boolean => {
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (boxes[r]![c] && !goals[r]![c]) return false;
     return true;
+  };
+  const progress = (): { on: number; total: number } => {
+    let on = 0, total = 0;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      if (goals[r]![c]) total++;
+      if (boxes[r]![c] && goals[r]![c]) on++;
+    }
+    return { on, total };
+  };
+  const setLabel = (): void => {
+    const p = progress();
+    ctx.hud.setLabel(`L${levelIdx + 1} · ${p.on}/${p.total} · ${steps} steps`);
+  };
+  setLabel();
+
+  const snapshot = (): void => {
+    history.push({ boxes: boxes.map((row) => row.slice()), px, py, pushes: totalPushes, steps });
+    if (history.length > 200) history.shift();
   };
 
   const move = (a: Action | Dir): void => {
@@ -83,13 +103,18 @@ export default function createGame(ctx: GameContext): Game {
       const bx = nx + d.x;
       const by = ny + d.y;
       if (walls[by]?.[bx] || boxes[by]?.[bx]) return;
+      snapshot();
       boxes[ny]![nx] = false;
       boxes[by]![bx] = true;
       totalPushes++;
       ctx.audio.sfx('blip');
+    } else {
+      snapshot();
     }
     px = nx;
     py = ny;
+    steps++;
+    setLabel();
     draw();
     if (solved()) {
       ctx.audio.sfx('levelup');
@@ -97,16 +122,48 @@ export default function createGame(ctx: GameContext): Game {
         levelIdx++;
         ctx.hud.toast(`LEVEL ${levelIdx + 1}`);
         load(levelIdx);
-        ctx.hud.setLabel(`LEVEL ${levelIdx + 1}`);
+        history.length = 0;
+        setLabel();
         draw();
       } else {
         over = true;
         ctx.hud.toast('ALL CLEAR!');
-        ctx.gameOver(Math.max(100, 3000 - totalPushes * 20), { pushes: totalPushes });
+        ctx.gameOver(Math.max(100, 3000 - totalPushes * 20 - steps * 2), { pushes: totalPushes });
       }
     }
   };
-  const offDown = ctx.input.on('down', move);
+
+  // Feature: undo last move
+  const undo = (): void => {
+    if (over || !history.length) return;
+    const s = history.pop()!;
+    boxes = s.boxes;
+    px = s.px;
+    py = s.py;
+    totalPushes = s.pushes;
+    steps = s.steps;
+    ctx.audio.sfx('select');
+    setLabel();
+    draw();
+  };
+  // Feature: restart the current level
+  const restart = (): void => {
+    if (over) return;
+    load(levelIdx);
+    history.length = 0;
+    steps = 0;
+    totalPushes = 0;
+    ctx.audio.sfx('blip');
+    setLabel();
+    draw();
+  };
+
+  const onDown = (a: Action | Dir): void => {
+    if (a === 'b' || a === 'select') undo();
+    else if (a === 'start') restart();
+    else move(a);
+  };
+  const offDown = ctx.input.on('down', onDown);
   const offSwipe = ctx.input.on('swipe', move);
 
   function draw(): void {

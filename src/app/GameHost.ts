@@ -26,7 +26,7 @@ import { icon } from '@ui/icons';
 import { enterPop } from '@ui/motion';
 import { attachTooltip } from '@ui/tooltip';
 import type { Game, GameContext, Hud } from '@core/types';
-import type { GameMeta } from '@core/Registry';
+import type { GameMeta, GameMode } from '@core/Registry';
 
 export interface RunOptions {
   seed?: number;
@@ -34,6 +34,8 @@ export interface RunOptions {
   daily?: boolean; // counts toward the daily streak
   timeScale?: number; // daily modifier: simulation speed multiplier
   scoreMult?: number; // daily modifier: score multiplier applied at game over
+  mode?: GameMode;
+  practice?: boolean; // does not save scores, rewards, daily streaks, or achievements
 }
 
 /**
@@ -396,17 +398,32 @@ export class GameHost {
     const mult = this.opts.scoreMult ?? 1;
     const score = mult !== 1 ? Math.round(rawScore * mult) : rawScore;
 
+    const practice = Boolean(this.opts.practice);
     const prevBest = getBest(this.meta.id);
-    const isBest = await submitScore(this.meta.id, score, custom);
-    const reward = awardRun(this.meta.id, score);
+    const isBest = practice ? false : await submitScore(this.meta.id, score, custom);
+    const masteryRank = this.masteryRankForRun(score, custom);
+    const reward = practice
+      ? {
+        leveledUp: false,
+        newLevel: 0,
+        xpGain: 0,
+        tokenGain: 0,
+        breakdown: { base: 0, score: 0, improvement: 0, daily: 0, mastery: 0 },
+      }
+      : awardRun(this.meta.id, score, {
+        reward: this.meta.reward,
+        previousBest: prevBest,
+        daily: Boolean(this.opts.daily),
+        masteryRank,
+      });
     const { leveledUp, newLevel, xpGain } = reward;
 
     // Daily streak (only when this run came from the daily challenge).
     let streak = currentStreak();
-    if (this.opts.daily) streak = recordDailyResult(this.meta.id, score, this.opts.label ?? '');
+    if (this.opts.daily && !practice) streak = recordDailyResult(this.meta.id, score, this.opts.label ?? '');
 
     // Achievements — evaluated centrally from the run payload + profile, no per-game code.
-    const unlocked = evaluateAchievements(buildContext(this.meta.id, score, custom, streak));
+    const unlocked = practice ? [] : evaluateAchievements(buildContext(this.meta.id, score, custom, streak));
 
     const scoreEl = el('div', { class: 'panel__score' }, ['0']);
     this.countUp(scoreEl, score);
@@ -416,17 +433,27 @@ export class GameHost {
         ? `${t('game.newBest')}  (+${(score - prevBest).toLocaleString()})`
         : isBest
           ? t('game.newBest')
-          : t('game.best', { n: prevBest });
+          : practice
+            ? 'Practice run - score not saved'
+            : t('game.best', { n: prevBest });
+    const ratio = this.scoreRatio(score);
+    const title = this.gameOverTitle(ratio, isBest, practice);
     const rows: (Node | string)[] = [
-      el('div', { class: 'panel__title' }, [t('game.over')]),
+      el('div', { class: 'panel__title' }, [title]),
       scoreEl,
       el('div', { style: 'color:var(--text-muted);font-size:13px' }, [bestLine]),
-      el('div', { class: 'panel__xp' }, [`+${xpGain} XP`]),
+      el('div', { class: 'run-comment' }, [this.gameOverComment(ratio, isBest, practice)]),
+      this.performanceGrid(score, prevBest, ratio, custom),
+      el('div', { class: 'panel__xp' }, [practice ? 'Practice mode: rewards paused' : `+${xpGain} Pixel XP  +${reward.tokenGain} Pocket Chips`]),
+      this.rewardBreakdown(reward.breakdown),
     ];
     if (leveledUp) rows.push(el('div', { style: 'color:var(--ok);font-size:13px' }, [t('game.levelUp', { n: newLevel })]));
+    if (this.opts.daily) rows.push(el('div', { class: 'daily-progress' }, [
+      `Daily target: ${Math.min(score, this.meta.dailyRules?.targetScore ?? score)} / ${this.meta.dailyRules?.targetScore ?? score}`,
+    ]));
 
     // Leaderboard: offer a name entry if the score cracks the local top 10.
-    if (qualifies(this.meta.id, score)) {
+    if (!practice && qualifies(this.meta.id, score)) {
       rows.push(this.buildNameEntry(score));
     }
 
@@ -485,6 +512,73 @@ export class GameHost {
       else node.textContent = String(target);
     };
     requestAnimationFrame(step);
+  }
+
+  private scoreRatio(score: number): number {
+    return score / Math.max(1, this.meta.reward?.targetScore ?? 1000);
+  }
+
+  private gameOverTitle(ratio: number, isBest: boolean, practice: boolean): string {
+    if (practice) return 'PRACTICE COMPLETE';
+    if (isBest) return 'NEW PERSONAL BEST';
+    if (ratio >= 1.2) return 'ELITE RUN';
+    if (ratio >= 0.65) return 'SOLID RUN';
+    return 'WARM-UP RUN';
+  }
+
+  private gameOverComment(ratio: number, isBest: boolean, practice: boolean): string {
+    if (practice) return 'Good rehearsal. Switch to Challenge when the rhythm feels locked in.';
+    if (isBest && ratio >= 1) return 'Clean execution and a new record. That one belongs on the shelf.';
+    if (ratio >= 1.2) return 'Great run. You beat the target pace and left room for a leaderboard push.';
+    if (ratio >= 0.65) return 'Nice middle stretch. One fewer risky mistake and this turns into a record chase.';
+    return 'Rough start, useful data. Reset fast and focus on the first safe scoring pattern.';
+  }
+
+  private performanceGrid(score: number, prevBest: number, ratio: number, custom: Record<string, number>): HTMLElement {
+    const delta = prevBest > 0 ? score - prevBest : score;
+    return el('div', { class: 'performance-grid' }, [
+      this.performanceCell(`${Math.round(ratio * 100)}%`, 'Target'),
+      this.performanceCell(delta >= 0 ? `+${delta}` : String(delta), 'Best delta'),
+      this.performanceCell(`${this.masteryRankForRun(score, custom)}/3`, 'Mastery'),
+    ]);
+  }
+
+  private performanceCell(value: string, label: string): HTMLElement {
+    return el('div', { class: 'performance-cell' }, [
+      el('b', {}, [value]),
+      el('span', {}, [label]),
+    ]);
+  }
+
+  private masteryRankForRun(score: number, custom: Record<string, number>): number {
+    let rank = 0;
+    for (const goal of this.meta.masteryGoals ?? []) {
+      const value = goal.metric === 'score' ? score : goal.metric === 'custom' ? custom[goal.customKey ?? ''] ?? 0 : 0;
+      if (value >= goal.target) rank++;
+    }
+    return Math.min(3, rank);
+  }
+
+  private rewardBreakdown(breakdown: {
+    base: number;
+    score: number;
+    improvement: number;
+    daily: number;
+    mastery: number;
+  }): HTMLElement {
+    const rows = [
+      ['Base', breakdown.base],
+      ['Score', breakdown.score],
+      ['Improvement', breakdown.improvement],
+      ['Daily', breakdown.daily],
+      ['Mastery', breakdown.mastery],
+    ].filter(([, value]) => Number(value) > 0);
+    return el('div', { class: 'reward-breakdown' }, rows.map(([label, value]) =>
+      el('div', { class: 'reward-breakdown__row' }, [
+        el('span', {}, [String(label)]),
+        el('b', {}, [`+${value}`]),
+      ]),
+    ));
   }
 
   private buildNameEntry(score: number): HTMLElement {

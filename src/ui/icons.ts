@@ -40,6 +40,7 @@ const ICONS = {
   skip: SkipForward,
   soundOff: VolumeX,
   soundOn: Volume2,
+  star: Star,
   surprise: Dices,
   trash: Trash2,
   trophy: Trophy,

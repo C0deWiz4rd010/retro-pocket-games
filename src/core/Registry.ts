@@ -3,6 +3,45 @@ import { controlsForGame, type ControlProfile } from './controlProfiles';
 
 export type Kit = 'grid' | 'shooter' | 'paddle' | 'vector' | 'sidescroll' | 'standalone';
 export type Orientation = 'portrait' | 'landscape' | 'any';
+export type GameCollection =
+  | 'quick'
+  | 'classic'
+  | 'neon'
+  | 'one-thumb'
+  | 'brain'
+  | 'puzzle'
+  | 'action'
+  | 'score';
+
+export interface RewardProfile {
+  targetScore: number;
+  sessionMin: number;
+  sessionMax: number;
+  difficulty: number;
+}
+
+export interface MasteryGoal {
+  id: string;
+  label: string;
+  target: number;
+  metric: 'score' | 'plays' | 'custom';
+  customKey?: string;
+}
+
+export interface DailyRules {
+  allowedModifiers: ('classic' | 'turbo' | 'zen' | 'sudden')[];
+  targetScore: number;
+}
+
+export type GameMode = 'practice' | 'challenge' | 'endless';
+
+export interface GamePolish {
+  release: 'classic' | 'new' | 'featured';
+  hotScore: number;
+  previewSpeed: 'calm' | 'medium' | 'fast';
+  tips: string[];
+  modes: GameMode[];
+}
 
 export interface GameMeta {
   id: string;
@@ -22,6 +61,12 @@ export interface GameMeta {
   assetManifest?: string;
   defaultHud?: 'score' | 'score-lives' | 'score-level' | 'minimal';
   tutorialSteps?: string[];
+  collections?: GameCollection[];
+  sessionLength?: 'quick' | 'medium' | 'deep';
+  reward?: RewardProfile;
+  masteryGoals?: MasteryGoal[];
+  dailyRules?: DailyRules;
+  polish?: GamePolish;
   available: boolean;
   loader?: () => Promise<GameModule>;
 }
@@ -239,15 +284,6 @@ export const GAMES: GameMeta[] = [
   mk('echorunner', 'Echo Runner', 'grid', 'Brain', 'portrait', '#60a5fa', 'ER', 'Watch the echo path, then replay it under pressure.', () => import('@games/echorunner')),
 ];
 
-for (const game of GAMES) {
-  game.controls ??= controlsForGame({ id: game.id, kit: game.kit, orientation: game.orientation });
-  game.difficulty ??= 'variable';
-  game.tags ??= [game.group.toLowerCase(), game.kit];
-  game.cover ??= { kind: 'generated', motif: coverMotif(game.kit, game.group) };
-  game.defaultHud ??= defaultHudForKit(game.kit);
-  game.tutorialSteps ??= tutorialFor(game);
-}
-
 function mk(
   id: string,
   title: string,
@@ -316,3 +352,172 @@ export const GROUP_ORDER: GameMeta['group'][] = [
   'Jump',
   'Physics',
 ];
+
+export const COLLECTIONS: { id: GameCollection; label: string; blurb: string }[] = [
+  { id: 'quick', label: 'Quick Runs', blurb: 'Fast sessions for one more try.' },
+  { id: 'classic', label: 'Classics', blurb: 'Arcade roots and familiar legends.' },
+  { id: 'neon', label: 'Neon Originals', blurb: 'Modern pocket challenges with extra juice.' },
+  { id: 'one-thumb', label: 'One Thumb', blurb: 'Tap, swipe, or drag-friendly games.' },
+  { id: 'brain', label: 'Brain Cabinet', blurb: 'Logic, memory, words, and deduction.' },
+  { id: 'puzzle', label: 'Puzzle Cabinet', blurb: 'Boards, cascades, matches, and clears.' },
+  { id: 'action', label: 'Action Bay', blurb: 'Movement, survival, shooting, and timing.' },
+  { id: 'score', label: 'Score Chasers', blurb: 'Built for high-score grinding.' },
+];
+
+const NEON_ORIGINALS = new Set([
+  'pixeldash',
+  'neonrider',
+  'blockcollapse',
+  'spaceblaster',
+  'jumpquest',
+  'retrosnake',
+  'dotcollector',
+  'memorymatch',
+  'brickbreaker',
+  'turbodrift',
+  'colorswitch',
+  'galacticinvaders',
+  'neonrush',
+  'crystalvault',
+  'lasermaze',
+  'starforge',
+  'driftracer',
+  'runereactor',
+  'cometsweep',
+  'prismdash',
+  'gearlock',
+  'echorunner',
+]);
+
+const CLASSICS = new Set([
+  'snake',
+  'tetris',
+  'pong',
+  'breakout',
+  'invaders',
+  'flappy',
+  'g2048',
+  'minesweeper',
+  'asteroids',
+  'pacman',
+  'frogger',
+  'galaga',
+  'centipede',
+  'missile',
+  'bomberman',
+  'qbert',
+  'doodle',
+  'simon',
+  'lander',
+  'tron',
+]);
+
+function collectionsFor(game: GameMeta): GameCollection[] {
+  const out = new Set<GameCollection>();
+  if (NEON_ORIGINALS.has(game.id)) out.add('neon');
+  if (CLASSICS.has(game.id)) out.add('classic');
+  if (game.group === 'Brain') out.add('brain');
+  if (game.group === 'Puzzle') out.add('puzzle');
+  if (['Arcade', 'Skill', 'Shooter', 'Jump', 'Paddle', 'Physics'].includes(game.group)) out.add('action');
+  if (game.controls?.preset === 'tap' || game.controls?.preset === 'swipe' || game.controls?.preset === 'drag') out.add('one-thumb');
+  if (game.kit !== 'standalone' || game.group === 'Skill' || game.group === 'Shooter') out.add('score');
+  if (sessionLengthFor(game) === 'quick') out.add('quick');
+  return [...out];
+}
+
+function sessionLengthFor(game: GameMeta): NonNullable<GameMeta['sessionLength']> {
+  if (['quickmath', 'reflex', 'targettap', 'rps', 'higherlower', 'pulsecatch', 'lockpick', 'gearlock', 'colorclash', 'hotcold'].includes(game.id)) {
+    return 'quick';
+  }
+  if (['sudoku', 'checkers', 'battleship', 'sokoban', 'reversi', 'blackjack', 'yahtzee'].includes(game.id)) {
+    return 'deep';
+  }
+  if (game.group === 'Brain' && game.kit !== 'standalone') return 'medium';
+  return game.kit === 'standalone' ? 'quick' : 'medium';
+}
+
+function rewardFor(game: GameMeta): RewardProfile {
+  const baseTarget: Record<GameMeta['group'], number> = {
+    Arcade: 900,
+    Puzzle: 1200,
+    Brain: 700,
+    Skill: 1000,
+    Shooter: 1400,
+    Paddle: 1100,
+    Jump: 850,
+    Physics: 900,
+  };
+  const session = sessionLengthFor(game);
+  const difficulty = game.difficulty === 'hard' ? 1.25 : game.difficulty === 'easy' ? 0.85 : 1;
+  return {
+    targetScore: baseTarget[game.group],
+    sessionMin: session === 'quick' ? 1 : session === 'deep' ? 4 : 2,
+    sessionMax: session === 'quick' ? 2 : session === 'deep' ? 8 : 4,
+    difficulty,
+  };
+}
+
+function masteryGoalsFor(game: GameMeta): MasteryGoal[] {
+  const scoreTarget = rewardFor(game).targetScore;
+  const goals: MasteryGoal[] = [
+    { id: `${game.id}-bronze`, label: `Score ${Math.round(scoreTarget * 0.5)}`, target: Math.round(scoreTarget * 0.5), metric: 'score' },
+    { id: `${game.id}-silver`, label: `Score ${scoreTarget}`, target: scoreTarget, metric: 'score' },
+    { id: `${game.id}-gold`, label: `Score ${Math.round(scoreTarget * 1.8)}`, target: Math.round(scoreTarget * 1.8), metric: 'score' },
+  ];
+  if (game.kit === 'shooter') goals[2] = { id: `${game.id}-wave`, label: 'Reach wave 3', target: 3, metric: 'custom', customKey: 'wave' };
+  if (game.id.includes('snake')) goals[2] = { id: `${game.id}-length`, label: 'Reach length 30', target: 30, metric: 'custom', customKey: 'length' };
+  if (game.kit === 'paddle') goals[2] = { id: `${game.id}-clear`, label: 'Clear level 2', target: 2, metric: 'custom', customKey: 'level' };
+  return goals;
+}
+
+function dailyRulesFor(game: GameMeta): DailyRules {
+  const allowedModifiers: DailyRules['allowedModifiers'] =
+    game.group === 'Brain' || game.kit === 'standalone'
+      ? ['classic', 'zen']
+      : game.group === 'Shooter' || game.group === 'Skill' || game.group === 'Jump'
+        ? ['classic', 'turbo', 'sudden']
+        : ['classic', 'turbo', 'zen'];
+  return { allowedModifiers, targetScore: Math.round(rewardFor(game).targetScore * 0.8) };
+}
+
+function polishFor(game: GameMeta): GamePolish {
+  const release: GamePolish['release'] = NEON_ORIGINALS.has(game.id) ? 'featured' : CLASSICS.has(game.id) ? 'classic' : 'new';
+  const tips = tipsFor(game);
+  const modes: GameMode[] = ['practice', 'challenge'];
+  if (['Arcade', 'Skill', 'Shooter', 'Paddle', 'Jump', 'Physics'].includes(game.group)) modes.push('endless');
+  return {
+    release,
+    hotScore: Math.round(rewardFor(game).targetScore * 1.25),
+    previewSpeed: game.group === 'Skill' || game.group === 'Shooter' || game.group === 'Jump' ? 'fast' : game.group === 'Brain' ? 'calm' : 'medium',
+    tips,
+    modes,
+  };
+}
+
+function tipsFor(game: GameMeta): string[] {
+  const generic = [
+    `Watch the ${game.group.toLowerCase()} rhythm before chasing risky points.`,
+    `Your next mastery target is usually safer than one huge run.`,
+  ];
+  if (game.kit === 'grid') return ['Plan one move ahead before committing.', 'Use corners and lanes to keep escape routes open.', ...generic];
+  if (game.kit === 'shooter') return ['Prioritize threats closest to the breach line.', 'Short controlled movement beats panic dodging.', ...generic];
+  if (game.kit === 'paddle') return ['Hit near the paddle edge to change the angle.', 'Recover center position after every risky save.', ...generic];
+  if (game.kit === 'vector') return ['Feather inputs instead of holding them forever.', 'Momentum is a resource; spend it deliberately.', ...generic];
+  if (game.kit === 'sidescroll') return ['Tap early and correct gently.', 'Coins are optional if the route is unsafe.', ...generic];
+  return ['Read the board before the timer pressures you.', 'A clean streak beats a rushed mistake.', ...generic];
+}
+
+for (const game of GAMES) {
+  game.controls ??= controlsForGame({ id: game.id, kit: game.kit, orientation: game.orientation });
+  game.difficulty ??= 'variable';
+  game.tags ??= [game.group.toLowerCase(), game.kit];
+  game.cover ??= { kind: 'generated', motif: coverMotif(game.kit, game.group) };
+  game.defaultHud ??= defaultHudForKit(game.kit);
+  game.tutorialSteps ??= tutorialFor(game);
+  game.collections ??= collectionsFor(game);
+  game.sessionLength ??= sessionLengthFor(game);
+  game.reward ??= rewardFor(game);
+  game.masteryGoals ??= masteryGoalsFor(game);
+  game.dailyRules ??= dailyRulesFor(game);
+  game.polish ??= polishFor(game);
+}

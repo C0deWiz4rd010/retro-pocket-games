@@ -26,7 +26,7 @@ export function pickDailyGame(): GameMeta {
  *  - `label` is an i18n key for the hero + HUD banner
  */
 export interface DailyModifier {
-  id: string;
+  id: 'classic' | 'turbo' | 'zen' | 'sudden';
   label: string;
   timeScale: number;
   scoreMult: number;
@@ -40,9 +40,11 @@ const MODIFIERS: DailyModifier[] = [
 ];
 
 /** Today's modifier — deterministic from the date (offset so it differs from game pick). */
-export function dailyModifier(): DailyModifier {
+export function dailyModifier(game: GameMeta = pickDailyGame()): DailyModifier {
   const rng = new RNG((dailySeed() ^ 0x5bd1e995) >>> 0);
-  return rng.pick(MODIFIERS);
+  const allowed = new Set(game.dailyRules?.allowedModifiers ?? MODIFIERS.map((m) => m.id));
+  const pool = MODIFIERS.filter((m) => allowed.has(m.id));
+  return rng.pick(pool.length ? pool : MODIFIERS);
 }
 
 /** Milliseconds until local midnight (when the next daily challenge unlocks). */

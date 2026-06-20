@@ -56,6 +56,15 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'pinball-5k', title: 'Silver Ball', desc: 'Score 5,000 in Pinball', icon: '🎰', tokens: 8, test: (x) => x.gameId === 'pinball' && x.score >= 5000 },
   { id: 'stacker-15', title: 'Sky High', desc: 'Stack 15 blocks', icon: '🧱', tokens: 6, test: (x) => x.gameId === 'stacker' && x.score >= 15 },
 
+  ...GAMES.filter((g) => g.polish?.release === 'featured').map((g): Achievement => ({
+    id: `${g.id}-signature`,
+    title: `${g.title} Specialist`,
+    desc: `Beat the signature score in ${g.title}`,
+    icon: g.glyph,
+    tokens: 7,
+    test: (x) => x.gameId === g.id && x.score >= Math.round((g.reward?.targetScore ?? 1000) * 1.15),
+  })),
+
   // ── meta achievements (lifetime / cross-game) ──
   { id: 'first-play', title: 'Welcome, Player One', desc: 'Play your first game', icon: '🕹️', tokens: 2, test: () => true },
   { id: 'play-10', title: 'Getting Warmed Up', desc: 'Play 10 games', icon: '🎮', tokens: 5, test: (x) => x.gamesPlayed >= 10 },

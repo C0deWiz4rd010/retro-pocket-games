@@ -57,3 +57,7 @@ gl-*.png
 dom.html
 chrome-err.txt
 preview.log
+
+# Agent / local scratch
+memory/
+.claude/

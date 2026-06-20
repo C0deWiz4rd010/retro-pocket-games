@@ -19,7 +19,9 @@ export default function createGame(ctx: GameContext): Game {
   let lives = 3;
   let angle = -Math.PI / 2;
   let speed = 2.2;
-  let arc = { a: 0, w: 0.55 };
+  let arc = { a: 0, w: 0.55, baseW: 0.55, repair: false };
+  let combo = 0; // Feature: lock-streak multiplier
+  let lockTimer = 0; // Feature: arc narrows over time
   let over = false;
   let t = 0;
 
@@ -28,8 +30,10 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setLabel('PIN 1/5');
 
   const newArc = (): void => {
-    arc = { a: ctx.rng.next() * Math.PI * 2, w: Math.max(0.24, 0.62 - level * 0.045) };
+    const w = Math.max(0.24, 0.62 - level * 0.045);
+    arc = { a: ctx.rng.next() * Math.PI * 2, w, baseW: w, repair: lives < 3 && ctx.rng.next() < 0.18 };
     speed = (2.1 + level * 0.22) * (ctx.rng.next() > 0.5 ? 1 : -1);
+    lockTimer = 0;
   };
   newArc();
 
@@ -38,21 +42,30 @@ export default function createGame(ctx: GameContext): Game {
     if (over) return;
     if (diff(angle, arc.a) < arc.w) {
       const acc = 1 - diff(angle, arc.a) / arc.w;
-      const pts = Math.round(120 + acc * 180 + level * 30);
+      combo++;
+      const mult = 1 + Math.floor(combo / 4);
+      const pts = Math.round((120 + acc * 180 + level * 30) * mult);
       score += pts;
       pin++;
+      if (arc.repair) {
+        lives = Math.min(3, lives + 1);
+        ctx.hud.setLives(lives);
+        ctx.hud.toast('+1 LIFE');
+      }
       ctx.hud.setScore(score);
-      ctx.fx.floatingText(`+${pts}`, cx, cy - 92, 0xffd200);
+      ctx.fx.floatingText(acc > 0.85 ? `PERFECT +${pts}` : `+${pts}`, cx, cy - 92, arc.repair ? 0x3ddc84 : 0xffd200);
+      if (combo >= 4 && combo % 4 === 0) ctx.hud.toast(`STREAK x${mult}`);
       ctx.audio.sfx(acc > 0.72 ? 'powerup' : 'coin');
-      burst(sparks, ctx.rng, cx + Math.cos(angle) * 88, cy + Math.sin(angle) * 88, 0xffd200, 18, 140);
+      burst(sparks, ctx.rng, cx + Math.cos(angle) * 88, cy + Math.sin(angle) * 88, arc.repair ? 0x3ddc84 : 0xffd200, 18, 140);
       if (pin > 5) {
         pin = 1;
         level++;
         ctx.fx.screenShake(4, 0.1);
       }
-      ctx.hud.setLabel(`PIN ${pin}/5`);
+      ctx.hud.setLabel(combo >= 4 ? `PIN ${pin}/5 x${mult}` : `PIN ${pin}/5`);
       newArc();
     } else {
+      combo = 0;
       lives--;
       ctx.hud.setLives(lives);
       ctx.audio.sfx('hit');
@@ -77,7 +90,7 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(cx, cy, r).stroke({ width: 2, color: 0x2d365a, alpha: 0.7 });
     }
     g.moveTo(cx + Math.cos(arc.a - arc.w) * 88, cy + Math.sin(arc.a - arc.w) * 88);
-    g.arc(cx, cy, 88, arc.a - arc.w, arc.a + arc.w).stroke({ width: 12, color: 0xffd200, alpha: 0.85 });
+    g.arc(cx, cy, 88, arc.a - arc.w, arc.a + arc.w).stroke({ width: 12, color: arc.repair ? 0x3ddc84 : 0xffd200, alpha: 0.85 });
     g.circle(cx, cy, 44).fill({ color: 0x111827 }).stroke({ width: 3, color: 0xb388ff });
     g.circle(cx + Math.cos(angle) * 88, cy + Math.sin(angle) * 88, 12).fill({ color: 0x22d3ee });
     g.rect(cx - 5, cy - 52, 10, 104).fill({ color: 0xffffff, alpha: 0.08 });
@@ -90,6 +103,9 @@ export default function createGame(ctx: GameContext): Game {
       t += dt;
       updateSparks(sparks, dt);
       angle += speed * dt;
+      // Feature: the lock window narrows the longer you wait — reward fast locks
+      lockTimer += dt;
+      arc.w = Math.max(arc.baseW * 0.4, arc.baseW - lockTimer * 0.07);
       draw();
     },
     destroy() {

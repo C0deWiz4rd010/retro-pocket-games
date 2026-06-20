@@ -7,6 +7,7 @@ interface Bumper {
   y: number;
   r: number;
   flash: number;
+  lit: boolean;
 }
 
 export default function createGame(ctx: GameContext): Game {
@@ -27,11 +28,14 @@ export default function createGame(ctx: GameContext): Game {
   let score = 0;
   let balls = 3;
   let over = false;
+  let combo = 0; // Feature: bumper-combo multiplier
+  let comboTimer = 0;
+  let nextExtra = 5000; // Feature: extra-ball milestones
 
   const bumpers: Bumper[] = [
-    { x: W * 0.3, y: H * 0.3, r: 22, flash: 0 },
-    { x: W * 0.7, y: H * 0.3, r: 22, flash: 0 },
-    { x: W * 0.5, y: H * 0.48, r: 26, flash: 0 },
+    { x: W * 0.3, y: H * 0.3, r: 22, flash: 0, lit: false },
+    { x: W * 0.7, y: H * 0.3, r: 22, flash: 0, lit: false },
+    { x: W * 0.5, y: H * 0.48, r: 26, flash: 0, lit: false },
   ];
 
   ctx.hud.setScore(0);
@@ -78,7 +82,7 @@ export default function createGame(ctx: GameContext): Game {
     g.rect(W - 6, 0, 6, H).fill({ color: 0x2b2b40 });
     g.rect(0, 0, W, 6).fill({ color: 0x2b2b40 });
     bumpers.forEach((b) => {
-      g.circle(b.x, b.y, b.r).fill({ color: b.flash > 0 ? 0xffffff : 0xef5350 });
+      g.circle(b.x, b.y, b.r).fill({ color: b.flash > 0 ? 0xffffff : b.lit ? 0x3ddc84 : 0xef5350 });
       g.circle(b.x, b.y, b.r * 0.5).fill({ color: 0xffd200 });
     });
     // flippers
@@ -111,6 +115,7 @@ export default function createGame(ctx: GameContext): Game {
         ball.vy = Math.abs(ball.vy);
       }
 
+      if (comboTimer > 0) comboTimer -= dt; else combo = 0;
       bumpers.forEach((b) => {
         if (b.flash > 0) b.flash -= dt;
         const d = Math.hypot(ball.x - b.x, ball.y - b.y);
@@ -120,7 +125,26 @@ export default function createGame(ctx: GameContext): Game {
           ball.vx = nx * 320;
           ball.vy = ny * 320;
           b.flash = 0.15;
-          score += 100;
+          combo++;
+          comboTimer = 2;
+          const mult = 1 + Math.floor(combo / 4);
+          score += 100 * mult;
+          if (combo >= 4 && combo % 4 === 0) ctx.fx.floatingText(`COMBO x${mult}`, b.x, b.y - 30, 0xffd200);
+          b.lit = true;
+          // Feature: jackpot when all bumpers are lit
+          if (bumpers.every((x) => x.lit)) {
+            score += 2000;
+            ctx.hud.toast('JACKPOT +2000');
+            ctx.fx.screenShake(7, 0.18);
+            bumpers.forEach((x) => (x.lit = false));
+          }
+          // Feature: extra ball at score milestones
+          if (score >= nextExtra) {
+            nextExtra += 5000;
+            balls++;
+            ctx.hud.setLives(balls);
+            ctx.hud.toast('EXTRA BALL!');
+          }
           ctx.hud.setScore(score);
           ctx.audio.sfx('coin');
         }

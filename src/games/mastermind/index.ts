@@ -17,15 +17,20 @@ export default function createGame(ctx: GameContext): Game {
   const boardX = ctx.width / 2 - (SLOTS * peg * 1.4) / 2;
   const oy = 50;
 
-  const secret = Array.from({ length: SLOTS }, () => ctx.rng.int(0, COLORS.length - 1));
-  const guesses: number[][] = [];
-  const feedback: { black: number; white: number }[] = [];
+  let secret = Array.from({ length: SLOTS }, () => ctx.rng.int(0, COLORS.length - 1));
+  let guesses: number[][] = [];
+  let feedback: { black: number; white: number }[] = [];
   let current: number[] = [];
   let over = false;
   let selColor = 0;
+  let round = 1; // Feature: round progression
+  let total = 0;
+  let hints = 1; // Feature: reveal one secret peg per round
+  const revealed = new Map<number, number>(); // pos -> colour
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('CRACK THE CODE');
+  const setLabel = (): void => ctx.hud.setLabel(`R${round} · ROW ${guesses.length + 1}/${MAX_ROWS} · 💡${hints}`);
+  setLabel();
 
   const score = (guess: number[]): { black: number; white: number } => {
     let black = 0;
@@ -49,6 +54,17 @@ export default function createGame(ctx: GameContext): Game {
     return { black, white };
   };
 
+  const newRound = (): void => {
+    secret = Array.from({ length: SLOTS }, () => ctx.rng.int(0, COLORS.length - 1));
+    guesses = [];
+    feedback = [];
+    current = [];
+    revealed.clear();
+    hints = 1;
+    round++;
+    setLabel();
+  };
+
   const submit = (): void => {
     if (current.length < SLOTS) return;
     const fb = score(current);
@@ -56,16 +72,40 @@ export default function createGame(ctx: GameContext): Game {
     feedback.push(fb);
     ctx.audio.sfx('blip');
     if (fb.black === SLOTS) {
-      over = true;
+      // Feature: cracked → bank a bonus and start a fresh code
+      const bonus = (MAX_ROWS - guesses.length + 1) * 100 + round * 100;
+      total += bonus;
+      ctx.hud.setScore(total);
       ctx.audio.sfx('levelup');
-      ctx.hud.toast('CRACKED!');
-      ctx.gameOver((MAX_ROWS - guesses.length + 1) * 100, { tries: guesses.length });
+      ctx.hud.toast(`CRACKED! +${bonus}`);
+      newRound();
+      draw();
+      return;
     } else if (guesses.length >= MAX_ROWS) {
       over = true;
       ctx.audio.sfx('gameover');
-      ctx.gameOver(0, { tries: guesses.length });
+      ctx.hud.toast(`CODE WAS…`);
+      ctx.gameOver(total, { round });
+      current = [];
+      draw();
+      return;
     }
     current = [];
+    setLabel();
+    draw();
+  };
+
+  const useHint = (): void => {
+    if (over || hints <= 0) return;
+    const opts: number[] = [];
+    for (let i = 0; i < SLOTS; i++) if (!revealed.has(i)) opts.push(i);
+    if (!opts.length) return;
+    const pos = ctx.rng.pick(opts);
+    revealed.set(pos, secret[pos]!);
+    hints--;
+    ctx.audio.sfx('powerup');
+    ctx.hud.toast(`HINT: slot ${pos + 1}`);
+    setLabel();
     draw();
   };
 
@@ -81,6 +121,9 @@ export default function createGame(ctx: GameContext): Game {
       if (current.length === SLOTS) submit();
     } else if (a === 'b') {
       current.pop();
+    } else if (a === 'start' || a === 'select') {
+      useHint();
+      return;
     }
     draw();
   });
@@ -129,6 +172,11 @@ export default function createGame(ctx: GameContext): Game {
       const x = boardX + s * peg * 1.4;
       const col = current[s] !== undefined ? COLORS[current[s]!]! : 0x14141f;
       g.circle(x + peg / 2, cy + peg / 2, peg / 2).fill({ color: col }).stroke({ width: 2, color: 0x8a8aa3 });
+      // Feature: revealed hint markers
+      if (revealed.has(s)) {
+        g.circle(x + peg / 2, cy + peg / 2, peg * 0.22).fill({ color: COLORS[revealed.get(s)!]! });
+        g.circle(x + peg / 2, cy + peg / 2, peg * 0.22).stroke({ width: 2, color: 0xffffff });
+      }
     }
     // palette
     const palY = ctx.height - 50;

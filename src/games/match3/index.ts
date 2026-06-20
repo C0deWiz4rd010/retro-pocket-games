@@ -28,9 +28,11 @@ export default function createGame(ctx: GameContext): Game {
   let moves = 30;
   let over = false;
   let cascade = 0;
+  let level = 1; // Feature: level progression
+  let target = 2500;
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel(`MOVES ${moves}`);
+  ctx.hud.setLabel(`L1 · MOVES ${moves}`);
 
   const findMatches = (): boolean[] => {
     const m = new Array(N * N).fill(false);
@@ -49,13 +51,34 @@ export default function createGame(ctx: GameContext): Game {
 
   const resolve = (): boolean => {
     const m = findMatches();
+    if (!m.some(Boolean)) { cascade = 0; return false; }
+    // Feature: a run of 4+ blasts the whole row (horizontal) or column (vertical)
+    let blasted = false;
+    for (let r = 0; r < N; r++) {
+      let run = 1;
+      for (let c = 1; c <= N; c++) {
+        if (c < N && at(c, r) === at(c - 1, r)) run++;
+        else { if (run >= 4) { for (let k = 0; k < N; k++) m[r * N + k] = true; blasted = true; } run = 1; }
+      }
+    }
+    for (let c = 0; c < N; c++) {
+      let run = 1;
+      for (let r = 1; r <= N; r++) {
+        if (r < N && at(c, r) === at(c, r - 1)) run++;
+        else { if (run >= 4) { for (let k = 0; k < N; k++) m[k * N + c] = true; blasted = true; } run = 1; }
+      }
+    }
     const count = m.filter(Boolean).length;
-    if (!count) { cascade = 0; return false; }
     cascade++;
     const pts = count * 10 * cascade;
     score += pts;
     ctx.hud.setScore(score);
-    if (cascade >= 2) ctx.hud.toast(`CASCADE x${cascade}! +${pts}`);
+    if (blasted) ctx.hud.toast(`LINE BLAST! +${pts}`);
+    else if (cascade >= 2) ctx.hud.toast(`CASCADE x${cascade}! +${pts}`);
+    // Feature: big clears refund moves
+    if (count >= 8) { moves += 2; ctx.fx.floatingText('+2 MOVES', ctx.width / 2, oy - 14, 0x3ddc84); }
+    // Feature: level progression
+    if (score >= target) { level++; moves += 8; target += 2500 + level * 1200; ctx.hud.toast(`LEVEL ${level}! +8 MOVES`); ctx.audio.sfx('levelup'); }
     ctx.audio.sfx('coin');
     for (let c = 0; c < N; c++) {
       const kept: number[] = [];
@@ -79,7 +102,7 @@ export default function createGame(ctx: GameContext): Game {
     if (findMatches().some(Boolean)) {
       moves--;
       cascade = 0;
-      ctx.hud.setLabel(`MOVES ${moves}`);
+      ctx.hud.setLabel(`L${level} · MOVES ${moves}`);
       busy = 0.15;
       ctx.audio.sfx('blip');
     } else {
@@ -134,7 +157,7 @@ export default function createGame(ctx: GameContext): Game {
           } else if (moves <= 0) {
             over = true;
             ctx.audio.sfx('gameover');
-            ctx.gameOver(score, {});
+            ctx.gameOver(score, { level });
           }
           draw();
         }

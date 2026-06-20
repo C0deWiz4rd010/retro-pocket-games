@@ -2,7 +2,7 @@ import { el } from '@utils/dom';
 import { settings, updateSettings } from '@store/settings';
 import { audio } from '@core/AudioManager';
 import { haptics } from '@core/Haptics';
-import { exportAll, wipeAll } from '@data/db';
+import { exportAll, importAll, wipeAll } from '@data/db';
 import { t } from '@i18n/index';
 import type { Settings } from '@data/schemas';
 
@@ -221,8 +221,11 @@ function rows(rerender: () => void): HTMLElement[] {
     row(t('settings.largeTargets'), toggle(s.a11y.largeTargets, (largeTargets) => patchA11y({ largeTargets }))),
 
     el('div', { class: 'section-title' }, [t('settings.data')]),
-    el('div', { class: 'panel__row', style: 'padding:8px 0 20px' }, [
+    el('div', { class: 'panel__row', style: 'padding:8px 0 8px' }, [
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => void doExport() }, [`⬇ ${t('settings.export')}`]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => doImport() }, [`⬆ ${t('settings.import')}`]),
+    ]),
+    el('div', { class: 'panel__row', style: 'padding:0 0 20px' }, [
       el('button', {
         class: 'btn btn--danger btn--block',
         onClick: () => confirmReset(),
@@ -243,6 +246,32 @@ async function doExport(): Promise<void> {
   a.download = 'retro-pocket-save.json';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** Restore progress from a previously exported JSON backup, then reload. */
+function doImport(): void {
+  const input = el('input', { type: 'file', accept: 'application/json', style: 'display:none' }) as HTMLInputElement;
+  input.addEventListener('change', () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result));
+        void importAll(data).then((n) => {
+          audio.sfx('coin');
+          window.alert(t('settings.importDone', { n }));
+          location.reload();
+        }).catch(() => window.alert(t('settings.importFail')));
+      } catch {
+        window.alert(t('settings.importFail'));
+      }
+    };
+    reader.readAsText(file);
+  });
+  document.body.append(input);
+  input.click();
+  window.setTimeout(() => input.remove(), 1000);
 }
 
 /** Two-step confirmation overlay so progress can't be wiped by accident. */

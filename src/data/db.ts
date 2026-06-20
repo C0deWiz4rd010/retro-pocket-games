@@ -52,6 +52,20 @@ export async function exportAll(): Promise<Record<string, unknown>> {
   return out;
 }
 
+/** Import a previously exported backup. Only writes namespaced keys; returns the count restored. */
+export async function importAll(data: unknown): Promise<number> {
+  if (!data || typeof data !== 'object') throw new Error('invalid backup');
+  let n = 0;
+  for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+    if (typeof k === 'string' && k.startsWith(`${NS}:`)) {
+      await set(k, v);
+      n++;
+    }
+  }
+  if (n === 0) throw new Error('no Retro Pocket data in backup');
+  return n;
+}
+
 /** Wipe all Retro Pocket data (Settings → reset progress). */
 export async function wipeAll(): Promise<void> {
   for (const k of await keys()) {

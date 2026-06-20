@@ -58,6 +58,6 @@ dom.html
 chrome-err.txt
 preview.log
 
-# Agent / local scratch
-memory/
-.claude/
+# Agent / local scratch (repo-root only — must not match src/games/memory)
+/memory/
+/.claude/

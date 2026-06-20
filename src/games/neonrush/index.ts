@@ -3,7 +3,7 @@ import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
 import { burst, clamp, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
 
-type Hazard = { x: number; lane: number; kind: 'block' | 'coin' | 'shield'; wobble: number };
+type Hazard = { x: number; lane: number; kind: 'block' | 'coin' | 'shield' | 'magnet'; wobble: number };
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -25,6 +25,8 @@ export default function createGame(ctx: GameContext): Game {
   let lives = 3;
   let combo = 0;
   let shield = 0;
+  let magnet = 0; // Feature: magnet auto-collects coins
+  let zone = 1; // Feature: zone score multiplier
   let spawn = 0;
   let speed = 185;
   let t = 0;
@@ -39,7 +41,7 @@ export default function createGame(ctx: GameContext): Game {
     hazards.push({
       x: W + 28,
       lane: ctx.rng.int(0, 2),
-      kind: roll > 0.86 ? 'shield' : roll > 0.62 ? 'coin' : 'block',
+      kind: roll > 0.93 ? 'magnet' : roll > 0.84 ? 'shield' : roll > 0.6 ? 'coin' : 'block',
       wobble: ctx.rng.next() * Math.PI * 2,
     });
   };
@@ -80,9 +82,12 @@ export default function createGame(ctx: GameContext): Game {
       } else if (h.kind === 'coin') {
         g.circle(h.x, y + Math.sin(t * 7 + h.wobble) * 4, 12).fill({ color: 0xffd200 });
         g.circle(h.x, y + Math.sin(t * 7 + h.wobble) * 4, 6).fill({ color: 0x5c3b00, alpha: 0.35 });
-      } else {
+      } else if (h.kind === 'shield') {
         g.circle(h.x, y, 13).fill({ color: 0x3ddc84 });
         g.circle(h.x, y, 7).fill({ color: 0x07160d });
+      } else {
+        g.roundRect(h.x - 11, y - 11, 22, 22, 4).fill({ color: 0xc084fc });
+        g.rect(h.x - 11, y - 4, 22, 8).fill({ color: 0x1a0730, alpha: 0.6 });
       }
     }
     const py = lanes[lane]!;
@@ -91,6 +96,7 @@ export default function createGame(ctx: GameContext): Game {
     g.circle(px - 8, py + 19, 4).fill({ color: 0xff80ab });
     g.circle(px + 8, py + 19, 4).fill({ color: 0xff80ab });
     if (shield > 0) g.circle(px, py, 28).stroke({ width: 3, color: 0x93c5fd, alpha: 0.55 + Math.sin(t * 18) * 0.18 });
+    if (magnet > 0) g.circle(px, py, 34).stroke({ width: 2, color: 0xc084fc, alpha: 0.5 + Math.sin(t * 12) * 0.2 });
     drawSparks(g, sparks);
   }
 
@@ -102,7 +108,11 @@ export default function createGame(ctx: GameContext): Game {
       lane += (targetLane - lane) * Math.min(1, dt * 12);
       px += (lanes[targetLane]! - px) * Math.min(1, dt * 14);
       shield = Math.max(0, shield - dt);
+      magnet = Math.max(0, magnet - dt);
       speed += dt * 3.8;
+      // Feature: zone multiplier rises with score
+      const nz = 1 + Math.floor(score / 4000);
+      if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); ctx.audio.sfx('powerup'); }
       spawn -= dt;
       if (spawn <= 0) {
         spawn = Math.max(0.36, 0.86 - score / 9000);
@@ -116,6 +126,16 @@ export default function createGame(ctx: GameContext): Game {
         if (h.x < -40) {
           hazards.splice(i, 1);
           if (h.kind === 'block') score += 8;
+          continue;
+        }
+        // Feature: magnet auto-collects coins in any lane
+        if (magnet > 0 && h.kind === 'coin' && Math.abs(h.x - px) < 46) {
+          hazards.splice(i, 1);
+          const pts = (60 + combo * 8) * zone;
+          score += pts;
+          combo++;
+          ctx.audio.sfx('coin');
+          burst(sparks, ctx.rng, h.x, hy, 0xffd200, 8, 90);
           continue;
         }
         if (Math.abs(h.x - px) < 25 && Math.abs(hy - playerY) < 26) {
@@ -138,19 +158,21 @@ export default function createGame(ctx: GameContext): Game {
               }
             }
           } else {
-            const pts = h.kind === 'coin' ? 60 + combo * 8 : 120;
+            const pts = (h.kind === 'coin' ? 60 + combo * 8 : 120) * zone;
             score += pts;
             combo++;
             if (h.kind === 'shield') shield = 4;
-            ctx.fx.floatingText(`+${pts}`, px, playerY - 32, h.kind === 'coin' ? 0xffd200 : 0x3ddc84);
+            if (h.kind === 'magnet') { magnet = 7; ctx.hud.toast('MAGNET'); }
+            const col = h.kind === 'coin' ? 0xffd200 : h.kind === 'magnet' ? 0xc084fc : 0x3ddc84;
+            ctx.fx.floatingText(`+${pts}`, px, playerY - 32, col);
             ctx.audio.sfx(h.kind === 'coin' ? 'coin' : 'powerup');
-            burst(sparks, ctx.rng, px, playerY, h.kind === 'coin' ? 0xffd200 : 0x3ddc84);
+            burst(sparks, ctx.rng, px, playerY, col);
           }
         }
       }
-      score += Math.floor(dt * 18);
+      score += Math.floor(dt * 18 * zone);
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(shield > 0 ? `SHIELD ${Math.ceil(shield)}` : `COMBO ${combo}`);
+      ctx.hud.setLabel(magnet > 0 ? `MAGNET ${Math.ceil(magnet)}` : shield > 0 ? `SHIELD ${Math.ceil(shield)}` : `COMBO ${combo} · Z${zone}`);
       draw();
     },
     destroy() {

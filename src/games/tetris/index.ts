@@ -59,6 +59,16 @@ export default function createGame(ctx: GameContext): Game {
   let lastClearWasTetris = false;
   let flashRows: number[] = [];
   let flashT = 0;
+  let combo = -1; // Feature: back-to-back line-clear combo
+  let lastMoveWasRotate = false; // for T-spin detection
+  let shake = 0;
+  interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+  const particles: Particle[] = [];
+  const spawnParticles = (rowY: number, color: number): void => {
+    for (let i = 0; i < 14; i++) {
+      particles.push({ x: Math.random() * fieldW, y: rowY * cell + cell / 2, vx: (Math.random() - 0.5) * 160, vy: (Math.random() - 0.5) * 120, life: 0.5, color });
+    }
+  };
 
   const makePiece = (id: number): Piece => {
     const s = SHAPES[id]!;
@@ -83,7 +93,9 @@ export default function createGame(ctx: GameContext): Game {
     return false;
   };
 
+  let pendingTSpin = false;
   const lock = (): void => {
+    pendingTSpin = isTSpin();
     piece.m.forEach((row, y) =>
       row.forEach((v, x) => {
         if (v && piece.y + y >= 0) board[(piece.y + y) * COLS + piece.x + x] = piece.color;
@@ -115,24 +127,36 @@ export default function createGame(ctx: GameContext): Game {
       const isTetris = cleared >= 4;
       const b2b = isTetris && lastClearWasTetris;
       const base = [0, 100, 300, 500, 800][cleared]! * level;
-      const pts = b2b ? Math.floor(base * 1.5) : base;
+      let pts = b2b ? Math.floor(base * 1.5) : base;
+      // Feature: T-spin bonus
+      if (pendingTSpin) pts += 400 * cleared * level;
+      // Feature: combo chain bonus
+      combo++;
+      if (combo > 0) pts += 50 * combo * level;
       score += pts;
       lastClearWasTetris = isTetris;
       level = 1 + Math.floor(lines / 10);
+      shake = Math.min(0.6, 0.2 + cleared * 0.12);
+      for (const ry of flashRows) spawnParticles(ry, 0xffffff);
       ctx.hud.setScore(score);
       ctx.hud.setLabel(`LV ${level}`);
-      if (b2b) ctx.hud.toast('B2B TETRIS! x1.5');
+      if (pendingTSpin) ctx.hud.toast(`T-SPIN! +${400 * cleared * level}`);
+      else if (b2b) ctx.hud.toast('B2B TETRIS! x1.5');
       else if (isTetris) ctx.hud.toast('TETRIS!');
-      ctx.audio.sfx(isTetris ? 'powerup' : 'clear');
+      if (combo > 0) ctx.hud.toast(`COMBO x${combo}`);
+      ctx.audio.sfx(isTetris || pendingTSpin ? 'powerup' : 'clear');
     } else {
       lastClearWasTetris = false;
+      combo = -1; // reset combo when a lock clears no lines
     }
+    pendingTSpin = false;
   };
 
   const tryMove = (dx: number, dy: number): boolean => {
     if (collides(piece, piece.x + dx, piece.y + dy)) return false;
     piece.x += dx;
     piece.y += dy;
+    lastMoveWasRotate = false;
     return true;
   };
 
@@ -142,10 +166,24 @@ export default function createGame(ctx: GameContext): Game {
       if (!collides(piece, piece.x + kick, piece.y, r)) {
         piece.m = r;
         piece.x += kick;
+        lastMoveWasRotate = true;
         ctx.audio.sfx('blip');
         return;
       }
     }
+  };
+
+  // T-spin: a just-rotated T-piece wedged with 3+ corners blocked.
+  const isTSpin = (): boolean => {
+    if (piece.id !== 2 || !lastMoveWasRotate) return false;
+    const corners = [[0, 0], [2, 0], [0, 2], [2, 2]];
+    let blocked = 0;
+    for (const [dx, dy] of corners) {
+      const bx = piece.x + dx!;
+      const by = piece.y + dy!;
+      if (bx < 0 || bx >= COLS || by >= ROWS || (by >= 0 && board[by * COLS + bx])) blocked++;
+    }
+    return blocked >= 3;
   };
 
   const hardDrop = (): void => {
@@ -230,6 +268,8 @@ export default function createGame(ctx: GameContext): Game {
       }),
     );
 
+    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+
     sideG.clear();
     const sx = fieldW + cell * 0.6;
     sideG.rect(sx, 0, sideW - cell * 0.6, fieldH).fill({ color: 0x0a0a12, alpha: 0.3 });
@@ -240,6 +280,14 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update(dt) {
       if (over) return;
+      // particles + shake animate independently of lock state
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]!;
+        p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 200 * dt; p.life -= dt;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+      if (shake > 0) shake = Math.max(0, shake - dt * 2);
+      layer.position.set(ox + (shake > 0 ? (Math.random() * 2 - 1) * shake * 6 : 0), oy + (shake > 0 ? (Math.random() * 2 - 1) * shake * 6 : 0));
       if (flashT > 0) {
         flashT -= dt;
         if (flashT <= 0) {

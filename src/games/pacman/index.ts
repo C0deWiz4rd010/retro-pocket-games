@@ -62,24 +62,30 @@ export default function createGame(ctx: GameContext): Game {
       wall[r]![c] = isWall;
       dot[r]![c] = false;
       pellet[r]![c] = false;
-      if (!isWall && !inHouse(c, r)) {
-        dot[r]![c] = true;
-        dotCount++;
+    }
+  }
+
+  const resetDots = (): void => {
+    dotCount = 0;
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) {
+        pellet[r]![c] = false;
+        dot[r]![c] = false;
+        if (!wall[r]![c] && !inHouse(c, r)) {
+          dot[r]![c] = true;
+          dotCount++;
+        }
+      }
+    // power pellets near the four corners
+    for (const [c, r] of [[1, 1], [COLS - 2, 1], [1, ROWS - 2], [COLS - 2, ROWS - 2]] as [number, number][]) {
+      if (dot[r]![c]) {
+        dot[r]![c] = false;
+        dotCount--;
+        pellet[r]![c] = true;
       }
     }
-  }
-  // power pellets near the four corners
-  for (const [c, r] of [
-    [1, 1],
-    [COLS - 2, 1],
-    [1, ROWS - 2],
-    [COLS - 2, ROWS - 2],
-  ] as [number, number][]) {
-    if (dot[r]![c]) {
-      dot[r]![c] = false;
-      pellet[r]![c] = true;
-    }
-  }
+  };
+  resetDots();
 
   const isWall = (c: number, r: number): boolean => {
     if (r < 0 || r >= ROWS) return true;
@@ -96,17 +102,28 @@ export default function createGame(ctx: GameContext): Game {
     { x: homeC, y: homeR, dir: DIRS.down!, color: 0xff7b00, scatter: { x: 1, y: ROWS - 2 }, frightened: 0 },
   ];
 
+  let initialDots = dotCount;
   let score = 0;
   let lives = 3;
   let over = false;
   let modeTimer = 0;
   let mode: 'scatter' | 'chase' = 'scatter';
+  let level = 1;
+  let ghostCombo = 0; // Feature: ghost-eat chain multiplier
+  let fruit: { c: number; r: number; ttl: number; worth: number } | null = null; // Feature: bonus fruit
+  let fruitDone = false;
   const pacSpeed = 6;
-  const ghostSpeed = 5.4;
+  let ghostSpeed = 5.4;
 
   ctx.hud.setScore(0);
   ctx.hud.setLives(lives);
-  ctx.hud.setLabel('EAT THE DOTS');
+  ctx.hud.setLabel('EAT THE DOTS · L1');
+
+  const spawnFruit = (): void => {
+    if (fruit || fruitDone) return;
+    fruit = { c: homeC, r: homeR + 2, ttl: 9, worth: 100 * level, };
+    fruitDone = true;
+  };
 
   const setDir = (a: Action | Dir): void => {
     const d = DIRS[a];
@@ -183,6 +200,11 @@ export default function createGame(ctx: GameContext): Game {
       if (over) return;
       pac.mouth = (pac.mouth + dt * 8) % (Math.PI / 2);
 
+      if (fruit) {
+        fruit.ttl -= dt;
+        if (fruit.ttl <= 0) fruit = null;
+      }
+
       modeTimer += dt;
       if (mode === 'scatter' && modeTimer > 7) {
         mode = 'chase';
@@ -206,18 +228,47 @@ export default function createGame(ctx: GameContext): Game {
           score += 10;
           ctx.hud.setScore(score);
           ctx.audio.sfx('eat');
+          // spawn the bonus fruit roughly halfway through the maze
+          if (!fruitDone && dotCount < initialDots * 0.5) spawnFruit();
         } else if (pellet[ry]![rx]) {
           pellet[ry]![rx] = false;
           score += 50;
+          ghostCombo = 0;
           ctx.hud.setScore(score);
           ctx.audio.sfx('powerup');
-          ghosts.forEach((gh) => (gh.frightened = 6));
+          ghosts.forEach((gh) => (gh.frightened = 6 + level * 0.4));
+        }
+        // Feature: bonus fruit pickup
+        if (fruit && rx === fruit.c && ry === fruit.r) {
+          score += fruit.worth;
+          ctx.hud.setScore(score);
+          ctx.hud.toast(`FRUIT +${fruit.worth}`);
+          ctx.audio.sfx('coin');
+          fruit = null;
         }
         if (dotCount <= 0) {
+          // Feature: advance to the next level instead of ending
+          level++;
+          ghostSpeed = Math.min(8.5, ghostSpeed + 0.5);
           ctx.audio.sfx('levelup');
-          ctx.hud.toast('MAZE CLEAR!');
-          over = true;
-          ctx.gameOver(score + lives * 100, { cleared: 1 });
+          ctx.hud.toast(`LEVEL ${level}!`);
+          ctx.hud.setLabel(`EAT THE DOTS · L${level}`);
+          score += 100 + lives * 50;
+          resetDots();
+          initialDots = dotCount;
+          fruit = null;
+          fruitDone = false;
+          pac.x = start.x;
+          pac.y = start.y;
+          pac.dir = { x: 0, y: 0 };
+          pac.next = { x: 0, y: 0 };
+          ghosts.forEach((gh, i) => {
+            gh.x = homeC;
+            gh.y = homeR;
+            gh.frightened = 0;
+            gh.dir = [DIRS.left!, DIRS.up!, DIRS.right!, DIRS.down!][i]!;
+          });
+          ctx.hud.setScore(score);
           return;
         }
       }
@@ -233,8 +284,11 @@ export default function createGame(ctx: GameContext): Game {
             gh.x = homeC;
             gh.y = homeR;
             gh.frightened = 0;
-            score += 200;
+            ghostCombo = Math.min(4, ghostCombo + 1);
+            const gained = 200 * Math.pow(2, ghostCombo - 1); // 200/400/800/1600
+            score += gained;
             ctx.hud.setScore(score);
+            ctx.hud.toast(`GHOST +${gained}`);
             ctx.audio.sfx('coin');
           } else {
             loseLife();
@@ -247,8 +301,19 @@ export default function createGame(ctx: GameContext): Game {
       for (let r = 0; r < ROWS; r++)
         for (let c = 0; c < COLS; c++) {
           if (dot[r]![c]) g.circle(c * cell + cell / 2, r * cell + cell / 2, cell * 0.1).fill({ color: 0xffd27f });
-          else if (pellet[r]![c]) g.circle(c * cell + cell / 2, r * cell + cell / 2, cell * 0.26).fill({ color: 0xffd27f });
+          else if (pellet[r]![c]) g.circle(c * cell + cell / 2, r * cell + cell / 2, cell * (0.2 + 0.06 * Math.sin(modeTimer * 6))).fill({ color: 0xffd27f });
         }
+      // bonus fruit (cherry)
+      if (fruit) {
+        const fx = fruit.c * cell + cell / 2;
+        const fy = fruit.r * cell + cell / 2;
+        const flash = fruit.ttl < 3 && Math.floor(fruit.ttl * 6) % 2 === 0;
+        if (!flash) {
+          g.circle(fx - cell * 0.12, fy + cell * 0.1, cell * 0.18).fill({ color: 0xff2e44 });
+          g.circle(fx + cell * 0.12, fy + cell * 0.1, cell * 0.18).fill({ color: 0xff2e44 });
+          g.rect(fx - 1, fy - cell * 0.25, 2, cell * 0.3).fill({ color: 0x3ddc84 });
+        }
+      }
       const px = pac.x * cell + cell / 2;
       const py = pac.y * cell + cell / 2;
       const facing = pac.dir.x === 0 && pac.dir.y === 0 ? 0 : Math.atan2(pac.dir.y, pac.dir.x);

@@ -15,9 +15,16 @@ export interface SnakeState {
   score: number;
   alive: boolean;
   grow: number;
+  /** Lethal blocked cells (rocks). Optional for backward compatibility. */
+  obstacles?: Vec[];
 }
 
 export type StepResult = 'move' | 'eat' | 'dead';
+
+/** Per-tick step options. `invincible` lets the head pass through itself and obstacles (shield power-up). */
+export interface StepOptions {
+  invincible?: boolean;
+}
 
 export function createSnake(cols: number, rows: number, rng: RNG): SnakeState {
   const cx = Math.floor(cols / 2);
@@ -53,23 +60,32 @@ export function spawnFood(s: SnakeState, rng: RNG): Vec {
   const free: Vec[] = [];
   for (let y = 0; y < s.rows; y++) {
     for (let x = 0; x < s.cols; x++) {
-      if (!s.body.some((b) => b.x === x && b.y === y)) free.push({ x, y });
+      if (s.body.some((b) => b.x === x && b.y === y)) continue;
+      if (s.obstacles?.some((o) => o.x === x && o.y === y)) continue;
+      free.push({ x, y });
     }
   }
   return free.length ? (rng.pick(free) as Vec) : { x: 0, y: 0 };
 }
 
 /** Advance one tick. Returns what happened. */
-export function step(s: SnakeState, rng: RNG): StepResult {
+export function step(s: SnakeState, rng: RNG, opts: StepOptions = {}): StepResult {
   if (!s.alive) return 'dead';
   s.dir = s.nextDir;
   const head = s.body[0] as Vec;
   const nx = (head.x + s.dir.x + s.cols) % s.cols;
   const ny = (head.y + s.dir.y + s.rows) % s.rows;
-  // self collision (tail tip moves away unless growing — but classic uses full body)
-  if (s.body.some((b, i) => i < s.body.length - 1 && b.x === nx && b.y === ny)) {
-    s.alive = false;
-    return 'dead';
+  if (!opts.invincible) {
+    // self collision (tail tip moves away unless growing — but classic uses full body)
+    if (s.body.some((b, i) => i < s.body.length - 1 && b.x === nx && b.y === ny)) {
+      s.alive = false;
+      return 'dead';
+    }
+    // obstacle (rock) collision
+    if (s.obstacles?.some((o) => o.x === nx && o.y === ny)) {
+      s.alive = false;
+      return 'dead';
+    }
   }
 
   s.body.unshift({ x: nx, y: ny });

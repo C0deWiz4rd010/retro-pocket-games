@@ -353,7 +353,6 @@ export class App {
     const children: (Node | string)[] = [
       el('div', { class: 'hero__visual', style: `--tile-accent:${meta.accent}` }, [
         this.tileCover(meta),
-        el('div', { class: 'hero__glyph' }, [meta.glyph]),
       ]),
       el('div', { class: 'hero__content' }, [
         el('div', { class: 'hero__tag' }, [t('home.daily')]),
@@ -655,7 +654,6 @@ export class App {
         g.available ? el('div', { class: `mastery mastery--${mastery}`, 'aria-label': `Mastery ${mastery} of 3` }, [
           el('i', { style: `width:${(mastery / 3) * 100}%` }),
         ]) : '',
-        el('div', { class: 'tile__glyph' }, [g.glyph]),
         el('div', { class: 'tile__body' }, [
           el('div', { class: 'tile__title' }, [g.title]),
           el('div', { class: 'tile__best' }, [
@@ -748,11 +746,14 @@ export class App {
 
   private tileCover(g: GameMeta): HTMLElement {
     const motif = g.cover?.motif ?? (g.kit === 'paddle' ? 'paddle' : g.kit === 'shooter' ? 'shooter' : g.kit === 'vector' ? 'vector' : 'grid');
+    // The game's glyph is the hero of the cover; the motif shapes are a faint animated backdrop.
+    const letters = !/\p{Extended_Pictographic}/u.test(g.glyph); // monogram covers (e.g. "PD") get a tighter style
     return el('div', { class: `tile__cover tile__cover--${motif} tile__cover--${g.polish?.previewSpeed ?? 'medium'}`, 'aria-hidden': 'true' }, [
       el('i', {}),
       el('i', {}),
       el('i', {}),
       el('i', {}),
+      el('div', { class: `tile__cover-art${letters ? ' tile__cover-art--mono' : ''}` }, [g.glyph]),
     ]);
   }
 
@@ -994,7 +995,7 @@ export class App {
       ]),
       el('div', { class: 'scroll start-sheet' }, [
         el('div', { class: 'start-card', style: `--tile-accent:${meta.accent}` }, [
-          el('div', { class: 'start-card__visual' }, [this.tileCover(meta), el('div', { class: 'start-card__glyph' }, [meta.glyph])]),
+          el('div', { class: 'start-card__visual' }, [this.tileCover(meta)]),
           el('div', { class: 'start-card__body' }, [
             el('div', { class: 'hero__tag' }, [this.collectionLabel(meta.collections?.[0] ?? 'quick')]),
             el('h1', { class: 'start-card__title' }, [meta.title]),

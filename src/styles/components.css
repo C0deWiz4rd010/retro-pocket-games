@@ -261,6 +261,28 @@
   display: block;
   background: color-mix(in srgb, var(--tile-accent) 70%, #fff);
   box-shadow: 0 0 10px color-mix(in srgb, var(--tile-accent) 60%, transparent);
+  opacity: 0.38; /* faint backdrop behind the glyph hero */
+}
+/* Glyph hero — the recognizable game icon centred on the cover. */
+.tile__cover-art {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tile-accent) 75%, transparent));
+  pointer-events: none;
+}
+.tile__cover-art--mono {
+  font-family: var(--font-display, var(--font-hud, sans-serif));
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: 1px;
+  color: color-mix(in srgb, var(--tile-accent) 35%, #fff);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--tile-accent) 70%, transparent);
 }
 .tile__cover--grid i {
   width: 16%;
@@ -1906,6 +1928,12 @@
   inset: 16px;
   height: calc(100% - 32px);
 }
+.start-card__visual .tile__cover-art {
+  font-size: clamp(54px, 9vw, 96px);
+}
+.start-card__visual .tile__cover-art--mono {
+  font-size: clamp(40px, 7vw, 76px);
+}
 
 .start-card__glyph {
   position: absolute;
@@ -2335,6 +2363,12 @@
   height: calc(100% - 32px);
   opacity: 0.82;
   filter: saturate(1.2);
+}
+.hero__visual .tile__cover-art {
+  font-size: clamp(48px, 7vw, 84px);
+}
+.hero__visual .tile__cover-art--mono {
+  font-size: clamp(36px, 5.5vw, 64px);
 }
 .hero__glyph {
   position: absolute;

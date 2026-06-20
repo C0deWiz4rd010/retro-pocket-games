@@ -1,4 +1,7 @@
-# Umsetzungsplan – neuerVorgang.md (Punkte 9–35)
+# Umsetzungsplan – Feature Backlog (Punkte 9–35)
+
+> **Stand:** Code-Lücken umgesetzt & einzeln auf `develop` gepusht — #9 (Pause-Untermenüs + Haptik), #10/#22 (Fullscreen + Daten-Import), #11 (Tasten-Rebinding), #14 (Music-Toggle + Version), #16 (+5 Achievements, 2 Regressionen gefixt), #21 (First-Run-Onboarding), #27 (Pause bei Fokusverlust). Konzepte als Docs: [13](13-monetarisierung.md) (#28), [14](14-neue-games.md) (#30). Roher Backlog: [15](15-feature-backlog.md). Übrige Punkte waren bereits vorhanden. Parallel: Cover-Bilder überarbeitet (Glyph-Held statt abstrakter Formen) und Spiele Schritt für Schritt mit je 3+ neuen Features erweitert.
+
 
 Konkreter Implementierungsplan für jeden Punkt aus `docs/neuerVorgang.md`. Aufwand-Tags:
 **[QW] Quick Win** (≤2 h) · **[ME] Medium Effort** (½–2 Tage) · **[BF] Big Feature** (mehrere Tage).

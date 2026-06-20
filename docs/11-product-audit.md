@@ -4,9 +4,9 @@ Stand: 2026-06-15. Grundlage: Codebasis, Registry, Launcher, GameHost, Store-Mod
 
 ## Kurzurteil
 
-Retro Pocket hat bereits den Kern eines echten Produkts: eine installierbare, lokale Pocket-Arcade mit 74 Spielen, eigenem Launcher, Daily Challenge, Profil, XP, Tokens, Achievements, Leaderboards, Share-Cards, Touch-Steuerung, PWA-Installationslogik und zentralem GameHost. Die starke Idee ist nicht "viele Minispiele", sondern "eine kleine eigene Arcade-Konsole, die im Browser wohnt".
+Retro Pocket hat bereits den Kern eines echten Produkts: eine installierbare, lokale Pocket-Arcade mit 82 Spielen, eigenem Launcher, Daily Challenge, Profil, XP, Tokens, Achievements, Leaderboards, Share-Cards, Touch-Steuerung, PWA-Installationslogik und zentralem GameHost. Die starke Idee ist nicht "viele Minispiele", sondern "eine kleine eigene Arcade-Konsole, die im Browser wohnt".
 
-Der groesste naechste Schritt ist Kuratierung. Aktuell konkurrieren 74 Spiele, Meta-Systeme und Navigationseintraege um Aufmerksamkeit. Das Projekt wirkt technisch erstaunlich weit, aber noch nicht wie ein fokussiertes Mobile-Game-Produkt, weil Einstieg, Spielauswahl, Belohnung, Fortschritt und Rueckkehrgruende noch zu wenig als zusammenhaengende Spielerreise choreografiert sind.
+Der groesste naechste Schritt ist Kuratierung. Aktuell konkurrieren 82 Spiele, Meta-Systeme und Navigationseintraege um Aufmerksamkeit. Das Projekt wirkt technisch erstaunlich weit, aber noch nicht wie ein fokussiertes Mobile-Game-Produkt, weil Einstieg, Spielauswahl, Belohnung, Fortschritt und Rueckkehrgruende noch zu wenig als zusammenhaengende Spielerreise choreografiert sind.
 
 ## 1. Gesamtanalyse
 
@@ -25,7 +25,7 @@ Eine offline-faehige "Pocket Console" mit vielen kurzen Arcade-Ritualen, lokalem
 
 ### Wo es noch unfertig wirkt
 
-- Die Sidenav listet neben den Hauptzielen alle Spiele. Bei 74 Titeln wird Navigation zum Katalog und verliert Orientierung.
+- Die Sidenav listet neben den Hauptzielen alle Spiele. Bei 82 Titeln wird Navigation zum Katalog und verliert Orientierung.
 - Game Cards sind visuell konsistent, aber zu generisch. Viele Karten zeigen Cover-Motive statt einer klaren "Cartridge"-Identitaet.
 - Spielstart ist sehr direkt. Es fehlt eine kurze "Cartridge Boot"-Zwischenstufe mit Ziel, Controls, Best Score, heutiger Mission und Start.
 - Game Over zeigt Score, XP und Aktionen, erklaert aber noch zu wenig, warum der Run gut war und was als naechstes reizvoll ist.
@@ -57,7 +57,7 @@ Positioniere es als "lokale Pocket-Konsole", nicht als Spielesammlung. Jedes Spi
 
 ### Besserer Elevator Pitch
 
-Retro Pocket ist deine installierbare Mini-Arcade: 74 schnelle Retro-Spiele, offline spielbar, mit Daily Challenges, lokalen Highscores und einer kleinen Fortschrittswelt, die sich anfuehlt wie eine eigene Handheld-Konsole im Browser.
+Retro Pocket ist deine installierbare Mini-Arcade: 82 schnelle Retro-Spiele, offline spielbar, mit Daily Challenges, lokalen Highscores und einer kleinen Fortschrittswelt, die sich anfuehlt wie eine eigene Handheld-Konsole im Browser.
 
 ### Zielgruppe
 
@@ -80,7 +80,7 @@ Kurz, spielerisch, arcade-authentisch, nie werblich. Gute UI-Texte: "Insert Run"
 
 ### Slogans
 
-- "74 games. One pocket."
+- "82 games. One pocket."
 - "Your browser just became an arcade."
 - "Tiny runs. Big score energy."
 - "Install once. Play anywhere."
@@ -190,7 +190,7 @@ Home | Daily | Shelf | Scores | Profile
 
 ### Problem
 
-Die Sidenav dupliziert alle 74 Spiele. Das ist als Katalog nuetzlich, aber als Navigation zu laut. Auf Desktop nimmt sie viel kognitive Last weg, auf Mobile wird sie zu einer langen Liste.
+Die Sidenav dupliziert alle 82 Spiele. Das ist als Katalog nuetzlich, aber als Navigation zu laut. Auf Desktop nimmt sie viel kognitive Last weg, auf Mobile wird sie zu einer langen Liste.
 
 ### Desktop-Struktur
 
@@ -382,7 +382,7 @@ Risiken:
   - `LeaderboardService`
   - `GameChrome`
 - `conceptArcade.ts` buendelt 12 Spiele in einer grossen Datei. Gut fuer schnellen Ausbau, aber schlecht fuer Ownership und gezielte Politur. Langfristig je Spiel eigene Datei oder Shared Helpers + einzelne Module.
-- Registry-Kommentare sind veraltet ("20 classics"), obwohl 74 Spiele existieren.
+- Registry-Kommentare sind veraltet ("20 classics"), obwohl 82 Spiele existieren.
 - Encoding wirkt in Terminal-Ausgabe teils fehlerhaft. Pruefe UTF-8-Konfiguration fuer Docs/Source.
 
 ## 13. Tests und QA
@@ -554,7 +554,7 @@ Optionen:
 ## 18. Priorisierte Backlog-Liste
 
 1. `Registry`: `sessionLength`, `rewardProfile`, `collections`, `masteryGoals`, `dailyRules` ergaenzen.
-2. `App`: Sidenav auf Hauptziele kuerzen; Collections statt 74 Eintraege.
+2. `App`: Sidenav auf Hauptziele kuerzen; Collections statt 82 Eintraege.
 3. `App`: Mobile Bottom Tabs fuer Home/Daily/Shelf/Scores/Profile.
 4. `App`: Search ueber Titel, Blurb, Tags, Group, Kit, Controls.
 5. `GameHost`: Game Over um tokenGain und XP-Breakdown erweitern.

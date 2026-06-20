@@ -1,4 +1,10 @@
+# 15 – Feature Backlog (Punkte 9–35)
 
+Roher Produkt-Backlog mit Feature- und Design-Anfragen (ursprünglich `neuerVorgang.md`). Die Umsetzung ist in [12 – Umsetzungsplan](12-umsetzungsplan.md) priorisiert; Status der Realisierung siehe unten im Abschnitt **Status**.
+
+> **Status (laufend):** Die echten Code-Lücken sind umgesetzt und einzeln auf `develop` gepusht — #9 Pause-Untermenüs (Controls/Regeln/Accessibility) + Haptik-Toggle, #10/#22 Fullscreen-Button + Daten-Import, #11 Tasten-Rebinding-UI, #14 Music-Toggle + Versionsanzeige, #16 zusätzliche Achievements, #21 First-Run-Onboarding, #27 Pause bei Fokusverlust. Konzept-Punkte als Docs geliefert: [13 – Monetarisierung](13-monetarisierung.md) (#28), [14 – Neue Games](14-neue-games.md) (#30). Übrige Punkte (#12/#13/#15/#17/#18/#19/#20/#23–26/#31–34) waren im Repo bereits in Grundform vorhanden und wurden belassen/punktuell erweitert.
+
+---
 
 9. Pause-Menü verbessern
 
@@ -298,7 +304,7 @@ Bitte gib konkrete technische Empfehlungen.
 
 23. Performance verbessern
 
-Retro Pocket hat 74 Minigames.
+Retro Pocket hat 82 Minigames.
 
 Bitte schlage vor, wie man Performance und Ladezeit verbessert:
 
@@ -322,7 +328,7 @@ Bitte gib eine Prioritätenliste.
 
 Bitte schlage eine professionelle Architektur vor.
 
-Das Projekt sollte skalierbar für 74+ Games sein.
+Das Projekt sollte skalierbar für 82+ Games sein.
 
 Bitte liefere:
 

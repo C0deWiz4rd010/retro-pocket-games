@@ -72,7 +72,7 @@ export interface GameMeta {
 }
 
 /**
- * The catalog of all 20 classics. Implemented games carry a lazy `loader` so the home
+ * The catalog of all 82 games. Implemented games carry a lazy `loader` so the home
  * bundle stays tiny (code-splitting per game — docs/03 §4). Unimplemented entries render
  * as "Coming soon" tiles and follow the same contract once built.
  */

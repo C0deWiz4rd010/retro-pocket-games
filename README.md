@@ -2,7 +2,7 @@
 
 # RETRO POCKET
 
-### A pocket arcade in your browser - 82 retro games, one installable PWA.
+### A pocket arcade in your browser - 85 retro games, one installable PWA.
 
 [![Play Now](https://img.shields.io/badge/PLAY_NOW-GitHub_Pages-00f7ff?style=for-the-badge)](https://c0dewiz4rd010.github.io/retro-pocket-games/)
 [![PWA](https://img.shields.io/badge/PWA-installable-7b2ff7?style=for-the-badge)](#)
@@ -13,11 +13,11 @@
 
 ---
 
-**Retro Pocket** is a mobile-first, offline-capable web platform that bundles **82 classic and original retro games** into a single installable Progressive Web App. It is designed to feel like a native handheld console with switchable device shells, CRT screen effects, chiptune sound, touch controls, achievements, and a daily challenge, while still running entirely in the browser.
+**Retro Pocket** is a mobile-first, offline-capable web platform that bundles **85 classic and original retro games** into a single installable Progressive Web App. It is designed to feel like a native handheld console with switchable device shells, CRT screen effects, chiptune sound, touch controls, achievements, and a daily challenge, while still running entirely in the browser.
 
 ## Highlights
 
-- **82 games across 8 categories** - the arcade canon plus a growing library of puzzle, memory, reaction, shooter, and neon-style original games in one installable app.
+- **85 games across 8 categories** - the arcade canon plus a growing library of puzzle, memory, reaction, shooter, and neon-style original games in one installable app.
 - **Two skins, four shells** - switch between a *Clean Launcher* and a *Handheld Console* shell with selectable **Brick / Slim / Wide / TV** housings.
 - **Mobile-first & installable** - fullscreen PWA, safe-area aware, touch controls, haptics, orientation handling, and fully playable **offline**.
 - **Retro feel** - toggleable CRT/scanline screen effects, neon themes, pixel fonts, and 8-bit chiptune SFX.

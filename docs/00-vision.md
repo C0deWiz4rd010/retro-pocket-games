@@ -21,7 +21,7 @@ place to play the canon of retro games on a phone. Retro Pocket is that place.
 ## Brand: "RETRO POCKET"
 
 - **Name:** Retro Pocket. Internal device codename: **RP**.
-- **Tagline:** *"Eighty games. One pocket."*
+- **Tagline:** *"Eighty-five games. One pocket."*
 - **Personality:** nostalgic, playful, crafted, and a little neon.
 - **Logo concept:** a stylized handheld silhouette with a glowing screen; the "O" in POCKET can double as a D-pad or power button.
 

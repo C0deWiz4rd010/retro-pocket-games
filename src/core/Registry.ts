@@ -72,7 +72,7 @@ export interface GameMeta {
 }
 
 /**
- * The catalog of all 82 games. Implemented games carry a lazy `loader` so the home
+ * The catalog of all 85 games. Implemented games carry a lazy `loader` so the home
  * bundle stays tiny (code-splitting per game — docs/03 §4). Unimplemented entries render
  * as "Coming soon" tiles and follow the same contract once built.
  */
@@ -282,6 +282,11 @@ export const GAMES: GameMeta[] = [
   mk('prismdash', 'Prism Dash', 'sidescroll', 'Skill', 'portrait', '#fb7185', '🔷', 'Match your prism color while dodging shifting gates.', () => import('@games/prismdash')),
   mk('gearlock', 'Gear Lock', 'standalone', 'Skill', 'portrait', '#facc15', '⚙️', 'Time each lock pin inside the golden gear window.', () => import('@games/gearlock')),
   mk('echorunner', 'Echo Runner', 'grid', 'Brain', 'portrait', '#60a5fa', '🔊', 'Watch the echo path, then replay it under pressure.', () => import('@games/echorunner')),
+
+  // ── Volume VIII: three original creations ──
+  mk('polara', 'Polara', 'vector', 'Skill', 'portrait', '#38bdf8', '🧲', 'Flip the core polarity to absorb matching particles before they breach.', () => import('@games/polara')),
+  mk('dualoop', 'Dualoop', 'vector', 'Skill', 'portrait', '#22d3ee', '🔵', 'Orbit the core and swap rings to slip past sweeping barriers.', () => import('@games/dualoop')),
+  mk('cometputt', 'Comet Putt', 'vector', 'Skill', 'portrait', '#3ddc84', '⛳', 'Tap to aim and fling the comet through gravity and bumpers into the ring.', () => import('@games/cometputt')),
 ];
 
 function mk(

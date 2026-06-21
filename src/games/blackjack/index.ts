@@ -70,6 +70,7 @@ export default function createGame(ctx: GameContext): Game {
   let dealerTimer = 0;
   let rounds = 0;
   let score = 0;
+  let streak = 0; // Feature: win-streak bonus
 
   ctx.hud.setScore(credits);
   ctx.hud.setLabel('BLACKJACK');
@@ -90,6 +91,7 @@ export default function createGame(ctx: GameContext): Game {
     { label: 'HIT', x: W * 0.18, y: BTN_Y, w: 70, h: 34, action: 'hit' },
     { label: 'STAND', x: W * 0.5, y: BTN_Y, w: 80, h: 34, action: 'stand' },
     { label: 'DBL', x: W * 0.82, y: BTN_Y, w: 70, h: 34, action: 'double' },
+    { label: 'SURR', x: W * 0.5, y: BTN_Y - 44, w: 80, h: 34, action: 'surrender' }, // Feature: surrender
     { label: '+10', x: W * 0.3, y: BTN_Y, w: 60, h: 34, action: 'bet+' },
     { label: '-10', x: W * 0.7, y: BTN_Y, w: 60, h: 34, action: 'bet-' },
     { label: 'DEAL', x: W * 0.5, y: BTN_Y - 44, w: 100, h: 38, action: 'deal' },
@@ -178,11 +180,11 @@ export default function createGame(ctx: GameContext): Game {
 
     buttons.forEach((b, i) => {
       const isBet = b.action.startsWith('bet') || b.action === 'deal';
-      const isPlay = b.action === 'hit' || b.action === 'stand' || b.action === 'double';
+      const isPlay = b.action === 'hit' || b.action === 'stand' || b.action === 'double' || b.action === 'surrender';
       const visible = (showBet && isBet) || (showPlay && isPlay);
       if (!visible) { btnLabels[i]!.text = ''; return; }
 
-      const disabled = (b.action === 'double' && (credits < bet || playerHand.length !== 2));
+      const disabled = (b.action === 'double' && (credits < bet || playerHand.length !== 2)) || (b.action === 'surrender' && playerHand.length !== 2);
       g.roundRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h, 6)
         .fill({ color: disabled ? 0x333333 : 0x1a4a2a })
         .stroke({ width: 2, color: disabled ? 0x555555 : 0x3ddc84 });
@@ -229,8 +231,17 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx('blip');
     if (handValue(playerHand) > 21) {
       endRound('BUST! DEALER WINS', -bet);
+    } else if (playerHand.length >= 5 && handValue(playerHand) <= 21) {
+      // Feature: 5-Card Charlie — five cards without busting auto-wins
+      endRound('5-CARD CHARLIE! +' + bet, bet);
     }
     draw();
+  };
+
+  // Feature: surrender — forfeit half the bet on the opening hand
+  const surrender = (): void => {
+    if (gamePhase !== 'player' || playerHand.length !== 2) return;
+    endRound('SURRENDER', -Math.floor(bet / 2));
   };
 
   const stand = (): void => {
@@ -251,6 +262,11 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const endRound = (msg: string, delta: number): void => {
+    // Feature: win-streak bonus
+    if (delta > 0) {
+      streak++;
+      if (streak >= 3) { const sb = streak * 5; delta += sb; msg += ` (STREAK +${sb})`; }
+    } else if (delta < 0) streak = 0;
     credits += delta;
     score += Math.max(0, delta);
     ctx.hud.setScore(credits);
@@ -274,6 +290,7 @@ export default function createGame(ctx: GameContext): Game {
         if (b.action === 'hit') hit();
         else if (b.action === 'stand') stand();
         else if (b.action === 'double') doubleDown();
+        else if (b.action === 'surrender') surrender();
         else if (b.action === 'deal') { bet = Math.min(bet, credits); deal(); }
         else if (b.action === 'bet+') { bet = Math.min(bet + 10, credits, 100); draw(); }
         else if (b.action === 'bet-') { bet = Math.max(bet - 10, 10); draw(); }

@@ -19,11 +19,13 @@ export default function createGame(ctx: GameContext): Game {
   const grid = new Array<number>(N * N).fill(0);
   let moves = 20;
   let score = 0;
+  let level = 1; // Feature: level multiplier
+  let target = 2000;
   let over = false;
   const queue: number[] = [];
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel(`MOVES ${moves}`);
+  ctx.hud.setLabel(`MOVES ${moves} · L1`);
 
   const add = (c: number, r: number): void => {
     if (c < 0 || c >= N || r < 0 || r >= N) return;
@@ -32,14 +34,17 @@ export default function createGame(ctx: GameContext): Game {
     if (grid[i]! >= 4) queue.push(i);
   };
 
-  const resolve = (): void => {
+  const resolve = (): number => {
+    let chain = 0;
     while (queue.length) {
       const i = queue.shift()!;
       if ((grid[i] ?? 0) < 4) continue;
       grid[i] = 0;
+      chain++;
       const c = i % N;
       const r = Math.floor(i / N);
-      score += 40;
+      // Feature: escalating chain bonus × level multiplier
+      score += 40 * level * (1 + Math.floor(chain / 4));
       add(c + 1, r);
       add(c - 1, r);
       add(c, r + 1);
@@ -47,6 +52,7 @@ export default function createGame(ctx: GameContext): Game {
       ctx.fx.flashRect(ox + c * cell, oy + r * cell, cell, cell, 0xc084fc);
     }
     ctx.hud.setScore(score);
+    return chain;
   };
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
@@ -56,12 +62,17 @@ export default function createGame(ctx: GameContext): Game {
     if (c < 0 || r < 0 || c >= N || r >= N) return;
     moves--;
     add(c, r);
-    resolve();
-    ctx.audio.sfx('blip');
-    ctx.hud.setLabel(`MOVES ${moves}`);
+    const chain = resolve();
+    ctx.audio.sfx(chain >= 4 ? 'powerup' : 'blip');
+    if (chain >= 3) ctx.fx.floatingText(`CHAIN ${chain}!`, W / 2, oy - 18, 0xc084fc);
+    // Feature: big chains refund moves
+    if (chain >= 5) { moves += 2; ctx.fx.floatingText('+2 MOVES', W / 2, oy - 40, 0x3ddc84); }
+    // Feature: level progression
+    if (score >= target) { level++; moves += 6; target += 2000 + level * 900; ctx.hud.toast(`LEVEL ${level}! +6`); ctx.audio.sfx('levelup'); }
+    ctx.hud.setLabel(`MOVES ${moves} · L${level}`);
     if (moves <= 0) {
       over = true;
-      ctx.gameOver(score, { cells: grid.filter(Boolean).length });
+      ctx.gameOver(score, { cells: grid.filter(Boolean).length, level });
     }
     draw();
   });

@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 
-const WORDS = ['PIXEL', 'ARCADE', 'VECTOR', 'BUTTON', 'PUZZLE', 'TOKEN', 'RETRO', 'SPRITE', 'COMBO', 'POCKET'];
+const WORDS = ['PIXEL', 'ARCADE', 'VECTOR', 'BUTTON', 'PUZZLE', 'TOKEN', 'RETRO', 'SPRITE', 'COMBO', 'POCKET', 'JOYSTICK', 'CONSOLE', 'NEON', 'GLITCH', 'POWERUP', 'CHIPTUNE', 'CARTRIDGE', 'HIGHSCORE'];
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -22,11 +22,16 @@ export default function createGame(ctx: GameContext): Game {
   let score = 0;
   let lives = 3;
   let time = 50;
+  let streak = 0; // Feature: streak multiplier
+  let hints = 3; // Feature: 50/50 eliminate hint
+  let shownAt = performance.now();
+  const eliminated = new Set<number>();
   const labels: Text[] = [];
 
   ctx.hud.setScore(score);
   ctx.hud.setLives(lives);
-  ctx.hud.setLabel('50s');
+  const setLabel = (): void => ctx.hud.setLabel(`${Math.ceil(Math.max(0, time))}s · 💡${hints}`);
+  setLabel();
 
   function shuffleWord(word: string): string {
     let s = word;
@@ -40,22 +45,40 @@ export default function createGame(ctx: GameContext): Game {
     while (set.size < 3) set.add(WORDS[ctx.rng.int(0, WORDS.length - 1)]!);
     choices = [...set].sort(() => ctx.rng.next() - 0.5);
     scramble.text = shuffleWord(answer);
+    eliminated.clear();
+    shownAt = performance.now();
+    draw();
+  }
+
+  function useHint(): void {
+    if (hints <= 0) return;
+    const wrong = choices.map((c, i) => (c !== answer && !eliminated.has(i) ? i : -1)).filter((i) => i >= 0);
+    if (!wrong.length) return;
+    hints--;
+    eliminated.add(ctx.rng.pick(wrong));
+    ctx.audio.sfx('powerup');
+    setLabel();
     draw();
   }
 
   function choose(i: number): void {
+    if (eliminated.has(i)) return;
     if (choices[i] === answer) {
-      score += 180;
+      streak++;
+      const mult = 1 + Math.floor(streak / 4);
+      const speed = Math.max(0, 60 - Math.round((performance.now() - shownAt) / 60));
+      score += (180 + speed) * mult;
       time += 1.5;
       ctx.audio.sfx('coin');
-      ctx.fx.floatingText('+WORD', W / 2, H * 0.22, 0xa78bfa);
+      ctx.fx.floatingText(streak >= 4 ? `x${mult}` : '+WORD', W / 2, H * 0.22, 0xa78bfa);
       next();
     } else {
+      streak = 0;
       lives--;
       ctx.audio.sfx('hit');
       ctx.fx.screenShake(4, 0.12);
       ctx.hud.setLives(lives);
-      if (lives <= 0) ctx.gameOver(score);
+      if (lives <= 0) { ctx.gameOver(score, { streak }); return; }
     }
     ctx.hud.setScore(score);
   }
@@ -65,7 +88,8 @@ export default function createGame(ctx: GameContext): Game {
     choose(Math.min(2, Math.floor((x / W) * 3)));
   });
   const offDown = ctx.input.on('down', (a) => {
-    if (a === 'left') choose(0);
+    if (a === 'start' || a === 'select') useHint();
+    else if (a === 'left') choose(0);
     else if (a === 'up' || a === 'a') choose(1);
     else if (a === 'right' || a === 'b') choose(2);
   });
@@ -77,8 +101,9 @@ export default function createGame(ctx: GameContext): Game {
     const y = H * 0.62;
     choices.forEach((choice, i) => {
       const x = W * (0.18 + i * 0.32);
-      g.roundRect(x - 52, y, 104, 74, 10).fill({ color: 0x24183f }).stroke({ width: 2, color: 0xa78bfa });
-      const t = new Text({ text: choice, style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff } });
+      const gone = eliminated.has(i);
+      g.roundRect(x - 52, y, 104, 74, 10).fill({ color: gone ? 0x161122 : 0x24183f }).stroke({ width: 2, color: gone ? 0x3a3450 : 0xa78bfa, alpha: gone ? 0.4 : 1 });
+      const t = new Text({ text: gone ? '✗' : choice, style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: gone ? 0x5a5470 : 0xffffff } });
       t.anchor.set(0.5);
       t.position.set(x, y + 37);
       labels.push(t);
@@ -89,9 +114,10 @@ export default function createGame(ctx: GameContext): Game {
   next();
   return {
     update(dt) {
+      if (lives <= 0) return;
       time -= dt;
-      ctx.hud.setLabel(`${Math.ceil(Math.max(0, time))}s`);
-      if (time <= 0) ctx.gameOver(score);
+      setLabel();
+      if (time <= 0) ctx.gameOver(score, { streak });
     },
     destroy() {
       offTap();

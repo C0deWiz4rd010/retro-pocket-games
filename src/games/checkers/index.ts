@@ -164,7 +164,7 @@ export default function createGame(ctx: GameContext): Game {
     // Feature: 1-ply lookahead — among the best moves, prefer the one that least exposes
     // the AI to an immediate recapture.
     const snapshot = (): Piece[][] => board.map((row) => row.map((p) => (p ? { ...p } : null)));
-    const restore = (snap: Piece[][]): void => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) board[r]![c] = snap[r]![c]; };
+    const restore = (snap: Piece[][]): void => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) board[r]![c] = snap[r]![c] ?? null; };
     let chosen = candidates[0]!;
     let bestReply = Infinity;
     for (const m of candidates) {

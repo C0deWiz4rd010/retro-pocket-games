@@ -19,16 +19,20 @@ export default function createGame(ctx: GameContext): Game {
   let target = ctx.rng.next() * Math.PI * 2;
   let width = 0.7;
   let speed = 2.3;
+  let lockNo = 1; // Feature: lock progression
+  let combo = 0; // Feature: perfect-pin combo
 
   ctx.hud.setScore(score);
   ctx.hud.setLives(lives);
-  ctx.hud.setLabel('PIN 1/5');
+  ctx.hud.setLabel('LOCK 1 · PIN 1/5');
 
   function resetPin(): void {
     target = ctx.rng.next() * Math.PI * 2;
-    width = Math.max(0.24, 0.72 - pin * 0.08);
-    speed = 2.1 + pin * 0.42;
-    ctx.hud.setLabel(`PIN ${pin}/5`);
+    width = Math.max(0.18, 0.72 - pin * 0.08 - lockNo * 0.03);
+    // Feature: alternate locks spin in reverse
+    const dir = lockNo % 2 === 0 ? -1 : 1;
+    speed = (2.1 + pin * 0.42 + lockNo * 0.3) * dir;
+    ctx.hud.setLabel(`LOCK ${lockNo} · PIN ${pin}/5`);
   }
 
   function diff(a: number, b: number): number {
@@ -36,24 +40,33 @@ export default function createGame(ctx: GameContext): Game {
   }
 
   function pick(): void {
-    const hit = diff(angle, target) < width / 2;
+    const d = diff(angle, target);
+    const hit = d < width / 2;
     if (hit) {
-      score += 300 + pin * 80 + Math.floor((width - diff(angle, target)) * 120);
-      ctx.audio.sfx('coin');
-      ctx.fx.floatingText('CLICK', W / 2, H * 0.3, 0xfacc15);
+      combo++;
+      const mult = 1 + Math.floor(combo / 4);
+      const perfect = d < width * 0.15;
+      score += (300 + pin * 80 + lockNo * 60 + Math.floor((width - d) * 120) + (perfect ? 200 : 0)) * mult;
+      ctx.audio.sfx(perfect ? 'powerup' : 'coin');
+      ctx.fx.floatingText(perfect ? `PERFECT${mult > 1 ? ` x${mult}` : ''}` : 'CLICK', W / 2, H * 0.3, 0xfacc15);
       ctx.fx.flashRect(W * 0.2, H * 0.24, W * 0.6, H * 0.56, 0xfacc15);
       pin++;
       if (pin > 5) {
-        ctx.gameOver(score, { pins: 5 });
-        return;
+        // Feature: lock cracked → bank a bonus and start a harder lock
+        score += 500 + lockNo * 200;
+        lockNo++;
+        pin = 1;
+        ctx.hud.toast(`LOCK ${lockNo - 1} CRACKED!`);
+        ctx.audio.sfx('levelup');
       }
       resetPin();
     } else {
+      combo = 0;
       lives--;
       ctx.audio.sfx('hit');
       ctx.fx.screenShake(5, 0.12);
       ctx.hud.setLives(lives);
-      if (lives <= 0) ctx.gameOver(score, { pins: pin - 1 });
+      if (lives <= 0) { ctx.gameOver(score, { pins: pin - 1, locks: lockNo - 1 }); return; }
     }
     ctx.hud.setScore(score);
   }

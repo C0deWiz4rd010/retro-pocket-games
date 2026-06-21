@@ -276,6 +276,20 @@
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tile-accent) 75%, transparent));
   pointer-events: none;
 }
+/* OpenMoji SVG glyphs — sized to the parent's font-size via 1em, so every existing glyph
+   style (cover, cards, scores, hero) keeps working and inherits its neon drop-shadow. */
+.emoji {
+  width: 1em;
+  height: 1em;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: -0.15em;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.emoji-mono {
+  display: inline-block;
+}
 .tile__cover-art--mono {
   font-family: var(--font-display, var(--font-hud, sans-serif));
   font-weight: 900;

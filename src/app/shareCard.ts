@@ -1,4 +1,16 @@
 import type { GameMeta } from '@core/Registry';
+import { emojiSrc } from '@utils/glyph';
+
+/** Load an image URL into an HTMLImageElement (for drawing emoji art onto the canvas). */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
 /** Read a CSS custom property from :root (so the card matches the active theme). */
 function cssVar(name: string, fallback: string): string {
@@ -50,9 +62,23 @@ export async function shareScoreCard(meta: GameMeta, score: number, isBest: bool
   ctx.font = '700 44px Inter, system-ui, sans-serif';
   ctx.fillText('● RETRO POCKET', W / 2, 200);
 
-  // game glyph + title
-  ctx.font = '180px serif';
-  ctx.fillText(meta.glyph, W / 2, 470);
+  // game glyph + title — draw the OpenMoji SVG when available, else fall back to text
+  const glyphUrl = emojiSrc(meta.glyph);
+  let drewGlyphImg = false;
+  if (glyphUrl) {
+    try {
+      const img = await loadImage(glyphUrl);
+      const gs = 200;
+      ctx.drawImage(img, (W - gs) / 2, 300, gs, gs);
+      drewGlyphImg = true;
+    } catch {
+      /* fall back to text glyph below */
+    }
+  }
+  if (!drewGlyphImg) {
+    ctx.font = '180px serif';
+    ctx.fillText(meta.glyph, W / 2, 470);
+  }
   ctx.fillStyle = text;
   ctx.font = '800 84px Inter, system-ui, sans-serif';
   ctx.fillText(meta.title.toUpperCase(), W / 2, 600);

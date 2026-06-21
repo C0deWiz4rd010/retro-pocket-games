@@ -1,4 +1,5 @@
 import { el } from '@utils/dom';
+import { glyphEl } from '@utils/glyph';
 import { profile, xpForLevel } from '@store/profile';
 import { unlockedCount, ACHIEVEMENTS } from '@store/achievements';
 import { daily } from '@store/dailyStore';
@@ -58,7 +59,7 @@ export function renderProfile(): HTMLElement {
           class: 'fav-game',
           onClick: () => (location.hash = `#/play/${favMeta.id}`),
         }, [
-          el('span', { class: 'fav-game__glyph' }, [favMeta.glyph]),
+          el('span', { class: 'fav-game__glyph' }, [glyphEl(favMeta.glyph)]),
           el('div', {}, [
             el('div', { class: 'fav-game__label' }, [t('profile.favorite')]),
             el('div', { class: 'fav-game__title' }, [`${favMeta.title} · ${favPlays}×`]),

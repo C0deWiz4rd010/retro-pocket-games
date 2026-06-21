@@ -1,0 +1,2 @@
+Emoji graphics in this folder are from OpenMoji (https://openmoji.org), version 15.0.0.
+Licensed under Creative Commons CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/).

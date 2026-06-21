@@ -1,4 +1,5 @@
 import { el, clear, mount } from '@utils/dom';
+import { glyphEl } from '@utils/glyph';
 import { pixi } from '@core/PixiManager';
 import { audio } from '@core/AudioManager';
 import { COLLECTIONS, GAMES, GROUP_ORDER, getGame, type GameCollection, type GameMeta, type GameMode } from '@core/Registry';
@@ -420,7 +421,7 @@ export class App {
     if (!recent.length) return [];
     const cards = recent.slice(0, 8).map((g) =>
       el('button', { class: 'continue-card', style: `--ca:${g.accent}`, onClick: () => this.go(`play/${g.id}`) }, [
-        el('div', { class: 'g' }, [g.glyph]),
+        el('div', { class: 'g' }, [glyphEl(g.glyph)]),
         el('div', { class: 't' }, [g.title]),
         el('div', { class: 's' }, [`★ ${getBest(g.id)}`]),
         el('div', { class: 'ago' }, [this.timeAgo(getLastPlayed(g.id))]),
@@ -753,7 +754,7 @@ export class App {
       el('i', {}),
       el('i', {}),
       el('i', {}),
-      el('div', { class: `tile__cover-art${letters ? ' tile__cover-art--mono' : ''}` }, [g.glyph]),
+      el('div', { class: `tile__cover-art${letters ? ' tile__cover-art--mono' : ''}` }, [glyphEl(g.glyph)]),
     ]);
   }
 

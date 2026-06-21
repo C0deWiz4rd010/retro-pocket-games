@@ -1,4 +1,5 @@
 import { el } from '@utils/dom';
+import { glyphEl } from '@utils/glyph';
 import { GAMES, getGame } from '@core/Registry';
 import { loadScores, getBest } from '@store/scores';
 import { loadLeaderboard, getEntries } from '@store/leaderboard';
@@ -29,7 +30,7 @@ async function renderAll(): Promise<HTMLElement> {
           { class: 'score-list' },
           withScores.map(({ g, best }) =>
             el('button', { class: 'score-row', onClick: () => (location.hash = `#/scores/${g.id}`) }, [
-              el('span', { class: 'score-row__glyph' }, [g.glyph]),
+              el('span', { class: 'score-row__glyph' }, [glyphEl(g.glyph)]),
               el('span', { class: 'score-row__title' }, [g.title]),
               el('span', { class: 'score-row__best' }, [`★ ${best.toLocaleString()}`]),
             ]),
@@ -61,7 +62,7 @@ async function renderOne(gameId: string): Promise<HTMLElement> {
 
   return el('div', { class: 'scroll' }, [
     el('div', { class: 'lb-hero' }, [
-      el('div', { class: 'lb-hero__glyph' }, [meta.glyph]),
+      el('div', { class: 'lb-hero__glyph' }, [glyphEl(meta.glyph)]),
       el('div', { class: 'lb-hero__title' }, [meta.title]),
       el('button', { class: 'btn btn--primary', onClick: () => (location.hash = `#/play/${gameId}`) }, [
         `▶  ${t('home.playToday')}`,

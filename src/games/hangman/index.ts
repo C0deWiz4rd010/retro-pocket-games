@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 
-const WORDS = ['PIXEL', 'ARCADE', 'POCKET', 'VECTOR', 'BUTTON', 'PUZZLE', 'RETRO', 'SCREEN'];
+const WORDS = ['PIXEL', 'ARCADE', 'POCKET', 'VECTOR', 'BUTTON', 'PUZZLE', 'RETRO', 'SCREEN', 'JOYSTICK', 'CARTRIDGE', 'HIGHSCORE', 'POWERUP', 'NEON', 'CONSOLE', 'CHIPTUNE', 'GLITCH'];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 export default function createGame(ctx: GameContext): Game {
@@ -30,15 +30,26 @@ export default function createGame(ctx: GameContext): Game {
     tempTexts.length = 0;
   };
 
-  const word = ctx.rng.pick(WORDS);
+  let word = ctx.rng.pick(WORDS);
   const guessed = new Set<string>();
   let misses = 0;
   let over = false;
   let score = 0;
+  let round = 1; // Feature: round progression
+  let hints = 2; // Feature: reveal-a-letter hint
   const maxMisses = 6;
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('HANGMAN');
+  const setLabel = (): void => ctx.hud.setLabel(`ROUND ${round} · ✗${misses}/${maxMisses} · 💡${hints}`);
+  setLabel();
+
+  const newWord = (): void => {
+    word = ctx.rng.pick(WORDS);
+    guessed.clear();
+    misses = 0;
+    round++;
+    setLabel();
+  };
 
   const visibleWord = (): string => word.split('').map((l) => (guessed.has(l) ? l : '_')).join(' ');
   const hasWon = (): boolean => word.split('').every((l) => guessed.has(l));
@@ -56,15 +67,29 @@ export default function createGame(ctx: GameContext): Game {
       ctx.fx.screenShake(4, 0.12);
     }
     if (hasWon()) {
-      over = true;
-      score += Math.max(0, maxMisses - misses) * 250;
-      ctx.gameOver(score, { misses });
+      // Feature: solved → bank a bonus and advance to the next word
+      score += Math.max(0, maxMisses - misses) * 250 + round * 100;
+      ctx.audio.sfx('levelup');
+      ctx.fx.floatingText('SOLVED!', W / 2, H * 0.3, 0x3ddc84);
+      ctx.hud.setScore(score);
+      newWord();
+      draw();
+      return;
     } else if (misses >= maxMisses) {
       over = true;
-      ctx.gameOver(score, { misses });
+      ctx.gameOver(score, { misses, round });
     }
+    setLabel();
     ctx.hud.setScore(score);
     draw();
+  };
+
+  const useHint = (): void => {
+    if (over || hints <= 0) return;
+    const unrevealed = word.split('').filter((l) => !guessed.has(l));
+    if (!unrevealed.length) return;
+    hints--;
+    guess(ctx.rng.pick(unrevealed)); // reveals a correct letter (guess handles win)
   };
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
@@ -79,6 +104,7 @@ export default function createGame(ctx: GameContext): Game {
     if (letter) guess(letter);
   });
   const offDown = ctx.input.on('down', (a) => {
+    if (a === 'b' || a === 'start') { useHint(); return; }
     if (a === 'a') {
       const next = LETTERS.find((l) => !guessed.has(l));
       if (next) guess(next);
@@ -116,8 +142,10 @@ export default function createGame(ctx: GameContext): Game {
       const x = c * keyW + 4;
       const y = top + r * keyH;
       const used = guessed.has(letter);
-      g.roundRect(x, y, keyW - 8, keyH - 6, 7).fill({ color: used ? 0x1f2937 : 0x164e63 }).stroke({ width: 1, color: 0x7dd3fc, alpha: used ? 0.25 : 0.9 });
-      const t = new Text({ text: letter, style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: used ? 0x64748b : 0xffffff } });
+      // Feature: colour feedback — green for correct guesses, red for wrong
+      const keyColor = used ? (word.includes(letter) ? 0x1d6e44 : 0x7a2424) : 0x164e63;
+      g.roundRect(x, y, keyW - 8, keyH - 6, 7).fill({ color: keyColor }).stroke({ width: 1, color: 0x7dd3fc, alpha: used ? 0.25 : 0.9 });
+      const t = new Text({ text: letter, style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: used ? 0xcccccc : 0xffffff } });
       t.anchor.set(0.5);
       t.position.set(c * keyW + keyW / 2, y + keyH / 2 - 2);
       addTemp(t);

@@ -161,7 +161,20 @@ export default function createGame(ctx: GameContext): Game {
     // pick top move with slight randomness
     const topLen = moves[0]!.captures.length;
     const candidates = moves.filter((m) => m.captures.length === topLen);
-    const chosen = candidates[Math.floor(ctx.rng.next() * candidates.length)]!;
+    // Feature: 1-ply lookahead — among the best moves, prefer the one that least exposes
+    // the AI to an immediate recapture.
+    const snapshot = (): Piece[][] => board.map((row) => row.map((p) => (p ? { ...p } : null)));
+    const restore = (snap: Piece[][]): void => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) board[r]![c] = snap[r]![c]; };
+    let chosen = candidates[0]!;
+    let bestReply = Infinity;
+    for (const m of candidates) {
+      const snap = snapshot();
+      applyMove(m);
+      const reply = getMoves(0);
+      const maxCap = reply.reduce((mx, rm) => Math.max(mx, rm.captures.length), 0);
+      restore(snap);
+      if (maxCap < bestReply || (maxCap === bestReply && ctx.rng.next() < 0.3)) { bestReply = maxCap; chosen = m; }
+    }
     applyMove(chosen);
     if (chosen.captures.length) {
       ctx.audio.sfx('explosion');
@@ -198,6 +211,14 @@ export default function createGame(ctx: GameContext): Game {
 
     // highlight valid moves for selected piece
     const moves = playerTurn ? validMoves() : [];
+    // Feature: when a capture is available it is mandatory — outline the pieces that can capture
+    if (playerTurn && moves.some((m) => m.captures.length)) {
+      const cappers = new Set(moves.filter((m) => m.captures.length).map((m) => `${m.fr},${m.fc}`));
+      for (const key of cappers) {
+        const [pr, pc] = key.split(',').map(Number);
+        g.roundRect(ox + pc! * cell + 1, oy + pr! * cell + 1, cell - 2, cell - 2, 4).stroke({ width: 2, color: 0xff4d4d, alpha: 0.8 });
+      }
+    }
     if (sel) {
       const selMoves = moves.filter((m) => m.fr === sel!.r && m.fc === sel!.c);
       selMoves.forEach((m) => {
@@ -241,14 +262,19 @@ export default function createGame(ctx: GameContext): Game {
       const moves = getMoves(0);
       const m = moves.find((mv) => mv.fr === sel!.r && mv.fc === sel!.c && mv.tr === r && mv.tc === c);
       if (m) {
+        const wasKing = board[m.fr]![m.fc]!.king;
         applyMove(m);
         if (m.captures.length) {
           ctx.audio.sfx('coin');
           score += m.captures.length * 100;
+          // Feature: multi-capture bonus
+          if (m.captures.length >= 2) { score += m.captures.length * 75; ctx.hud.toast(`${m.captures.length}× CAPTURE!`); }
           ctx.hud.setScore(score);
         } else {
           ctx.audio.sfx('blip');
         }
+        // Feature: king-promotion bonus
+        if (!wasKing && board[m.tr]![m.tc]!.king) { score += 200; ctx.hud.toast('KING ME! +200'); ctx.hud.setScore(score); ctx.audio.sfx('powerup'); }
         sel = null;
         playerTurn = false;
         ctx.hud.setLabel('AI THINKING…');

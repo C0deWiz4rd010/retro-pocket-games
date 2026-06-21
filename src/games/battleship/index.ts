@@ -76,6 +76,16 @@ export default function createGame(ctx: GameContext): Game {
   let score = 0;
   let over = false;
   let playerTurn = true;
+  let hitStreak = 0; // Feature: consecutive-hit multiplier
+  let sonar = 2; // Feature: sonar power-up
+  let sonarArmed = false;
+  const sonarReveal = new Set<number>();
+
+  const shipsLeft = (board: Board): number => board.ships.filter((s) => s.hits < s.cells.length).length;
+  const updateLabels = (): void => {
+    playerLabel.text = `YOUR FLEET · ${shipsLeft(player)}`;
+    enemyLabel.text = sonarArmed ? 'SONAR: TAP A ZONE' : `ENEMY · ${shipsLeft(enemy)} · 📡${sonar}`;
+  };
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('YOUR TURN — FIRE!');
@@ -112,6 +122,13 @@ export default function createGame(ctx: GameContext): Game {
     g.clear();
     drawBoard(player, playerOx, playerOy, false);
     drawBoard(enemy, enemyOx, enemyOy, true);
+    // sonar hints on the enemy board
+    for (const i of sonarReveal) {
+      const c = i % GRID, r = Math.floor(i / GRID);
+      const x = enemyOx + c * cell, y = enemyOy + r * cell;
+      if (enemy.cells[i] === 'ship') g.circle(x + cell / 2, y + cell / 2, cell * 0.28).stroke({ width: 2, color: 0x00f7ff, alpha: 0.7 });
+      else g.circle(x + cell / 2, y + cell / 2, cell * 0.08).fill({ color: 0x00f7ff, alpha: 0.4 });
+    }
   };
 
   const checkWin = (board: Board): boolean =>
@@ -126,7 +143,10 @@ export default function createGame(ctx: GameContext): Game {
 
     if (wasShip) {
       ctx.audio.sfx('explosion');
-      score += 50;
+      hitStreak++;
+      const mult = 1 + Math.floor(hitStreak / 3);
+      score += 50 * mult;
+      if (hitStreak >= 3 && hitStreak % 3 === 0) ctx.hud.toast(`STREAK x${mult}`);
       ctx.hud.setScore(score);
       // check if ship sunk
       for (const ship of enemy.ships) {
@@ -150,9 +170,11 @@ export default function createGame(ctx: GameContext): Game {
       }
     } else {
       ctx.audio.sfx('blip');
+      hitStreak = 0;
       playerTurn = false;
       ctx.hud.setLabel('ENEMY TURN…');
     }
+    updateLabels();
     draw();
     if (!wasShip) setTimeout(() => aiTurn(), 600);
   };
@@ -217,6 +239,7 @@ export default function createGame(ctx: GameContext): Game {
 
     playerTurn = true;
     ctx.hud.setLabel('YOUR TURN — FIRE!');
+    updateLabels();
     draw();
   };
 
@@ -224,17 +247,44 @@ export default function createGame(ctx: GameContext): Game {
     if (over || !playerTurn) return;
     const c = Math.floor((x - enemyOx) / cell);
     const r = Math.floor((y - enemyOy) / cell);
-    if (c >= 0 && c < GRID && r >= 0 && r < GRID) {
-      shootEnemy(idx(c, r));
+    if (c < 0 || c >= GRID || r < 0 || r >= GRID) return;
+    if (sonarArmed) {
+      // Feature: sonar reveals ships in the tapped 3x3 zone
+      sonarArmed = false;
+      sonar--;
+      let found = 0;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        const nc = c + dc, nr = r + dr;
+        if (nc < 0 || nc >= GRID || nr < 0 || nr >= GRID) continue;
+        const i = idx(nc, nr);
+        sonarReveal.add(i);
+        if (enemy.cells[i] === 'ship') found++;
+      }
+      ctx.hud.toast(`SONAR: ${found} ship cell${found === 1 ? '' : 's'} near`);
+      ctx.audio.sfx('powerup');
+      updateLabels();
+      draw();
+      return;
+    }
+    shootEnemy(idx(c, r));
+  });
+  const offDown = ctx.input.on('down', (a) => {
+    if (over || !playerTurn) return;
+    if ((a === 'a' || a === 'b' || a === 'start') && sonar > 0) {
+      sonarArmed = !sonarArmed;
+      ctx.audio.sfx('select');
+      updateLabels();
     }
   });
 
+  updateLabels();
   draw();
 
   return {
     update() {},
     destroy() {
       offTap();
+      offDown();
       layer.destroy({ children: true });
     },
   };

@@ -97,10 +97,13 @@ export default function createGame(ctx: GameContext): Game {
   let selectedNum = 0;
   let over = false;
   let mistakes = 0;
+  let hints = 3; // Feature: hint power-up
+  const MAX_MISTAKES = 3; // Feature: three-strikes limit
   const startTime = performance.now();
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('TAP CELL → NUMBER');
+  const setLabel = (): void => ctx.hud.setLabel(`✗ ${mistakes}/${MAX_MISTAKES} · 💡${hints}`);
+  setLabel();
 
   const pickerY = oy + gw + cell * 0.8;
   const pickerCellW = gw / 10;
@@ -120,9 +123,13 @@ export default function createGame(ctx: GameContext): Game {
         const isRelated = sel && (sel.r === r || sel.c === c || (Math.floor(sel.r / BOX) === Math.floor(r / BOX) && Math.floor(sel.c / BOX) === Math.floor(c / BOX)));
         const val = userGrid[r]![c];
         const wrong = val !== 0 && !isGiven && val !== solution[r]![c];
+        // Feature: highlight every cell holding the same number as the selection
+        const selVal = sel ? userGrid[sel.r]![sel.c] : 0;
+        const sameNum = selVal !== 0 && val === selVal;
 
         let bg = 0x12122a;
         if (isRelated) bg = 0x1e1e3c;
+        if (sameNum) bg = 0x244a3a;
         if (isSel) bg = 0x2e2e6e;
 
         g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 2).fill({ color: bg });
@@ -192,7 +199,15 @@ export default function createGame(ctx: GameContext): Game {
             if (prev !== selectedNum) {
               mistakes++;
               ctx.audio.sfx('hit');
-              ctx.hud.setLabel(`MISTAKES ${mistakes}`);
+              setLabel();
+              if (mistakes >= MAX_MISTAKES) {
+                over = true;
+                ctx.audio.sfx('gameover');
+                ctx.hud.toast('THREE STRIKES!');
+                draw();
+                ctx.gameOver(0, { mistakes });
+                return;
+              }
             }
           } else {
             ctx.audio.sfx('eat');
@@ -216,6 +231,37 @@ export default function createGame(ctx: GameContext): Game {
     }
   });
 
+  const finishIfSolved = (): void => {
+    if (!checkSolved()) return;
+    over = true;
+    const elapsed = Math.round((performance.now() - startTime) / 1000);
+    const timeBonus = Math.max(0, 600 - elapsed) * 10;
+    ctx.audio.sfx('powerup');
+    ctx.hud.toast('SOLVED!');
+    draw();
+    ctx.gameOver(Math.max(0, 5000 - mistakes * 200 + timeBonus + hints * 150), { mistakes, seconds: elapsed });
+  };
+
+  const useHint = (): void => {
+    if (over || hints <= 0) return;
+    // fill the selected empty/wrong cell, else the first incorrect cell
+    let target: { r: number; c: number } | null = null;
+    if (sel && !given[sel.r]![sel.c] && userGrid[sel.r]![sel.c] !== solution[sel.r]![sel.c]) target = sel;
+    if (!target) {
+      outer: for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!given[r]![c] && userGrid[r]![c] !== solution[r]![c]) { target = { r, c }; break outer; }
+    }
+    if (!target) return;
+    hints--;
+    userGrid[target.r]![target.c] = solution[target.r]![target.c]!;
+    given[target.r]![target.c] = true; // lock the revealed cell
+    ctx.audio.sfx('powerup');
+    ctx.hud.toast(`HINT (${hints})`);
+    setLabel();
+    draw();
+    finishIfSolved();
+  };
+  const offDown = ctx.input.on('down', (a) => { if (a === 'a' || a === 'b' || a === 'start') useHint(); });
+
   draw();
 
   return {
@@ -226,6 +272,7 @@ export default function createGame(ctx: GameContext): Game {
     },
     destroy() {
       offTap();
+      offDown();
       layer.destroy({ children: true });
     },
   };

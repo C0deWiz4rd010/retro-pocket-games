@@ -24,6 +24,7 @@ export default function createGame(ctx: GameContext): Game {
   let lives = 3;
   let time = 45;
   let streak = 0;
+  let shownAt = performance.now(); // Feature: speed bonus
   let problem = makeProblem();
   const labels: Text[] = [];
 
@@ -31,12 +32,22 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setLives(lives);
   ctx.hud.setLabel('45s');
 
+  // Feature: difficulty ramps with score (bigger numbers + division)
   function makeProblem(): Problem {
-    const mode = ctx.rng.int(0, 2);
-    const a = ctx.rng.int(2, mode === 2 ? 12 : 40);
-    const b = ctx.rng.int(2, mode === 2 ? 9 : 35);
-    const answer = mode === 0 ? a + b : mode === 1 ? Math.max(a, b) - Math.min(a, b) : a * b;
-    const label = mode === 0 ? `${a} + ${b}` : mode === 1 ? `${Math.max(a, b)} - ${Math.min(a, b)}` : `${a} x ${b}`;
+    const level = 1 + Math.floor(score / 600);
+    const maxMode = level >= 3 ? 3 : 2;
+    const mode = ctx.rng.int(0, maxMode);
+    let a: number, b: number, answer: number, label: string;
+    if (mode === 3) {
+      b = ctx.rng.int(2, 9);
+      const q = ctx.rng.int(2, 9);
+      a = b * q; answer = q; label = `${a} / ${b}`;
+    } else {
+      a = ctx.rng.int(2, mode === 2 ? 6 + level * 3 : 30 + level * 15);
+      b = ctx.rng.int(2, mode === 2 ? 5 + level : 25 + level * 12);
+      answer = mode === 0 ? a + b : mode === 1 ? Math.max(a, b) - Math.min(a, b) : a * b;
+      label = mode === 0 ? `${a} + ${b}` : mode === 1 ? `${Math.max(a, b)} - ${Math.min(a, b)}` : `${a} x ${b}`;
+    }
     const choices = new Set<number>([answer]);
     while (choices.size < 3) choices.add(Math.max(0, answer + ctx.rng.int(-10, 10) || answer + 1));
     return { label, answer, choices: [...choices].sort(() => ctx.rng.next() - 0.5) };
@@ -47,9 +58,12 @@ export default function createGame(ctx: GameContext): Game {
     if (picked === undefined) return;
     if (picked === problem.answer) {
       streak++;
-      score += 80 + streak * 20;
+      const speed = Math.max(0, 70 - Math.round((performance.now() - shownAt) / 40)); // faster = more
+      score += 80 + streak * 20 + speed;
+      time = Math.min(60, time + 1); // Feature: correct answers add a little time
+      if (streak % 5 === 0 && lives < 5) { lives++; ctx.hud.setLives(lives); ctx.hud.toast(`+1 LIFE (streak ${streak})`); } // Feature: streak life
       ctx.audio.sfx('coin');
-      ctx.fx.floatingText(`x${streak}`, W / 2, H * 0.24, 0x38bdf8);
+      ctx.fx.floatingText(speed > 40 ? `FAST x${streak}` : `x${streak}`, W / 2, H * 0.24, 0x38bdf8);
     } else {
       streak = 0;
       lives--;
@@ -62,6 +76,7 @@ export default function createGame(ctx: GameContext): Game {
       }
     }
     problem = makeProblem();
+    shownAt = performance.now();
     ctx.hud.setScore(score);
     draw();
   }

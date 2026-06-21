@@ -4,12 +4,17 @@ import type { Game, GameContext } from '@core/types';
 const comboScore = (dice: readonly number[]): { label: string; points: number } => {
   const counts = Array.from({ length: 7 }, (_, i) => dice.filter((d) => d === i).length);
   const sorted = dice.slice().sort((a, b) => a - b).join('');
+  const uniq = new Set(dice);
   const sum = dice.reduce((a, b) => a + b, 0);
+  const hasSmallStraight = ['1234', '2345', '3456'].some((s) => sorted.includes(s)) || [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]].some((s) => s.every((n) => uniq.has(n)));
+  const pairs = counts.filter((c) => c >= 2).length;
   if (counts.includes(5)) return { label: 'FIVE OF A KIND', points: 1500 };
   if (counts.includes(4)) return { label: 'FOUR OF A KIND', points: 800 + sum * 10 };
   if (counts.includes(3) && counts.includes(2)) return { label: 'FULL HOUSE', points: 650 };
   if (sorted === '12345' || sorted === '23456') return { label: 'BIG STRAIGHT', points: 700 };
+  if (hasSmallStraight) return { label: 'SMALL STRAIGHT', points: 400 }; // Feature: new combo
   if (counts.includes(3)) return { label: 'THREE OF A KIND', points: 350 + sum * 10 };
+  if (pairs >= 2) return { label: 'TWO PAIR', points: 200 + sum * 8 }; // Feature: new combo
   return { label: 'CHANCE', points: sum * 25 };
 };
 
@@ -49,9 +54,13 @@ export default function createGame(ctx: GameContext): Game {
   const bank = (): void => {
     if (over || rolls === 3) return;
     const combo = comboScore(dice);
-    score += combo.points;
+    let gained = combo.points;
+    // Feature: Yahtzee bonus for five of a kind
+    if (combo.label === 'FIVE OF A KIND') { gained += 500; ctx.hud.toast('YAHTZEE BONUS! +500'); ctx.audio.sfx('powerup'); }
+    else ctx.audio.sfx('coin');
+    score += gained;
     ctx.hud.setScore(score);
-    ctx.fx.floatingText(`+${combo.points}`, W / 2, H * 0.28, 0xfacc15);
+    ctx.fx.floatingText(`${combo.label} +${gained}`, W / 2, H * 0.28, 0xfacc15);
     round++;
     held.clear();
     rolls = 3;
@@ -88,7 +97,8 @@ export default function createGame(ctx: GameContext): Game {
 
   function draw(): void {
     g.clear();
-    label.text = comboScore(dice).label;
+    const c = comboScore(dice);
+    label.text = `${c.label} — ${c.points}`; // Feature: live score preview
     hint.text = `ROLLS ${rolls}  |  A ROLL  B BANK`;
     const dieSize = W * 0.16;
     const startX = (W - dieSize * 5 - 8 * 4) / 2;

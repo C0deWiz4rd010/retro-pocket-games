@@ -30,21 +30,43 @@ export default function createGame(ctx: GameContext): Game {
   let cpu = 0;
   let rounds = 0;
   let over = false;
+  let matchNo = 1; // Feature: match progression
+  let totalScore = 0;
+  let streak = 0; // Feature: round-win streak bonus
+  const history: number[] = []; // Feature: CPU learns the player's pattern
 
   ctx.hud.setScore(0);
-  ctx.hud.setLabel('RPS DUEL');
+  ctx.hud.setLabel('MATCH 1 · 0-0');
+
+  const predictFoe = (): number => {
+    const predictChance = Math.min(0.78, 0.25 + matchNo * 0.16);
+    if (history.length >= 3 && ctx.rng.next() < predictChance) {
+      // counter the player's most frequent recent pick
+      const recent = history.slice(-6);
+      const freq = [0, 0, 0];
+      for (const p of recent) freq[p]!++;
+      let pred = 0;
+      for (let i = 1; i < 3; i++) if (freq[i]! > freq[pred]!) pred = i;
+      return (pred + 1) % 3; // the move that beats `pred`
+    }
+    return ctx.rng.int(0, 2);
+  };
 
   const play = (pick: number): void => {
     if (over) return;
-    const foe = ctx.rng.int(0, 2);
+    const foe = predictFoe();
+    history.push(pick);
     rounds++;
     const win = (pick - foe + 3) % 3;
     if (win === 1) {
       player++;
-      result.text = 'YOU WIN';
+      streak++;
+      if (streak >= 2) { totalScore += streak * 30; }
+      result.text = streak >= 2 ? `YOU WIN (STREAK x${streak})` : 'YOU WIN';
       ctx.audio.sfx('coin');
     } else if (win === 2) {
       cpu++;
+      streak = 0;
       result.text = 'RIVAL WINS';
       ctx.audio.sfx('hit');
     } else {
@@ -52,11 +74,20 @@ export default function createGame(ctx: GameContext): Game {
       ctx.audio.sfx('blip');
     }
     sub.text = `${CHOICES[pick]} vs ${CHOICES[foe]}`;
-    ctx.hud.setScore(player * 100 - cpu * 50);
-    ctx.hud.setLabel(`${player} - ${cpu}`);
-    if (player === 3 || cpu === 3) {
+    ctx.hud.setScore(totalScore + player * 100 - cpu * 50);
+    ctx.hud.setLabel(`MATCH ${matchNo} · ${player} - ${cpu}`);
+    if (player === 3) {
+      // Feature: win the match → bank it and start a harder one
+      totalScore += 500 + matchNo * 200 - cpu * 80;
+      matchNo++;
+      player = 0; cpu = 0; rounds = 0;
+      ctx.hud.toast(`MATCH WON! → ${matchNo}`);
+      ctx.audio.sfx('levelup');
+      ctx.hud.setScore(totalScore);
+      ctx.hud.setLabel(`MATCH ${matchNo} · 0 - 0`);
+    } else if (cpu === 3) {
       over = true;
-      ctx.gameOver(Math.max(0, player * 500 - cpu * 120), { rounds, wins: player });
+      ctx.gameOver(Math.max(0, totalScore), { matches: matchNo - 1, wins: player, rounds });
     }
     draw();
   };

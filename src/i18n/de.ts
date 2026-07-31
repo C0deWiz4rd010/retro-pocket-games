@@ -281,7 +281,7 @@ export const de: Dict = {
   'onboard.next': 'Weiter',
   'onboard.start': 'Los geht’s',
   'onboard.s1t': 'Willkommen bei Retro Pocket',
-  'onboard.s1b': '82 Arcade-Klassiker in der Hosentasche — eine installierbare App, komplett offline.',
+  'onboard.s1b': '85 Arcade-Klassiker in der Hosentasche — eine installierbare App, komplett offline.',
   'onboard.s2t': 'Tippe ein Cabinet zum Spielen',
   'onboard.s2b': 'Wähl eine leuchtende Kachel. Wischen, Tippen oder das Bildschirm-Pad — Tastatur & Gamepad gehen auch.',
   'onboard.s3t': 'Sammle XP, steig im Level auf',

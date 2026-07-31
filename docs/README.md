@@ -1,7 +1,7 @@
 # Retro Pocket - Documentation
 
 This folder is the design and engineering plan for **Retro Pocket**, a mobile-first
-PWA that bundles **70 retro arcade and original games** into one installable app.
+PWA that bundles **85 retro arcade and original games** into one installable app.
 
 > Status: **Planning + active implementation.** These documents are the source of truth for
 > what we are building and why. They are kept up to date as the code evolves.

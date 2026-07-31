@@ -47,7 +47,7 @@ The skin changes the frame and chrome, not the gameplay itself.
 
 **Goals**
 
-- 70 polished retro and original games in a single installable PWA.
+- 85 polished retro and original games in a single installable PWA.
 - Native-grade mobile feel with offline play, fullscreen behavior, haptics, and save-state friendly UX.
 - A cohesive meta layer with XP, achievements, daily challenge, and leaderboards.
 - A codebase clean enough to serve as a portfolio and reference project.
@@ -68,4 +68,4 @@ The skin changes the frame and chrome, not the gameplay itself.
 
 ## One-line for the README
 
-*A pocket arcade in your browser - 70 retro games, one installable PWA.*
+*A pocket arcade in your browser - 85 retro games, one installable PWA.*

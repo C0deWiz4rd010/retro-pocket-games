@@ -281,7 +281,7 @@ export const en: Dict = {
   'onboard.next': 'Next',
   'onboard.start': 'Start playing',
   'onboard.s1t': 'Welcome to Retro Pocket',
-  'onboard.s1b': '82 arcade classics in your pocket — one installable app, all offline.',
+  'onboard.s1b': '85 arcade classics in your pocket — one installable app, all offline.',
   'onboard.s2t': 'Tap a cabinet to play',
   'onboard.s2b': 'Pick any glowing tile. Swipe, tap or use the on-screen pad — keyboard & gamepad work too.',
   'onboard.s3t': 'Earn XP, level up',

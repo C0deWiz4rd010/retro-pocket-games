@@ -50,6 +50,8 @@ export class GameFX {
   }
 
   screenShake(amp = 6, seconds = 0.16): void {
+    // Respect the reduced-motion accessibility setting (shake is a common nausea trigger).
+    if (document.documentElement.classList.contains('a11y-reduced-motion')) return;
     this.shakeAmp = Math.max(this.shakeAmp, amp);
     this.shakeTime = Math.max(this.shakeTime, seconds);
   }

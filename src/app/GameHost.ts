@@ -194,7 +194,27 @@ export class GameHost {
 
     this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
 
-    this.screenView.append(hud, this.buildControls(), this.buildRotatePrompt(), this.overlayHost);
+    this.screenView.append(hud, this.buildControls(), this.buildAssist(), this.buildRotatePrompt(), this.overlayHost);
+  }
+
+  /** A single secondary on-screen button for tap games whose D-pad is hidden
+   * (e.g. minesweeper flag toggle, puzzle hint) so those actions stay reachable on touch. */
+  private buildAssist(): HTMLElement | Text {
+    const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
+    const assist = profile.assist;
+    if (!assist) return document.createTextNode('');
+    const label = t(assist.label);
+    return el('button', {
+      class: 'touch-assist',
+      'aria-label': label,
+      onPointerdown: (e: Event) => {
+        e.preventDefault();
+        this.input.press(assist.action);
+        haptics.tick();
+      },
+      onPointerup: () => this.input.release(assist.action),
+      onPointerleave: () => this.input.release(assist.action),
+    }, [label]);
   }
 
   private buildRotatePrompt(): HTMLElement {

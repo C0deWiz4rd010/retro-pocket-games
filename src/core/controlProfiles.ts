@@ -14,6 +14,9 @@ export interface ControlProfile {
   surfaces: TouchSurface[];
   pointerMode: PointerMode;
   primaryActions: ControlActionHint[];
+  /** Optional secondary on-screen button for tap/swipe games whose D-pad is hidden
+   * (e.g. minesweeper flag toggle, puzzle hint). `label` is an i18n key. */
+  assist?: ControlActionHint;
   hints: string[];
   gamepadDeadzone: number;
 }
@@ -93,10 +96,10 @@ const explicit: Record<string, ControlProfile> = {
   tetris: CONTROL_PROFILES.falling,
   g2048: CONTROL_PROFILES.swipe,
   match3: CONTROL_PROFILES.tap,
-  minesweeper: CONTROL_PROFILES.tap,
+  minesweeper: { ...CONTROL_PROFILES.tap, assist: { action: 'a', label: 'assist.flag' } },
   memory: CONTROL_PROFILES.tap,
-  lightsout: CONTROL_PROFILES.tap,
-  mastermind: CONTROL_PROFILES.tap,
+  lightsout: { ...CONTROL_PROFILES.tap, assist: { action: 'b', label: 'assist.hint' } },
+  mastermind: { ...CONTROL_PROFILES.tap, assist: { action: 'select', label: 'assist.hint' } },
   simon: CONTROL_PROFILES.tap,
   blackjack: CONTROL_PROFILES.tap,
   pong: CONTROL_PROFILES.drag,
@@ -105,6 +108,7 @@ const explicit: Record<string, ControlProfile> = {
   missile: CONTROL_PROFILES.tap,
   asteroids: CONTROL_PROFILES.vector,
   lander: CONTROL_PROFILES.vector,
+  hangman: { ...CONTROL_PROFILES.tap, assist: { action: 'b', label: 'assist.hint' } },
   crystalvault: CONTROL_PROFILES.tap,
   starforge: CONTROL_PROFILES.tap,
   runereactor: CONTROL_PROFILES.tap,

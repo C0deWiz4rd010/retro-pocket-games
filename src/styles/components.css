@@ -677,6 +677,29 @@
 }
 .touch--left .dpad { transform-origin: bottom left; }
 .touch--left .actionbtns { transform-origin: bottom right; }
+/* Secondary assist button (tap games: minesweeper flag, puzzle hint) — kept reachable
+   even though the main .touch surface is hidden for tap presets. */
+.touch-assist {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + var(--safe-b));
+  transform: translateX(-50%);
+  z-index: 11;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  color: var(--text);
+  font-family: var(--font-hud);
+  font-size: 14px;
+  opacity: var(--touch-opacity, 0.9);
+}
+.touch-assist:active {
+  background: var(--primary);
+  color: #04040a;
+  transform: translateX(-50%) scale(0.94);
+}
 .touch--swipe,
 .touch--tap,
 .touch--none {

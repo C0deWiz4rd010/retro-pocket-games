@@ -108,6 +108,7 @@ export const en: Dict = {
   'settings.footer': 'Retro Pocket • all data stays on your device',
   'install.text': 'Install Retro Pocket',
   'install.cta': 'Install',
+  'install.ios.text': 'Install: tap Share, then “Add to Home Screen”.',
   'offline.ready': 'Ready to play offline',
   'update.text': 'New version available',
   'update.cta': 'Reload',

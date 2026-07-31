@@ -20,6 +20,31 @@ export function initPwaUx(): void {
     if (sessions >= 2 && !localStorage.getItem('rp:installDismissed')) showInstallBanner();
   });
 
+  // iOS Safari never fires `beforeinstallprompt`, so guide users to Add-to-Home-Screen
+  // manually after they've returned a couple of times (docs/05 §5, audit §8).
+  const sessions = Number(localStorage.getItem('rp:sessions') ?? '0');
+  if (isIosDevice() && !isStandalone() && sessions >= 2 && !localStorage.getItem('rp:iosHintDismissed')) {
+    showIosHint();
+  }
+
+  function showIosHint(): void {
+    if (document.querySelector('.install-banner')) return;
+    const banner = el('div', { class: 'install-banner' }, [
+      el('span', {}, ['📲 ' + t('install.ios.text')]),
+      el('div', { class: 'install-banner__actions' }, [
+        el('button', {
+          class: 'iconbtn',
+          'aria-label': 'Dismiss',
+          onClick: () => {
+            localStorage.setItem('rp:iosHintDismissed', '1');
+            banner.remove();
+          },
+        }, ['✕']),
+      ]),
+    ]);
+    document.body.append(banner);
+  }
+
   function showInstallBanner(): void {
     if (document.querySelector('.install-banner')) return;
     const banner = el('div', { class: 'install-banner' }, [
@@ -54,6 +79,18 @@ export function offlineReadyToast(): void {
   const toast = el('div', { class: 'toast toast--offline' }, [`✓ ${t('offline.ready')}`]);
   document.body.append(toast);
   window.setTimeout(() => toast.remove(), 2600);
+}
+
+function isIosDevice(): boolean {
+  const ua = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isStandalone(): boolean {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true
+  );
 }
 
 /**

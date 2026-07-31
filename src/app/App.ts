@@ -1083,7 +1083,9 @@ export class App {
   private tipFor(meta: GameMeta): string {
     const tips = meta.polish?.tips ?? meta.tutorialSteps ?? [meta.blurb];
     const index = Math.abs([...meta.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) + new Date().getDate()) % tips.length;
-    return tips[index] ?? meta.blurb;
+    const key = tips[index] ?? meta.blurb;
+    // tips are i18n keys (see Registry.tipsFor); non-key fallbacks pass through t() unchanged.
+    return t(key, { group: t(`group.${meta.group.toLowerCase()}`) });
   }
 
   private async launchWithCountdown(id: string, mode: GameMode): Promise<void> {

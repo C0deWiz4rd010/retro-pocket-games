@@ -566,17 +566,15 @@ function polishFor(game: GameMeta): GamePolish {
   };
 }
 
+/** Kit-based play tips as i18n keys, resolved at render time (App.tipFor) so they localize. */
 function tipsFor(game: GameMeta): string[] {
-  const generic = [
-    `Watch the ${game.group.toLowerCase()} rhythm before chasing risky points.`,
-    `Your next mastery target is usually safer than one huge run.`,
-  ];
-  if (game.kit === 'grid') return ['Plan one move ahead before committing.', 'Use corners and lanes to keep escape routes open.', ...generic];
-  if (game.kit === 'shooter') return ['Prioritize threats closest to the breach line.', 'Short controlled movement beats panic dodging.', ...generic];
-  if (game.kit === 'paddle') return ['Hit near the paddle edge to change the angle.', 'Recover center position after every risky save.', ...generic];
-  if (game.kit === 'vector') return ['Feather inputs instead of holding them forever.', 'Momentum is a resource; spend it deliberately.', ...generic];
-  if (game.kit === 'sidescroll') return ['Tap early and correct gently.', 'Coins are optional if the route is unsafe.', ...generic];
-  return ['Read the board before the timer pressures you.', 'A clean streak beats a rushed mistake.', ...generic];
+  const generic = ['tip.generic1', 'tip.generic2'];
+  if (game.kit === 'grid') return ['tip.grid1', 'tip.grid2', ...generic];
+  if (game.kit === 'shooter') return ['tip.shooter1', 'tip.shooter2', ...generic];
+  if (game.kit === 'paddle') return ['tip.paddle1', 'tip.paddle2', ...generic];
+  if (game.kit === 'vector') return ['tip.vector1', 'tip.vector2', ...generic];
+  if (game.kit === 'sidescroll') return ['tip.side1', 'tip.side2', ...generic];
+  return ['tip.brain1', 'tip.brain2', ...generic];
 }
 
 for (const game of GAMES) {

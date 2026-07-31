@@ -1217,12 +1217,8 @@
   color: var(--text-muted);
   max-width: 240px;
 }
-/* Only show for landscape-only games while the screen is taller than wide. */
-@media (orientation: portrait) {
-  .screen__view[data-orient='landscape'] .rotate-prompt {
-    display: flex;
-  }
-}
+/* Landscape games now auto-rotate to fill a portrait viewport (see PixiManager.computeLayout),
+   so the rotate-device prompt is kept for reference but no longer shown. */
 
 /* ── HUD best-to-beat badge ── */
 .hud__best {

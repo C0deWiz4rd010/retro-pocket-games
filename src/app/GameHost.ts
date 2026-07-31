@@ -229,10 +229,15 @@ export class GameHost {
       dirBtn('down', '▼'),
     ]);
 
+    // Label the on-screen buttons from the control profile (e.g. Thrust/Fire, Cycle/Drop,
+    // Left/Right) instead of a generic A/B, and scale the font to fit longer words.
+    const labelFor = (action: Action, fallback: string): string =>
+      profile.primaryActions.find((p) => p.action === action)?.label ?? fallback;
     const actBtn = (cls: string, action: Action, label: string) =>
       el('button', {
         class: cls,
-        'aria-label': action,
+        'aria-label': label,
+        style: label.length > 3 ? 'font-size:10px' : label.length > 1 ? 'font-size:12px' : '',
         onPointerdown: (e: Event) => {
           e.preventDefault();
           this.input.press(action);
@@ -243,10 +248,11 @@ export class GameHost {
       }, [label]);
 
     const actions = el('div', { class: 'actionbtns' }, [
-      actBtn('b', 'b', 'B'),
-      actBtn('a', 'a', 'A'),
+      actBtn('b', 'b', labelFor('b', 'B')),
+      actBtn('a', 'a', labelFor('a', 'A')),
     ]);
 
+    // CSS (.touch--swipe/tap/none/drag) still governs which surfaces are visible per preset.
     return el('div', {
       class: `touch touch--${profile.preset} touch--${settings().controls.touchLayout}`,
       'data-pointer': profile.pointerMode,

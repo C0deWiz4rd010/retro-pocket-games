@@ -252,10 +252,11 @@ export class GameHost {
 
     // Label the on-screen buttons from the control profile (e.g. Thrust/Fire, Cycle/Drop,
     // Left/Right) instead of a generic A/B, and scale the font to fit longer words.
-    const labelFor = (action: Action, fallback: string): string =>
-      profile.primaryActions.find((p) => p.action === action)?.label ?? fallback;
-    const actBtn = (cls: string, action: Action, label: string) =>
-      el('button', {
+    const labelKeyFor = (action: Action, fallbackKey: string): string =>
+      profile.primaryActions.find((p) => p.action === action)?.label ?? fallbackKey;
+    const actBtn = (cls: string, action: Action, labelKey: string) => {
+      const label = t(labelKey);
+      return el('button', {
         class: cls,
         'aria-label': label,
         style: label.length > 3 ? 'font-size:10px' : label.length > 1 ? 'font-size:12px' : '',
@@ -267,10 +268,11 @@ export class GameHost {
         onPointerup: () => this.input.release(action),
         onPointerleave: () => this.input.release(action),
       }, [label]);
+    };
 
     const actions = el('div', { class: 'actionbtns' }, [
-      actBtn('b', 'b', labelFor('b', 'B')),
-      actBtn('a', 'a', labelFor('a', 'A')),
+      actBtn('b', 'b', labelKeyFor('b', 'ctl.b')),
+      actBtn('a', 'a', labelKeyFor('a', 'ctl.a')),
     ]);
 
     // CSS (.touch--swipe/tap/none/drag) still governs which surfaces are visible per preset.

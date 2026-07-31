@@ -992,7 +992,7 @@ export class App {
       el('div', { class: 'topbar' }, [
         el('button', { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() }, [icon('menu')]),
         el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [icon('back')]),
-        el('div', { class: 'topbar__title' }, ['CARTRIDGE']),
+        el('div', { class: 'topbar__title' }, [t('start.cartridge')]),
       ]),
       el('div', { class: 'scroll start-sheet' }, [
         el('div', { class: 'start-card', style: `--tile-accent:${meta.accent}` }, [
@@ -1002,28 +1002,28 @@ export class App {
             el('h1', { class: 'start-card__title' }, [meta.title]),
             el('p', { class: 'start-card__sub' }, [meta.blurb]),
             el('div', { class: 'start-stats' }, [
-              this.startStat(best ? String(best) : '0', 'Best'),
-              this.startStat(`${mastery}/3`, 'Mastery'),
-              this.startStat(meta.sessionLength ?? 'quick', 'Session'),
-              this.startStat(controls, 'Controls'),
+              this.startStat(best ? String(best) : '0', t('start.best')),
+              this.startStat(`${mastery}/3`, t('start.mastery')),
+              this.startStat(meta.sessionLength ?? 'quick', t('start.session')),
+              this.startStat(controls, t('start.controls')),
             ]),
             this.modePicker(meta, mode),
             el('div', { class: 'start-reward' }, [
               el('div', { class: 'start-reward__item' }, [
                 el('b', {}, [`${meta.reward?.targetScore ?? 1000}`]),
-                el('span', {}, ['Target score']),
+                el('span', {}, [t('start.targetScore')]),
               ]),
               el('div', { class: 'start-reward__item' }, [
                 el('b', {}, [`${meta.reward?.sessionMin ?? 1}-${meta.reward?.sessionMax ?? 2} min`]),
-                el('span', {}, ['Pocket run']),
+                el('span', {}, [t('start.pocketRun')]),
               ]),
               el('div', { class: 'start-reward__item' }, [
-                el('b', {}, [mode === 'practice' ? 'No save' : 'XP + chips']),
-                el('span', {}, ['Rewards']),
+                el('b', {}, [mode === 'practice' ? t('start.noSave') : t('start.rewardsXp')]),
+                el('span', {}, [t('start.rewards')]),
               ]),
             ]),
-            nextGoal ? el('div', { class: 'mission-chip' }, [`Next mission: ${nextGoal.label}`]) : el('div', { class: 'mission-chip' }, ['Mastery complete']),
-            el('div', { class: 'tip-chip' }, [`Tip: ${tip}`]),
+            nextGoal ? el('div', { class: 'mission-chip' }, [`${t('start.nextMission')} ${t(nextGoal.label, nextGoal.labelParams)}`]) : el('div', { class: 'mission-chip' }, [t('start.masteryDone')]),
+            el('div', { class: 'tip-chip' }, [`${t('start.tip')}: ${tip}`]),
             el('div', { class: 'start-actions' }, [
               el('button', { class: 'btn btn--primary', onClick: () => void this.launchWithCountdown(meta.id, mode) }, [icon('play'), this.startButtonLabel(mode)]),
               el('button', { class: 'btn btn--ghost', onClick: () => {

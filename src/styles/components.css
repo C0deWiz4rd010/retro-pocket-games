@@ -536,6 +536,28 @@
   min-width: 0;
 }
 
+/* Mobile: present overlays (pause / game over) as a bottom sheet for a native feel. */
+@media (max-width: 560px) {
+  .overlay {
+    align-items: end;
+  }
+  .panel {
+    width: 100%;
+    max-width: 520px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation: sheet-up 0.24s var(--ease);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(12%);
+    opacity: 0;
+  }
+}
+.a11y-reduced-motion .panel {
+  animation: none;
+}
+
 /* HUD */
 .hud {
   display: flex;

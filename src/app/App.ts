@@ -649,25 +649,25 @@ export class App {
         'aria-label': g.title,
       },
       [
-        el('div', { class: 'tile__badges' }, badges.map((badge) => el('span', { class: `tile__badge tile__badge--${badge.toLowerCase()}` }, [badge]))),
+        el('div', { class: 'tile__badges' }, badges.map((badge) => el('span', { class: `tile__badge tile__badge--${badge.toLowerCase()}` }, [t(`badge.${badge.toLowerCase()}`)]))),
         g.available ? this.favStar(g.id) : '',
         this.tileCover(g),
-        g.available ? el('div', { class: `mastery mastery--${mastery}`, 'aria-label': `Mastery ${mastery} of 3` }, [
+        g.available ? el('div', { class: `mastery mastery--${mastery}`, 'aria-label': t('tile.masteryAria', { n: mastery }) }, [
           el('i', { style: `width:${(mastery / 3) * 100}%` }),
         ]) : '',
         el('div', { class: 'tile__body' }, [
           el('div', { class: 'tile__title' }, [g.title]),
           el('div', { class: 'tile__best' }, [
-            g.available ? (best ? `Best ${best}` : 'No score yet') : 'Coming soon',
+            g.available ? (best ? t('tile.best', { n: best }) : t('tile.noScore')) : t('tile.comingSoon'),
           ]),
           el('div', { class: 'tile__meta' }, [`${this.sessionLabel(g)} / ${this.controlLabel(g)}`]),
           el('div', { class: 'tile__stats' }, [
-            this.tileStat('Diff', this.difficultyLabel(g)),
-            this.tileStat('Goal', String(g.reward?.targetScore ?? 1000)),
-            this.tileStat('Ach', `${achievements.unlocked}/${achievements.total}`),
+            this.tileStat(t('tile.diff'), this.difficultyLabel(g)),
+            this.tileStat(t('tile.goal'), String(g.reward?.targetScore ?? 1000)),
+            this.tileStat(t('tile.ach'), `${achievements.unlocked}/${achievements.total}`),
           ]),
           g.available ? this.customBestLabel(g.id) : '',
-          g.available ? el('div', { class: 'tile__play' }, ['Play']) : '',
+          g.available ? el('div', { class: 'tile__play' }, [t('tile.play')]) : '',
         ]),
       ],
     );
@@ -704,10 +704,10 @@ export class App {
   }
 
   private difficultyLabel(g: GameMeta): string {
-    if (g.difficulty === 'easy') return 'Easy';
-    if (g.difficulty === 'medium') return 'Med';
-    if (g.difficulty === 'hard') return 'Hard';
-    return 'Var';
+    if (g.difficulty === 'easy') return t('diff.easy');
+    if (g.difficulty === 'medium') return t('diff.med');
+    if (g.difficulty === 'hard') return t('diff.hard');
+    return t('diff.var');
   }
 
   private sessionLabel(g: GameMeta): string {

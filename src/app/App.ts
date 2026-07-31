@@ -310,7 +310,7 @@ export class App {
       .slice(0, 6);
     if (!picks.length) return [];
     return [
-      el('div', { class: 'section-title' }, ['RECOMMENDED']),
+      el('div', { class: 'section-title' }, [t('home.recommended')]),
       el('div', { class: 'tilegrid tilegrid--compact' }, picks.map((g) => this.tile(g))),
     ];
   }
@@ -327,7 +327,7 @@ export class App {
 
   private collectionsSection(): HTMLElement {
     return el('div', { class: 'collections' }, [
-      el('div', { class: 'section-title' }, ['CABINETS']),
+      el('div', { class: 'section-title' }, [t('home.cabinets')]),
       el('div', { class: 'collection-grid' }, COLLECTIONS.map((c) => {
         const count = GAMES.filter((g) => g.available && g.collections?.includes(c.id)).length;
         return el('button', {
@@ -801,7 +801,7 @@ export class App {
       this.navItem(icon('play'), 'Continue', () => this.goLastPlayed(), 'continue'),
       this.navItem(icon('star'), 'Pocket Shelf', () => this.scrollHomeShelf(), 'shelf'),
     );
-    items.push(el('div', { class: 'nav__group' }, ['CABINETS']));
+    items.push(el('div', { class: 'nav__group' }, [t('home.cabinets')]));
     for (const c of COLLECTIONS) {
       items.push(this.navItem(icon('search'), c.label, () => this.openCollection(c.id), `collection-${c.id}`));
     }

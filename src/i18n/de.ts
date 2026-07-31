@@ -194,6 +194,8 @@ export const de: Dict = {
   'group.paddle': 'Paddle',
   'group.jump': 'Sprung',
   'group.physics': 'Physik',
+  'home.recommended': 'EMPFOHLEN',
+  'home.cabinets': 'KABINETTE',
   'start.cartridge': 'CARTRIDGE',
   'start.best': 'Beste',
   'start.mastery': 'Meisterschaft',

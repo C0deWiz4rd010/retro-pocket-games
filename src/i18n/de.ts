@@ -210,6 +210,7 @@ export const de: Dict = {
   'tip.brain2': 'Eine saubere Serie schlägt einen hastigen Fehler.',
   'tip.generic1': 'Achte auf den {group}-Rhythmus, bevor du riskante Punkte jagst.',
   'tip.generic2': 'Dein nächstes Meisterschaftsziel ist meist sicherer als ein Riesenlauf.',
+  'a11y.gameOver': 'Spiel vorbei. {title}. Punkte {score}.',
   'start.cartridge': 'CARTRIDGE',
   'start.best': 'Beste',
   'start.mastery': 'Meisterschaft',

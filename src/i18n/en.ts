@@ -210,6 +210,7 @@ export const en: Dict = {
   'tip.brain2': 'A clean streak beats a rushed mistake.',
   'tip.generic1': 'Watch the {group} rhythm before chasing risky points.',
   'tip.generic2': 'Your next mastery target is usually safer than one huge run.',
+  'a11y.gameOver': 'Game over. {title}. Score {score}.',
   'start.cartridge': 'CARTRIDGE',
   'start.best': 'Best',
   'start.mastery': 'Mastery',

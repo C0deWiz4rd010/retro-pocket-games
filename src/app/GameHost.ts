@@ -24,6 +24,7 @@ import { GAMES } from '@core/Registry';
 import { t, hintLabel } from '@i18n/index';
 import { icon } from '@ui/icons';
 import { enterPop } from '@ui/motion';
+import { announce } from '@ui/announce';
 import { attachTooltip } from '@ui/tooltip';
 import type { Game, GameContext, Hud } from '@core/types';
 import type { GameMeta, GameMode } from '@core/Registry';
@@ -599,6 +600,8 @@ export class GameHost {
     );
 
     this.showOverlay(el('div', { class: 'panel' }, rows));
+    // Announce the result to assistive tech (game state is otherwise visual-only).
+    announce(`${t('a11y.gameOver', { title, score })}${isBest ? ` ${t('game.newBest')}` : ''}`);
     // Celebrate a genuine new best with a confetti burst over the screen.
     if (isBest && prevBest > 0) confettiBurst(this.screenView);
     if (unlocked.length) this.toastAchievements(unlocked);

@@ -547,7 +547,7 @@ export class GameHost {
         : isBest
           ? t('game.newBest')
           : practice
-            ? 'Practice run - score not saved'
+            ? t('go.practiceNotSaved')
             : t('game.best', { n: prevBest });
     const ratio = this.scoreRatio(score);
     const title = this.gameOverTitle(ratio, isBest, practice);
@@ -557,12 +557,15 @@ export class GameHost {
       el('div', { style: 'color:var(--text-muted);font-size:13px' }, [bestLine]),
       el('div', { class: 'run-comment' }, [this.gameOverComment(ratio, isBest, practice)]),
       this.performanceGrid(score, prevBest, ratio, custom),
-      el('div', { class: 'panel__xp' }, [practice ? 'Practice mode: rewards paused' : `+${xpGain} Pixel XP  +${reward.tokenGain} Pocket Chips`]),
+      el('div', { class: 'panel__xp' }, [practice ? t('go.rewardsPaused') : `+${xpGain} Pixel XP  +${reward.tokenGain} Pocket Chips`]),
       this.rewardBreakdown(reward.breakdown),
     ];
     if (leveledUp) rows.push(el('div', { style: 'color:var(--ok);font-size:13px' }, [t('game.levelUp', { n: newLevel })]));
     if (this.opts.daily) rows.push(el('div', { class: 'daily-progress' }, [
-      `Daily target: ${Math.min(score, this.meta.dailyRules?.targetScore ?? score)} / ${this.meta.dailyRules?.targetScore ?? score}`,
+      t('go.dailyTarget', {
+        a: Math.min(score, this.meta.dailyRules?.targetScore ?? score),
+        b: this.meta.dailyRules?.targetScore ?? score,
+      }),
     ]));
 
     // Leaderboard: offer a name entry if the score cracks the local top 10.
@@ -632,27 +635,27 @@ export class GameHost {
   }
 
   private gameOverTitle(ratio: number, isBest: boolean, practice: boolean): string {
-    if (practice) return 'PRACTICE COMPLETE';
-    if (isBest) return 'NEW PERSONAL BEST';
-    if (ratio >= 1.2) return 'ELITE RUN';
-    if (ratio >= 0.65) return 'SOLID RUN';
-    return 'WARM-UP RUN';
+    if (practice) return t('go.titlePractice');
+    if (isBest) return t('go.titleBest');
+    if (ratio >= 1.2) return t('go.titleElite');
+    if (ratio >= 0.65) return t('go.titleSolid');
+    return t('go.titleWarmup');
   }
 
   private gameOverComment(ratio: number, isBest: boolean, practice: boolean): string {
-    if (practice) return 'Good rehearsal. Switch to Challenge when the rhythm feels locked in.';
-    if (isBest && ratio >= 1) return 'Clean execution and a new record. That one belongs on the shelf.';
-    if (ratio >= 1.2) return 'Great run. You beat the target pace and left room for a leaderboard push.';
-    if (ratio >= 0.65) return 'Nice middle stretch. One fewer risky mistake and this turns into a record chase.';
-    return 'Rough start, useful data. Reset fast and focus on the first safe scoring pattern.';
+    if (practice) return t('go.commentPractice');
+    if (isBest && ratio >= 1) return t('go.commentBest');
+    if (ratio >= 1.2) return t('go.commentElite');
+    if (ratio >= 0.65) return t('go.commentSolid');
+    return t('go.commentRough');
   }
 
   private performanceGrid(score: number, prevBest: number, ratio: number, custom: Record<string, number>): HTMLElement {
     const delta = prevBest > 0 ? score - prevBest : score;
     return el('div', { class: 'performance-grid' }, [
-      this.performanceCell(`${Math.round(ratio * 100)}%`, 'Target'),
-      this.performanceCell(delta >= 0 ? `+${delta}` : String(delta), 'Best delta'),
-      this.performanceCell(`${this.masteryRankForRun(score, custom)}/3`, 'Mastery'),
+      this.performanceCell(`${Math.round(ratio * 100)}%`, t('go.cellTarget')),
+      this.performanceCell(delta >= 0 ? `+${delta}` : String(delta), t('go.cellDelta')),
+      this.performanceCell(`${this.masteryRankForRun(score, custom)}/3`, t('go.cellMastery')),
     ]);
   }
 
@@ -680,11 +683,11 @@ export class GameHost {
     mastery: number;
   }): HTMLElement {
     const rows = [
-      ['Base', breakdown.base],
-      ['Score', breakdown.score],
-      ['Improvement', breakdown.improvement],
-      ['Daily', breakdown.daily],
-      ['Mastery', breakdown.mastery],
+      [t('go.rewBase'), breakdown.base],
+      [t('go.rewScore'), breakdown.score],
+      [t('go.rewImprovement'), breakdown.improvement],
+      [t('go.rewDaily'), breakdown.daily],
+      [t('go.rewMastery'), breakdown.mastery],
     ].filter(([, value]) => Number(value) > 0);
     return el('div', { class: 'reward-breakdown' }, rows.map(([label, value]) =>
       el('div', { class: 'reward-breakdown__row' }, [

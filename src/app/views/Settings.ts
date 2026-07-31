@@ -148,14 +148,14 @@ function rows(rerender: () => void): HTMLElement[] {
       seg(
         s.screenFx.mode,
         [
-          { value: 'off', label: 'Off' },
+          { value: 'off', label: t('settings.off') },
           { value: 'css', label: 'CRT' },
           { value: 'full', label: 'Full' },
         ],
         (mode) => patchScreenFx({ mode }),
       ),
     ),
-    row('CRT intensity', slider(s.screenFx.intensity, (intensity) => patchScreenFx({ intensity }))),
+    row(t('settings.crtIntensity'), slider(s.screenFx.intensity, (intensity) => patchScreenFx({ intensity }))),
     row(
       t('settings.language'),
       seg(
@@ -196,8 +196,8 @@ function rows(rerender: () => void): HTMLElement[] {
       seg(
         s.controls.touchLayout,
         [
-          { value: 'right', label: 'Right' },
-          { value: 'left', label: 'Left' },
+          { value: 'right', label: t('ctl.right') },
+          { value: 'left', label: t('ctl.left') },
         ],
         (touchLayout) => patchControls({ touchLayout }),
       ),
@@ -253,11 +253,11 @@ function rows(rerender: () => void): HTMLElement[] {
     row(t('settings.reducedMotion'), toggle(s.a11y.reducedMotion, (reducedMotion) => patchA11y({ reducedMotion }))),
     row(t('settings.highContrast'), toggle(s.a11y.highContrast, (highContrast) => patchA11y({ highContrast }))),
     row(
-      'Colorblind palette',
+      t('settings.colorblind'),
       seg(
         s.a11y.colorblind,
         [
-          { value: 'off', label: 'Off' },
+          { value: 'off', label: t('settings.off') },
           { value: 'protan', label: 'Protan' },
           { value: 'deutan', label: 'Deutan' },
           { value: 'tritan', label: 'Tritan' },

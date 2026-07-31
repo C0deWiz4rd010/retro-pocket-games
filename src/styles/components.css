@@ -780,6 +780,19 @@
   transform: scale(0.9);
 }
 
+/* Accessibility: enlarge the on-screen game controls for the large-targets option. */
+.a11y-large-targets .dpad {
+  grid-template-columns: repeat(3, 54px);
+  grid-template-rows: repeat(3, 54px);
+}
+.a11y-large-targets .dpad button {
+  font-size: 21px;
+}
+.a11y-large-targets .actionbtns button {
+  width: 76px;
+  height: 76px;
+}
+
 .tooltip {
   position: fixed;
   z-index: 1000;

@@ -476,41 +476,41 @@ export class App {
           onChange();
           void this.renderHome();
         },
-      }, [group === 'all' ? 'All genres' : group]);
+      }, [group === 'all' ? t('filter.allGenres') : t(`group.${group.toLowerCase()}`)]);
 
     return el('div', { class: 'filter-panel' }, [
-      this.filterRow('Genre', (['all', ...GROUP_ORDER] as (GameMeta['group'] | 'all')[]).map(groupChip)),
-      this.filterRow('Duration', [
-        chip('duration:quick', 'Quick'),
-        chip('duration:medium', 'Medium'),
-        chip('duration:deep', 'Deep'),
+      this.filterRow(t('filter.genre'), (['all', ...GROUP_ORDER] as (GameMeta['group'] | 'all')[]).map(groupChip)),
+      this.filterRow(t('filter.duration'), [
+        chip('duration:quick', t('dur.quick')),
+        chip('duration:medium', t('dur.medium')),
+        chip('duration:deep', t('dur.deep')),
       ]),
-      this.filterRow('Difficulty', [
-        chip('difficulty:easy', 'Easy'),
-        chip('difficulty:medium', 'Medium'),
-        chip('difficulty:hard', 'Hard'),
-        chip('difficulty:variable', 'Variable'),
+      this.filterRow(t('filter.difficulty'), [
+        chip('difficulty:easy', t('fdiff.easy')),
+        chip('difficulty:medium', t('fdiff.medium')),
+        chip('difficulty:hard', t('fdiff.hard')),
+        chip('difficulty:variable', t('fdiff.variable')),
       ]),
-      this.filterRow('Control', [
-        chip('control:tap', 'Tap'),
-        chip('control:swipe', 'Swipe'),
-        chip('control:drag', 'Drag'),
-        chip('control:grid', 'D-pad'),
-        chip('control:shooter', 'Shooter'),
-        chip('control:vector', 'Vector'),
+      this.filterRow(t('filter.control'), [
+        chip('control:tap', t('hint.tap')),
+        chip('control:swipe', t('hint.swipe')),
+        chip('control:drag', t('hint.drag')),
+        chip('control:grid', t('hint.dpad')),
+        chip('control:shooter', t('filter.shooter')),
+        chip('control:vector', t('filter.vector')),
       ]),
-      this.filterRow('Progress', [
-        chip('progress:unplayed', 'Unplayed'),
-        chip('progress:played', 'Played'),
-        chip('progress:in-progress', 'In progress'),
-        chip('progress:mastered', 'Mastered'),
+      this.filterRow(t('filter.progress'), [
+        chip('progress:unplayed', t('prog.unplayed')),
+        chip('progress:played', t('prog.played')),
+        chip('progress:in-progress', t('prog.inprogress')),
+        chip('progress:mastered', t('badge.mastered')),
       ]),
-      this.filterRow('Special', [
-        chip('favorite', 'Favorites'),
-        chip('daily', 'Daily-ready'),
-        chip('score', 'Score chasers'),
-        chip('status:new', 'New'),
-        chip('status:hot', 'Hot'),
+      this.filterRow(t('filter.special'), [
+        chip('favorite', t('spec.favorites')),
+        chip('daily', t('spec.dailyReady')),
+        chip('score', t('spec.scoreChasers')),
+        chip('status:new', t('badge.new')),
+        chip('status:hot', t('badge.hot')),
       ]),
     ]);
   }
@@ -524,15 +524,15 @@ export class App {
 
   private sortControls(onChange: () => void): HTMLElement {
     const options: { id: LibrarySort; label: string }[] = [
-      { id: 'recommended', label: 'Recommended' },
-      { id: 'recent', label: 'Recently played' },
-      { id: 'popular', label: 'Most played' },
-      { id: 'score', label: 'Highest score' },
-      { id: 'new', label: 'New' },
-      { id: 'az', label: 'A-Z' },
+      { id: 'recommended', label: t('sort.recommended') },
+      { id: 'recent', label: t('sort.recent') },
+      { id: 'popular', label: t('sort.popular') },
+      { id: 'score', label: t('sort.score') },
+      { id: 'new', label: t('badge.new') },
+      { id: 'az', label: t('sort.az') },
     ];
     return el('div', { class: 'sort-row' }, [
-      el('div', { class: 'filter-row__label' }, ['Sort']),
+      el('div', { class: 'filter-row__label' }, [t('filter.sort')]),
       el('div', { class: 'cat-chips cat-chips--library' }, options.map((option) =>
         el('button', {
           class: `cat-chip${this.librarySort === option.id ? ' is-active' : ''}`,

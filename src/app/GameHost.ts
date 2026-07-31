@@ -58,6 +58,7 @@ export class GameHost {
   private hudLives!: HTMLElement;
   private hudBest!: HTMLElement;
   private overlayHost!: HTMLElement;
+  private touchEl?: HTMLElement;
   private lastHudScore = 0;
   private lastHudLives = 0;
   private cleanups: (() => void)[] = [];
@@ -273,10 +274,12 @@ export class GameHost {
     ]);
 
     // CSS (.touch--swipe/tap/none/drag) still governs which surfaces are visible per preset.
-    return el('div', {
+    const touchEl = el('div', {
       class: `touch touch--${profile.preset} touch--${settings().controls.touchLayout}`,
       'data-pointer': profile.pointerMode,
     }, [dpad, actions]);
+    this.touchEl = touchEl;
+    return touchEl;
   }
 
   private makeHud(): Hud {
@@ -417,6 +420,10 @@ export class GameHost {
           updateSettings({ audio: { ...settings().audio, sfx: !settings().audio.sfx } });
           rebuild();
         }),
+        chip(s.audio.music, `🎵 ${t('settings.music')}`, () => {
+          updateSettings({ audio: { ...settings().audio, music: !settings().audio.music } });
+          rebuild();
+        }),
         chip(s.controls.haptics, `📳 ${t('settings.haptics')}`, () => {
           updateSettings({ controls: { ...settings().controls, haptics: !settings().controls.haptics } });
           if (settings().controls.haptics) haptics.bump();
@@ -425,6 +432,14 @@ export class GameHost {
         chip(s.screenFx.mode !== 'off', '📺 CRT', () => {
           const mode = settings().screenFx.mode === 'off' ? 'css' : 'off';
           updateSettings({ screenFx: { ...settings().screenFx, mode } });
+          rebuild();
+        }),
+        chip(s.controls.touchLayout === 'left', `🤚 ${t('settings.hand')}`, () => {
+          const touchLayout = settings().controls.touchLayout === 'left' ? 'right' : 'left';
+          updateSettings({ controls: { ...settings().controls, touchLayout } });
+          // Reflect the change live on the already-mounted control surface.
+          this.touchEl?.classList.toggle('touch--left', touchLayout === 'left');
+          this.touchEl?.classList.toggle('touch--right', touchLayout === 'right');
           rebuild();
         }),
       );

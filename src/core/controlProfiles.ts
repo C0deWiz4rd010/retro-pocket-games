@@ -96,6 +96,7 @@ const explicit: Record<string, ControlProfile> = {
   tetris: CONTROL_PROFILES.falling,
   g2048: { ...CONTROL_PROFILES.swipe, assist: { action: 'b', label: 'assist.undo' } },
   match3: CONTROL_PROFILES.tap,
+  sokoban: { ...CONTROL_PROFILES.grid, primaryActions: [{ action: 'a', label: 'A' }, { action: 'b', label: 'Undo' }] },
   minesweeper: { ...CONTROL_PROFILES.tap, assist: { action: 'a', label: 'assist.flag' } },
   memory: CONTROL_PROFILES.tap,
   lightsout: { ...CONTROL_PROFILES.tap, assist: { action: 'b', label: 'assist.hint' } },
@@ -115,6 +116,7 @@ const explicit: Record<string, ControlProfile> = {
   cometsweep: CONTROL_PROFILES.tap,
   gearlock: CONTROL_PROFILES.tap,
   echorunner: CONTROL_PROFILES.tap,
+  wordmix: { ...CONTROL_PROFILES.tap, assist: { action: 'select', label: 'assist.hint' } },
   driftracer: CONTROL_PROFILES.vector,
   pinball: base({
     preset: 'dual',

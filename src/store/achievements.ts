@@ -32,6 +32,14 @@ export interface Achievement {
   test: (c: AchContext) => boolean;
 }
 
+/** Games that already have a hand-authored milestone achievement (so we don't add a
+ * generic "Rookie" starter on top). Keep in sync with the curated entries below. */
+const CURATED_ACH_GAMES = new Set<string>([
+  'snake', 'tetris', 'g2048', 'breakout', 'pong', 'invaders', 'asteroids', 'flappy', 'pacman',
+  'minesweeper', 'frogger', 'lander', 'simon', 'tictactoe', 'connectfour', 'reversi', 'lightsout',
+  'pinball', 'stacker', 'galaga', 'missile', 'doodle', 'tron',
+]);
+
 export const ACHIEVEMENTS: Achievement[] = [
   // ── per-game milestones (read from each game's `custom` payload) ──
   { id: 'snake-50', title: 'Long Boi', desc: 'Reach length 50 in Snake', icon: '🐍', tokens: 5, test: (x) => x.gameId === 'snake' && (x.custom.length ?? 0) >= 50 },
@@ -61,13 +69,23 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'tron-5wins', title: 'Light Cycle Legend', desc: 'Win 5 rounds in one Tron run', icon: '🏍️', tokens: 10, test: (x) => x.gameId === 'tron' && (x.custom.wins ?? 0) >= 5 },
   { id: 'secret-marathon', title: 'Insert Coin Forever', desc: 'Play 250 games', icon: '🪙', tokens: 30, secret: true, test: (x) => x.gamesPlayed >= 250 },
 
-  ...GAMES.filter((g) => g.polish?.release === 'featured').map((g): Achievement => ({
+  ...GAMES.filter((g) => g.available).map((g): Achievement => ({
     id: `${g.id}-signature`,
     title: `${g.title} Specialist`,
     desc: `Beat the signature score in ${g.title}`,
     icon: g.glyph,
     tokens: 7,
     test: (x) => x.gameId === g.id && x.score >= Math.round((g.reward?.targetScore ?? 1000) * 1.15),
+  })),
+  // Entry-level badge for games that don't have a hand-authored milestone yet, so every
+  // title carries at least a starter + specialist pair (docs/11 §10).
+  ...GAMES.filter((g) => g.available && !CURATED_ACH_GAMES.has(g.id)).map((g): Achievement => ({
+    id: `${g.id}-rookie`,
+    title: `${g.title} Rookie`,
+    desc: `Score ${Math.round((g.reward?.targetScore ?? 1000) * 0.5)} in ${g.title}`,
+    icon: g.glyph,
+    tokens: 3,
+    test: (x) => x.gameId === g.id && x.score >= Math.round((g.reward?.targetScore ?? 1000) * 0.5),
   })),
 
   // ── meta achievements (lifetime / cross-game) ──

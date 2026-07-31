@@ -287,7 +287,8 @@ export default function createGame(ctx: GameContext): Game {
         if (p.life <= 0) particles.splice(i, 1);
       }
       if (shake > 0) shake = Math.max(0, shake - dt * 2);
-      layer.position.set(ox + (shake > 0 ? (Math.random() * 2 - 1) * shake * 6 : 0), oy + (shake > 0 ? (Math.random() * 2 - 1) * shake * 6 : 0));
+      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
+      layer.position.set(ox + (rmS > 0 ? (Math.random() * 2 - 1) * rmS * 6 : 0), oy + (rmS > 0 ? (Math.random() * 2 - 1) * rmS * 6 : 0));
       if (flashT > 0) {
         flashT -= dt;
         if (flashT <= 0) {

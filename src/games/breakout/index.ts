@@ -348,7 +348,8 @@ export default function createGame(ctx: GameContext): Game {
         if (p.life <= 0) particles.splice(i, 1);
       }
       if (shake > 0) shake = Math.max(0, shake - dt * 2);
-      layer.position.set(shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 8 : 0, shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 8 : 0);
+      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
+      layer.position.set(rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0, rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0);
 
       draw();
     },

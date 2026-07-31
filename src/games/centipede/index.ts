@@ -245,7 +245,8 @@ export default function createGame(ctx: GameContext): Game {
         ctx.audio.sfx('powerup');
         spawnCentipede(10 + level);
       }
-      layer.position.set(ox + (shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 6 : 0), shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 6 : 0);
+      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
+      layer.position.set(ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0), rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0);
       draw();
     },
     destroy() {

@@ -334,7 +334,8 @@ export default function createGame(ctx: GameContext): Game {
           ctx.hud.setLabel('REACH THE EXIT →');
         }
       }
-      layer.position.set(ox + (shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 6 : 0), oy + (shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 6 : 0));
+      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
+      layer.position.set(ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0), oy + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0));
       draw();
     },
     destroy() {

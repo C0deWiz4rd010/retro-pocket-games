@@ -250,7 +250,8 @@ export default function createGame(ctx: GameContext): Game {
         ctx.gameOver(score, { wave });
         return;
       }
-      layer.position.set(shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 7 : 0, shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 7 : 0);
+      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
+      layer.position.set(rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0, rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0);
       draw();
     },
     destroy() {

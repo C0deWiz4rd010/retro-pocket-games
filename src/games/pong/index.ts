@@ -234,9 +234,10 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       // screen shake
+      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
       layer.position.set(
-        shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 10 : 0,
-        shake > 0 ? (ctx.rng.next() * 2 - 1) * shake * 10 : 0,
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 10 : 0,
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 10 : 0,
       );
 
       draw();

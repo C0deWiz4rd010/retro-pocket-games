@@ -36,8 +36,12 @@ export const SettingsSchema = z.object({
       touchLayout: z.enum(['right', 'left']).default('right'),
       tilt: z.boolean().default(false),
       haptics: z.boolean().default(true),
+      /** On-screen control opacity so they obscure the play field less. */
+      touchOpacity: z.number().min(0.3).max(1).default(0.9),
+      /** On-screen control size multiplier (compact ↔ large). */
+      touchScale: z.number().min(0.8).max(1.3).default(1),
     })
-    .default({ touchLayout: 'right', tilt: false, haptics: true }),
+    .default({ touchLayout: 'right', tilt: false, haptics: true, touchOpacity: 0.9, touchScale: 1 }),
   a11y: z
     .object({
       reducedMotion: z.boolean().default(false),

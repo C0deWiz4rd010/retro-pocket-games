@@ -202,6 +202,24 @@ function rows(rerender: () => void): HTMLElement[] {
         (touchLayout) => patchControls({ touchLayout }),
       ),
     ),
+    row(
+      t('settings.touchOpacity'),
+      slider((s.controls.touchOpacity - 0.3) / 0.7, (v) =>
+        patchControls({ touchOpacity: Math.round((0.3 + v * 0.7) * 100) / 100 }),
+      ),
+    ),
+    row(
+      t('settings.touchSize'),
+      seg(
+        s.controls.touchScale <= 0.9 ? 'sm' : s.controls.touchScale >= 1.15 ? 'lg' : 'md',
+        [
+          { value: 'sm', label: 'S' },
+          { value: 'md', label: 'M' },
+          { value: 'lg', label: 'L' },
+        ],
+        (size) => patchControls({ touchScale: size === 'sm' ? 0.85 : size === 'lg' ? 1.2 : 1 }),
+      ),
+    ),
 
     el('div', { class: 'section-title' }, [t('settings.keyBindings')]),
     ...REBINDABLE.map(({ action, label, def }) => {

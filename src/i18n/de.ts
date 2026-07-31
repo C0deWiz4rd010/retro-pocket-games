@@ -92,6 +92,8 @@ export const de: Dict = {
   'settings.pressKey': 'Taste drücken',
   'settings.resetKeys': 'Auf Standard zurücksetzen',
   'settings.hand': 'Hand',
+  'settings.touchOpacity': 'Steuerung Deckkraft',
+  'settings.touchSize': 'Steuerung Größe',
   'settings.a11y': 'BARRIEREFREIHEIT',
   'settings.reducedMotion': 'Weniger Bewegung',
   'settings.highContrast': 'Hoher Kontrast',

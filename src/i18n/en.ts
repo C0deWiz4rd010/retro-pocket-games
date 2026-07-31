@@ -92,6 +92,8 @@ export const en: Dict = {
   'settings.pressKey': 'press a key',
   'settings.resetKeys': 'Reset to defaults',
   'settings.hand': 'Hand',
+  'settings.touchOpacity': 'Control opacity',
+  'settings.touchSize': 'Control size',
   'settings.a11y': 'ACCESSIBILITY',
   'settings.reducedMotion': 'Reduced motion',
   'settings.highContrast': 'High contrast',

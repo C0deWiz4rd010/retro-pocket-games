@@ -643,7 +643,18 @@
   align-items: flex-end;
   padding: 0 18px calc(18px + var(--safe-b));
   z-index: 10;
+  opacity: var(--touch-opacity, 0.9);
+  /* Let taps in the empty gap between the pads reach the game field. */
+  pointer-events: none;
 }
+.touch .dpad,
+.touch .actionbtns {
+  pointer-events: auto;
+  transform: scale(var(--touch-scale, 1));
+  transform-origin: bottom center;
+}
+.touch--left .dpad { transform-origin: bottom left; }
+.touch--left .actionbtns { transform-origin: bottom right; }
 .touch--swipe,
 .touch--tap,
 .touch--none {

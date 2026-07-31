@@ -49,6 +49,8 @@ function applyToDom(s: Settings): void {
   root.classList.toggle('a11y-high-contrast', s.a11y.highContrast);
   root.classList.toggle('a11y-large-targets', s.a11y.largeTargets);
   root.style.setProperty('--fx-intensity', String(s.screenFx.intensity));
+  root.style.setProperty('--touch-opacity', String(s.controls.touchOpacity));
+  root.style.setProperty('--touch-scale', String(s.controls.touchScale));
 
   // Keep the browser/OS chrome color in sync with the active theme's background.
   const bg = getComputedStyle(root).getPropertyValue('--bg').trim();

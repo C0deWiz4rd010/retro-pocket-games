@@ -462,6 +462,64 @@ function rewardFor(game: GameMeta): RewardProfile {
   };
 }
 
+/** Mechanic-specific gold mastery goal per game, keyed to the `custom` stat it emits at
+ * game over (higher-is-better only; games without a suitable stat keep the score tier). */
+const MASTERY_GOLD: Record<string, { label: string; target: number; key: string }> = {
+  snake: { label: 'Reach length 30', target: 30, key: 'length' },
+  tetris: { label: 'Reach level 10', target: 10, key: 'level' },
+  breakout: { label: 'Clear level 3', target: 3, key: 'level' },
+  asteroids: { label: 'Survive wave 5', target: 5, key: 'wave' },
+  galaga: { label: 'Reach wave 5', target: 5, key: 'wave' },
+  invaders: { label: 'Reach wave 4', target: 4, key: 'wave' },
+  missile: { label: 'Defend to wave 5', target: 5, key: 'wave' },
+  centipede: { label: 'Reach level 4', target: 4, key: 'level' },
+  bomberman: { label: 'Clear level 3', target: 3, key: 'level' },
+  qbert: { label: 'Reach level 4', target: 4, key: 'level' },
+  pacman: { label: 'Clear 2 mazes', target: 2, key: 'cleared' },
+  frogger: { label: 'Fill all 5 homes', target: 5, key: 'homes' },
+  lander: { label: 'Land 3 times', target: 3, key: 'landed' },
+  tron: { label: 'Win 5 rounds', target: 5, key: 'wins' },
+  flappy: { label: 'Earn the gold medal', target: 3, key: 'medal' },
+  columns: { label: 'Combo x5', target: 5, key: 'combo' },
+  crystalvault: { label: 'Reach level 4', target: 4, key: 'level' },
+  match3: { label: 'Reach level 4', target: 4, key: 'level' },
+  maze: { label: 'Reach level 4', target: 4, key: 'level' },
+  minesweeper: { label: 'Reach level 3', target: 3, key: 'level' },
+  lightsout: { label: 'Reach level 4', target: 4, key: 'level' },
+  sliding: { label: 'Reach level 3', target: 3, key: 'level' },
+  flood: { label: 'Reach level 3', target: 3, key: 'level' },
+  lasermaze: { label: 'Reach level 4', target: 4, key: 'level' },
+  gearlock: { label: 'Reach level 5', target: 5, key: 'level' },
+  memorypath: { label: 'Recall 8 steps', target: 8, key: 'level' },
+  simon: { label: 'Reach length 12', target: 12, key: 'len' },
+  echorunner: { label: 'Recall length 10', target: 10, key: 'length' },
+  runereactor: { label: 'Chain x6', target: 6, key: 'chain' },
+  starforge: { label: 'Combo x8', target: 8, key: 'combo' },
+  targettap: { label: 'Combo x10', target: 10, key: 'combo' },
+  neonrush: { label: 'Combo x10', target: 10, key: 'combo' },
+  dodger: { label: 'Survive 60s', target: 60, key: 'time' },
+  driftracer: { label: 'Clear 20 gates', target: 20, key: 'gates' },
+  dualoop: { label: 'Reach zone 5', target: 5, key: 'zone' },
+  polara: { label: 'Reach zone 5', target: 5, key: 'zone' },
+  higherlower: { label: 'Streak of 10', target: 10, key: 'streak' },
+  colorclash: { label: 'Streak of 15', target: 15, key: 'streak' },
+  wordmix: { label: 'Streak of 8', target: 8, key: 'streak' },
+  quickmath: { label: 'Solve 20', target: 20, key: 'solved' },
+  numberhunt: { label: 'Reach level 3', target: 3, key: 'level' },
+  reversi: { label: 'Own 40 discs', target: 40, key: 'discs' },
+  mastermind: { label: 'Crack round 5', target: 5, key: 'round' },
+  hangman: { label: 'Reach round 5', target: 5, key: 'round' },
+  lockpick: { label: 'Open 5 locks', target: 5, key: 'locks' },
+  stacker: { label: 'Stack 15 blocks', target: 15, key: 'height' },
+  yahtzee: { label: 'Score a 30 combo', target: 30, key: 'combo' },
+  helicopter: { label: 'Fly 1500m', target: 1500, key: 'dist' },
+  blackjack: { label: 'Survive 10 rounds', target: 10, key: 'rounds' },
+  chainreaction: { label: 'Reach level 3', target: 3, key: 'level' },
+  connectfour: { label: 'Beat the CPU', target: 1, key: 'won' },
+  tictactoe: { label: 'Beat the CPU', target: 1, key: 'won' },
+  cometputt: { label: 'Sink 5 holes', target: 5, key: 'holes' },
+};
+
 function masteryGoalsFor(game: GameMeta): MasteryGoal[] {
   const scoreTarget = rewardFor(game).targetScore;
   const goals: MasteryGoal[] = [
@@ -469,9 +527,12 @@ function masteryGoalsFor(game: GameMeta): MasteryGoal[] {
     { id: `${game.id}-silver`, label: `Score ${scoreTarget}`, target: scoreTarget, metric: 'score' },
     { id: `${game.id}-gold`, label: `Score ${Math.round(scoreTarget * 1.8)}`, target: Math.round(scoreTarget * 1.8), metric: 'score' },
   ];
-  if (game.kit === 'shooter') goals[2] = { id: `${game.id}-wave`, label: 'Reach wave 3', target: 3, metric: 'custom', customKey: 'wave' };
-  if (game.id.includes('snake')) goals[2] = { id: `${game.id}-length`, label: 'Reach length 30', target: 30, metric: 'custom', customKey: 'length' };
-  if (game.kit === 'paddle') goals[2] = { id: `${game.id}-clear`, label: 'Clear level 2', target: 2, metric: 'custom', customKey: 'level' };
+  // Mechanic-specific gold goal, keyed to the `custom` payload each game emits on game over,
+  // so mastery rewards real skill (waves, levels, combos, streaks) rather than raw score.
+  const gold = MASTERY_GOLD[game.id];
+  if (gold) {
+    goals[2] = { id: `${game.id}-gold`, label: gold.label, target: gold.target, metric: 'custom', customKey: gold.key };
+  }
   return goals;
 }
 

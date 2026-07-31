@@ -94,7 +94,7 @@ export const CONTROL_PROFILES = {
 const explicit: Record<string, ControlProfile> = {
   columns: CONTROL_PROFILES.falling,
   tetris: CONTROL_PROFILES.falling,
-  g2048: CONTROL_PROFILES.swipe,
+  g2048: { ...CONTROL_PROFILES.swipe, assist: { action: 'b', label: 'assist.undo' } },
   match3: CONTROL_PROFILES.tap,
   minesweeper: { ...CONTROL_PROFILES.tap, assist: { action: 'a', label: 'assist.flag' } },
   memory: CONTROL_PROFILES.tap,

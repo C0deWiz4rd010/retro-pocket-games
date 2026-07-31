@@ -96,6 +96,7 @@ export const de: Dict = {
   'settings.touchSize': 'Steuerung Größe',
   'assist.hint': '💡 Tipp',
   'assist.flag': '🚩 Fahne',
+  'assist.undo': '↶ Zurück',
   'settings.a11y': 'BARRIEREFREIHEIT',
   'settings.reducedMotion': 'Weniger Bewegung',
   'settings.highContrast': 'Hoher Kontrast',

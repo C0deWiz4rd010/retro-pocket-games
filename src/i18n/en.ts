@@ -96,6 +96,7 @@ export const en: Dict = {
   'settings.touchSize': 'Control size',
   'assist.hint': '💡 Hint',
   'assist.flag': '🚩 Flag',
+  'assist.undo': '↶ Undo',
   'settings.a11y': 'ACCESSIBILITY',
   'settings.reducedMotion': 'Reduced motion',
   'settings.highContrast': 'High contrast',

@@ -86,6 +86,9 @@ export class GameHost {
     const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
     this.input.configure({ gamepadDeadzone: profile.gamepadDeadzone, keyMap: keyMapFromBindings(settings().keyBindings) });
     this.input.attach(pixi.canvas, pixi.screenToVirtual);
+    // Identify the play surface for assistive tech (canvas content is otherwise opaque).
+    pixi.canvas.setAttribute('role', 'img');
+    pixi.canvas.setAttribute('aria-label', this.meta.title);
 
     const ctx: GameContext = {
       stage: this.root,
@@ -601,7 +604,11 @@ export class GameHost {
 
     this.showOverlay(el('div', { class: 'panel' }, rows));
     // Announce the result to assistive tech (game state is otherwise visual-only).
-    announce(`${t('a11y.gameOver', { title, score })}${isBest ? ` ${t('game.newBest')}` : ''}`);
+    const said = [t('a11y.gameOver', { title, score })];
+    if (isBest) said.push(t('game.newBest'));
+    if (leveledUp) said.push(t('game.levelUp', { n: newLevel }));
+    if (unlocked.length) said.push(`${t('ach.unlocked')}: ${unlocked.map((a) => a.title).join(', ')}`);
+    announce(said.join(' '));
     // Celebrate a genuine new best with a confetti burst over the screen.
     if (isBest && prevBest > 0) confettiBurst(this.screenView);
     if (unlocked.length) this.toastAchievements(unlocked);

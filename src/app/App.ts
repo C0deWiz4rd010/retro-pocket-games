@@ -16,7 +16,7 @@ import { renderScores } from './views/Scores';
 import { renderProfile } from './views/Profile';
 import { renderAbout } from './views/About';
 import { pickDailyGame, dailySeed, dailyModifier, nextDailyLabel } from './daily';
-import { t } from '@i18n/index';
+import { t, hintLabel } from '@i18n/index';
 import { icon } from '@ui/icons';
 import { ACHIEVEMENTS, isUnlocked } from '@store/achievements';
 
@@ -718,8 +718,8 @@ export class App {
 
   private controlLabel(g: GameMeta): string {
     const first = g.controls?.hints[0];
-    if (first) return first;
-    if (g.controls?.preset === 'grid') return 'D-pad';
+    if (first) return hintLabel(first);
+    if (g.controls?.preset === 'grid') return t('hint.dpad');
     return g.kit;
   }
 
@@ -985,7 +985,7 @@ export class App {
           : getCustomBest(meta.id, goal.customKey ?? '');
       return value < goal.target;
     });
-    const controls = meta.controls?.hints.join(' / ') || 'Tap';
+    const controls = meta.controls?.hints.map(hintLabel).join(' / ') || t('hint.tap');
     const mode = this.runModes.get(meta.id) ?? 'challenge';
     const tip = this.tipFor(meta);
     this.view.append(

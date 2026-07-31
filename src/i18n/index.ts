@@ -21,3 +21,14 @@ export function t(key: string, vars?: Record<string, string | number>): string {
 export function detectLocale(): 'en' | 'de' {
   return (navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
 }
+
+/**
+ * Localize a canonical English control hint word (e.g. "Move", "Fire") for display. Hints stay
+ * English in the registry (used for search + precomputed tutorials); this only skins the live
+ * UI chrome, falling back to the original word when no translation exists.
+ */
+export function hintLabel(word: string): string {
+  const key = `hint.${word.toLowerCase()}`;
+  const val = t(key);
+  return val === key ? word : val;
+}

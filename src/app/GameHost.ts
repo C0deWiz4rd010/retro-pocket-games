@@ -21,7 +21,7 @@ import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
 import { confettiBurst } from './confetti';
 import { GAMES } from '@core/Registry';
-import { t } from '@i18n/index';
+import { t, hintLabel } from '@i18n/index';
 import { icon } from '@ui/icons';
 import { enterPop } from '@ui/motion';
 import { attachTooltip } from '@ui/tooltip';
@@ -366,9 +366,9 @@ export class GameHost {
     const hints = this.meta.controls?.hints ?? [];
     const rows: (Node | string)[] = [el('div', { class: 'panel__title' }, [t('settings.controls')])];
     if (hints.length) {
-      rows.push(el('ul', { class: 'pause-list' }, hints.map((h) => el('li', {}, [h]))));
+      rows.push(el('ul', { class: 'pause-list' }, hints.map((h) => el('li', {}, [hintLabel(h)]))));
     } else {
-      rows.push(el('div', { style: 'color:var(--text-muted);font-size:13px' }, ['Tap / swipe the screen targets.']));
+      rows.push(el('div', { style: 'color:var(--text-muted);font-size:13px' }, [t('controls.tapHint')]));
     }
     rows.push(el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [`←  ${t('game.back')}`]));
     this.showOverlay(el('div', { class: 'panel' }, rows));

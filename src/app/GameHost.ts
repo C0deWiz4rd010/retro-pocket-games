@@ -60,6 +60,8 @@ export class GameHost {
   private hudBest!: HTMLElement;
   private overlayHost!: HTMLElement;
   private touchEl?: HTMLElement;
+  private overlayReturnFocus: HTMLElement | null = null;
+  private overlayFocusCleanup: (() => void) | null = null;
   private lastHudScore = 0;
   private lastHudLives = 0;
   private cleanups: (() => void)[] = [];
@@ -739,14 +741,33 @@ export class GameHost {
     panel.setAttribute('aria-modal', 'true');
     const ov = el('div', { class: 'overlay' }, [panel]);
     ov.dataset.overlay = '1';
+    // Remember what had focus so we can restore it when the dialog closes.
+    this.overlayReturnFocus = document.activeElement as HTMLElement | null;
     this.screenView.append(ov);
     enterPop(panel);
-    // Move focus into the dialog for keyboard + screen-reader users.
-    const focusable = panel.querySelector<HTMLElement>('button, input, [tabindex]');
-    focusable?.focus();
+    const focusables = (): HTMLElement[] =>
+      [...panel.querySelectorAll<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])')].filter((n) => !n.hasAttribute('disabled'));
+    focusables()[0]?.focus();
+    // Trap Tab within the modal dialog.
+    const trap = (e: KeyboardEvent): void => {
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (!items.length) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    ov.addEventListener('keydown', trap);
+    this.overlayFocusCleanup = () => ov.removeEventListener('keydown', trap);
   }
   private clearOverlay(): void {
+    this.overlayFocusCleanup?.();
+    this.overlayFocusCleanup = null;
     this.screenView.querySelector('[data-overlay]')?.remove();
+    // Return focus to the control that opened the dialog.
+    if (this.overlayReturnFocus?.isConnected) this.overlayReturnFocus.focus();
+    this.overlayReturnFocus = null;
   }
 
   private teardown(): void {

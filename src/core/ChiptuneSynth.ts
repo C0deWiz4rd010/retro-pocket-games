@@ -8,6 +8,8 @@ export interface ToneSpec {
   release?: number;
   volume?: number; // 0..1
   slideTo?: number; // glide target freq
+  /** Seconds from now on the audio clock (sample-accurate scheduling, no JS timers). */
+  delay?: number;
 }
 
 export interface Note {
@@ -17,6 +19,9 @@ export interface Note {
 }
 
 export class ChiptuneSynth {
+  /** One shared white-noise buffer; each explosion just plays a slice of it. */
+  private noiseBuffer: AudioBuffer | null = null;
+
   constructor(
     private ctx: AudioContext,
     private out: GainNode,
@@ -31,8 +36,9 @@ export class ChiptuneSynth {
       release = 0.05,
       volume = 0.5,
       slideTo,
+      delay = 0,
     } = spec;
-    const t0 = this.ctx.currentTime;
+    const t0 = this.ctx.currentTime + delay;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = type;
@@ -51,28 +57,27 @@ export class ChiptuneSynth {
 
   noise(duration = 0.2, volume = 0.4): void {
     const t0 = this.ctx.currentTime;
-    const frames = Math.floor(this.ctx.sampleRate * duration);
-    const buffer = this.ctx.createBuffer(1, frames, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1;
+    if (!this.noiseBuffer) {
+      const frames = Math.floor(this.ctx.sampleRate); // 1 s is longer than any effect we play
+      this.noiseBuffer = this.ctx.createBuffer(1, frames, this.ctx.sampleRate);
+      const data = this.noiseBuffer.getChannelData(0);
+      for (let i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1;
+    }
     const src = this.ctx.createBufferSource();
-    src.buffer = buffer;
+    src.buffer = this.noiseBuffer;
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(volume, t0);
     gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
     src.connect(gain).connect(this.out);
-    src.start(t0);
-    src.stop(t0 + duration + 0.02);
+    src.start(t0, 0, Math.min(duration + 0.02, 1));
   }
 
   /** Play a melodic sequence (jingles like level-up / game-over). */
   sequence(notes: Note[], gap = 0): void {
     let when = 0;
     for (const n of notes) {
-      window.setTimeout(
-        () => this.tone({ freq: n.freq, duration: n.dur, type: n.type ?? 'square' }),
-        when * 1000,
-      );
+      // Scheduled on the audio clock: exact timing, and unaffected by timer throttling.
+      this.tone({ freq: n.freq, duration: n.dur, type: n.type ?? 'square', delay: when });
       when += n.dur + gap;
     }
   }

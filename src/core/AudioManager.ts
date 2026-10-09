@@ -27,6 +27,8 @@ export class AudioManager {
   private musicSynth: ChiptuneSynth | null = null;
   private musicTimer: number | null = null;
   private musicStep = 0;
+  /** Audio-clock time of the next arpeggio note still to be scheduled. */
+  private musicNext = 0;
 
   /** Lazily create the AudioContext (browsers require a user gesture first). */
   private ensure(): boolean {
@@ -61,6 +63,11 @@ export class AudioManager {
   setMutedByBlur(blurred: boolean): void {
     this.blurred = blurred;
     this.applyVolume();
+    // Muted in the background: also stop the audio thread, not just silence it (battery).
+    if (this.ctx) {
+      if (blurred && settings().audio.muteOnBlur) void this.ctx.suspend();
+      else if (!blurred) void this.ctx.resume();
+    }
   }
 
   private applyVolume(): void {
@@ -81,14 +88,25 @@ export class AudioManager {
     if (!this.ensure() || !this.musicSynth || this.musicTimer !== null) return;
     this.applyVolume();
     this.musicStep = 0;
-    this.musicTimer = window.setInterval(() => {
-      if (!this.musicSynth) return;
-      const note = AudioManager.MUSIC[this.musicStep % AudioManager.MUSIC.length]!;
-      this.musicSynth.tone({ freq: note, duration: 0.22, type: 'triangle', volume: 0.5 });
-      if (this.musicStep % 4 === 0)
-        this.musicSynth.tone({ freq: note / 2, duration: 0.4, type: 'square', volume: 0.25 });
-      this.musicStep++;
-    }, 260);
+    this.musicNext = this.ctx!.currentTime + 0.05;
+    // Look-ahead scheduler: a coarse timer queues notes a little ahead on the audio clock, so
+    // the rhythm stays steady even when the main thread (or a throttled timer) hiccups.
+    const schedule = (): void => {
+      const ctx = this.ctx;
+      const synth = this.musicSynth;
+      if (!ctx || !synth || ctx.state !== 'running') return;
+      while (this.musicNext < ctx.currentTime + 0.4) {
+        const delay = Math.max(0, this.musicNext - ctx.currentTime);
+        const note = AudioManager.MUSIC[this.musicStep % AudioManager.MUSIC.length]!;
+        synth.tone({ freq: note, duration: 0.22, type: 'triangle', volume: 0.5, delay });
+        if (this.musicStep % 4 === 0)
+          synth.tone({ freq: note / 2, duration: 0.4, type: 'square', volume: 0.25, delay });
+        this.musicStep++;
+        this.musicNext += 0.26;
+      }
+    };
+    schedule();
+    this.musicTimer = window.setInterval(schedule, 100);
   }
 
   stopMusic(): void {
@@ -110,7 +128,6 @@ export class AudioManager {
     haptics.forSfx(name);
     if (!settings().audio.sfx) return;
     if (!this.ensure() || !this.synth) return;
-    this.applyVolume();
     const s = this.synth;
     switch (name) {
       case 'blip':

@@ -29,7 +29,7 @@ export default function createGame(ctx: GameContext): Game {
   let time = 45;
   let level = 1; // Feature: round progression
   let streak = 0; // Feature: fast-tap streak
-  let lastTapAt = performance.now();
+  let lastTapAt = ctx.timers.now() * 1000;
 
   ctx.hud.setScore(score);
   ctx.hud.setLives(lives);
@@ -39,7 +39,7 @@ export default function createGame(ctx: GameContext): Game {
     const n = nums[index];
     if (!n) return;
     if (n === target) {
-      const now = performance.now();
+      const now = ctx.timers.now() * 1000;
       streak = now - lastTapAt < 900 ? streak + 1 : 0; // quick consecutive taps build a streak
       lastTapAt = now;
       score += 100 + target * 8 + streak * 15;

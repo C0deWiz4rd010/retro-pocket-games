@@ -106,13 +106,12 @@ export default function createGame(ctx: GameContext): Game {
       over = true;
       const bonus = pWins > cWins ? 1500 : 0;
       ctx.hud.toast(pWins > cWins ? 'SERIES WON!' : pWins < cWins ? 'SERIES LOST' : 'SERIES TIED');
-      window.setTimeout(
-        () => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }),
-        900,
+      ctx.timers.after(0.9, () =>
+        ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }),
       );
     } else {
       over = true; // block input until the next game starts
-      window.setTimeout(nextGame, 1100);
+      ctx.timers.after(1.1, nextGame);
     }
   };
 
@@ -167,7 +166,7 @@ export default function createGame(ctx: GameContext): Game {
     if (wins(1)) return endGame(1);
     if (full()) return endGame(0);
     turn = 2;
-    window.setTimeout(cpuMove, 350);
+    ctx.timers.after(0.35, cpuMove);
   };
 
   const offDown = ctx.input.on('down', (a: Action) => {

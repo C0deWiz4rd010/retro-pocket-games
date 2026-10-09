@@ -35,7 +35,7 @@ export default function createGame(ctx: GameContext): Game {
   let streak = 0; // Feature: streak multiplier
   let qTime = 3; // Feature: per-question timer
   let qMax = 3;
-  let shownAt = performance.now();
+  let shownAt = ctx.timers.now() * 1000;
   const labels: Text[] = [];
 
   ctx.hud.setScore(score);
@@ -55,7 +55,7 @@ export default function createGame(ctx: GameContext): Game {
     word.style.fill = COLORS[inkIdx]!.value;
     qMax = Math.max(1.4, 3 - level * 0.18);
     qTime = qMax;
-    shownAt = performance.now();
+    shownAt = ctx.timers.now() * 1000;
     draw();
   }
 
@@ -76,7 +76,7 @@ export default function createGame(ctx: GameContext): Game {
     if (i === target) {
       streak++;
       const mult = 1 + Math.floor(streak / 5);
-      const speed = Math.max(0, 50 - Math.round((performance.now() - shownAt) / 30));
+      const speed = Math.max(0, 50 - Math.round((ctx.timers.now() * 1000 - shownAt) / 30));
       score += (120 + speed) * mult;
       time += 0.8;
       ctx.audio.sfx('coin');

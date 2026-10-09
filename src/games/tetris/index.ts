@@ -98,6 +98,13 @@ export default function createGame(ctx: GameContext): Game {
   let flashT = 0;
   let combo = -1; // Feature: back-to-back line-clear combo
   let lastMoveWasRotate = false; // for T-spin detection
+  // Lock delay: a grounded piece may still slide/rotate for LOCK_DELAY seconds. Each successful
+  // move/rotate while grounded restarts the timer, capped so a piece can't stall forever.
+  const LOCK_DELAY = 0.5;
+  const MAX_LOCK_RESETS = 15;
+  let lockT = 0;
+  let lockResets = 0;
+  let lowestY = 0;
   let shake = 0;
   interface Particle {
     x: number;
@@ -134,6 +141,9 @@ export default function createGame(ctx: GameContext): Game {
   const spawn = (): Piece => {
     if (queue.length < 7) queue.push(...bag(ctx.rng));
     holdUsed = false;
+    lockT = 0;
+    lockResets = 0;
+    lowestY = 0;
     return makePiece(queue.shift() as number);
   };
   let piece = spawn();
@@ -209,21 +219,50 @@ export default function createGame(ctx: GameContext): Game {
     pendingTSpin = false;
   };
 
+  const grounded = (): boolean => collides(piece, piece.x, piece.y + 1);
+
+  /** A successful sideways move/rotate on the ground buys the player more time (capped). */
+  const bumpLock = (): void => {
+    if (lockT > 0 && lockResets < MAX_LOCK_RESETS) {
+      lockResets++;
+      lockT = 0;
+    }
+  };
+
   const tryMove = (dx: number, dy: number): boolean => {
     if (collides(piece, piece.x + dx, piece.y + dy)) return false;
     piece.x += dx;
     piece.y += dy;
     lastMoveWasRotate = false;
+    if (dy > 0 && piece.y > lowestY) {
+      lowestY = piece.y; // reached a new row: the reset budget is restored
+      lockResets = 0;
+    }
+    if (dx !== 0) bumpLock();
     return true;
   };
 
+  // Kick offsets tried in order: in place, sideways, then upward (floor kicks) so pieces can
+  // rotate out of tight spots and off the floor like in modern Tetris.
+  const KICKS: [number, number][] = [
+    [0, 0],
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [-1, -1],
+    [1, -1],
+    [-2, 0],
+    [2, 0],
+  ];
   const tryRotate = (): void => {
     const r = rotate(piece.m);
-    for (const kick of [0, -1, 1, -2, 2]) {
-      if (!collides(piece, piece.x + kick, piece.y, r)) {
+    for (const [kx, ky] of KICKS) {
+      if (!collides(piece, piece.x + kx, piece.y + ky, r)) {
         piece.m = r;
-        piece.x += kick;
+        piece.x += kx;
+        piece.y += ky;
         lastMoveWasRotate = true;
+        bumpLock();
         ctx.audio.sfx('blip');
         return;
       }
@@ -265,12 +304,15 @@ export default function createGame(ctx: GameContext): Game {
       const swap = holdId;
       holdId = cur;
       piece = makePiece(swap);
+      lockT = 0;
+      lockResets = 0;
+      lowestY = 0;
     }
     ctx.audio.sfx('select');
   };
 
   const onDown = (a: Action): void => {
-    if (over) return;
+    if (over || flashT > 0) return;
     if (a === 'left') tryMove(-1, 0);
     else if (a === 'right') tryMove(1, 0);
     else if (a === 'a' || a === 'up') tryRotate();
@@ -284,7 +326,7 @@ export default function createGame(ctx: GameContext): Game {
   const offD = ctx.input.on('down', onDown);
   const offU = ctx.input.on('up', onUp);
   const offS = ctx.input.on('swipe', (d) => {
-    if (over) return;
+    if (over || flashT > 0) return;
     if (d === 'down') hardDrop();
     else if (d === 'left') tryMove(-1, 0);
     else if (d === 'right') tryMove(1, 0);
@@ -394,11 +436,21 @@ export default function createGame(ctx: GameContext): Game {
         draw();
         return;
       }
-      dropAcc += dt;
-      const speed = softDrop ? 0.05 : Math.max(0.08, 0.8 - (level - 1) * 0.07);
-      if (dropAcc >= speed) {
-        dropAcc = 0;
-        if (!tryMove(0, 1)) lock();
+      if (grounded()) {
+        // Resting on the stack: count down the lock delay (soft drop speeds it up).
+        lockT += softDrop ? dt * 4 : dt;
+        if (lockT >= LOCK_DELAY) {
+          lockT = 0;
+          lock();
+        }
+      } else {
+        lockT = 0;
+        dropAcc += dt;
+        const speed = softDrop ? 0.05 : Math.max(0.08, 0.8 - (level - 1) * 0.07);
+        if (dropAcc >= speed) {
+          dropAcc = 0;
+          tryMove(0, 1);
+        }
       }
       draw();
     },

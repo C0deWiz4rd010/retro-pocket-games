@@ -109,7 +109,7 @@ export default function createGame(ctx: GameContext): Game {
     if (!onBoard(nr, nc)) {
       q.fall = true;
       ctx.audio.sfx('hit');
-      window.setTimeout(() => loseLife(), 200);
+      ctx.timers.after(0.2, () => loseLife());
       return;
     }
     q.row = nr;

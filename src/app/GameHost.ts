@@ -1,5 +1,6 @@
 import { Container, Ticker } from 'pixi.js';
 import { pixi } from '@core/PixiManager';
+import { GameTimers } from '@core/Timers';
 import { InputManager, keyMapFromBindings, type Action } from '@core/InputManager';
 import { controlsForGame } from '@core/controlProfiles';
 import { GameFX } from '@core/GameFX';
@@ -46,10 +47,17 @@ export interface RunOptions {
 export class GameHost {
   private input = new InputManager();
   private fx = new GameFX();
+  private timers = new GameTimers();
   private game: Game | null = null;
   private root = new Container();
   private tickFn: ((t: Ticker) => void) | null = null;
   private running = false;
+  /** True while the pause menu is up (distinguishes pause from tutorial/countdown/game over). */
+  private paused = false;
+  /** Set once the run ended; makes game over idempotent. */
+  private ended = false;
+  /** Bumped on every start/teardown; stale ctx callbacks from an old run compare against it. */
+  private runId = 0;
   private destroyed = false;
   private startedAt = 0;
   private opts: RunOptions = {};
@@ -72,8 +80,17 @@ export class GameHost {
     private onExit: () => void,
   ) {}
 
+  /** Single place that flips the sim on/off so game input is blocked whenever it isn't running. */
+  private setRunning(on: boolean): void {
+    this.running = on;
+    this.input.setBlocked(!on);
+  }
+
   async start(opts: RunOptions = {}): Promise<void> {
     this.opts = opts;
+    this.ended = false;
+    this.paused = false;
+    const runId = ++this.runId;
     this.startedAt = performance.now();
     await Promise.all([loadScores(this.meta.id), loadLeaderboard(this.meta.id)]);
     audio.unlock();
@@ -106,8 +123,11 @@ export class GameHost {
       rng: new RNG(opts.seed ?? Date.now() & 0xffffffff),
       hud: this.makeHud(),
       fx: this.fx,
+      timers: this.timers,
       timeScale: opts.timeScale ?? 1,
-      gameOver: (score, custom) => void this.handleGameOver(score, custom),
+      gameOver: (score, custom) => {
+        if (runId === this.runId) void this.handleGameOver(score, custom);
+      },
     };
 
     const mod = await this.meta.loader!();
@@ -118,9 +138,12 @@ export class GameHost {
     screenFX.apply();
     perf.attach(this.screenView);
 
-    // Pause on Start/Esc/P from keyboard or gamepad.
+    // Pause on Esc/P (keyboard) or Start (gamepad). Enter stays a game action. Pressing it again
+    // from the main pause menu resumes.
     this.input.on('down', (a) => {
-      if (a === 'pause' || a === 'start') this.pause();
+      if (a !== 'pause') return;
+      if (this.paused) this.resume();
+      else this.pause();
     });
 
     const timeScale = opts.timeScale ?? 1;
@@ -132,20 +155,22 @@ export class GameHost {
       this.fx.update(dt);
       if (!this.running || !this.game) return;
       // Fold the daily time-scale in, but keep the per-step dt clamped for stability.
-      this.game.update(Math.min(dt * timeScale, 0.05));
+      const step = Math.min(dt * timeScale, 0.05);
+      this.timers.update(step);
+      this.game.update(step);
     };
     pixi.app.ticker.add(this.tickFn);
 
     // First-run tutorial: hold the sim until dismissed, then play.
     if (!hasSeenTutorial(this.meta.id)) {
-      this.running = false;
+      this.setRunning(false);
       const ov = showTutorial(this.meta, () => {
         markTutorialSeen(this.meta.id);
-        this.running = true;
+        this.setRunning(true);
       });
       this.screenView.append(ov);
     } else {
-      this.running = true;
+      this.setRunning(true);
     }
   }
 
@@ -177,27 +202,21 @@ export class GameHost {
       {
         class: 'iconbtn',
         'aria-label': t('settings.sfx'),
-        onClick: (e: Event) => {
+        onClick: () => {
           const on = !settings().audio.sfx;
           updateSettings({ audio: { ...settings().audio, sfx: on } });
-          (e.currentTarget as HTMLElement).textContent = on ? '🔊' : '🔇';
+          muteBtn.replaceChildren(icon(on ? 'soundOn' : 'soundOff'));
           if (on) audio.sfx('blip');
         },
       },
-      [settings().audio.sfx ? '🔊' : '🔇'],
+      [icon(settings().audio.sfx ? 'soundOn' : 'soundOff')],
     );
     const pauseBtn = el(
       'button',
       { class: 'iconbtn', 'aria-label': t('game.paused'), onClick: () => this.pause() },
       ['⏸'],
     );
-    muteBtn.replaceChildren(icon(settings().audio.sfx ? 'soundOn' : 'soundOff'));
     attachTooltip(muteBtn, t('settings.sfx'));
-    muteBtn.addEventListener('click', () => {
-      window.setTimeout(() =>
-        muteBtn.replaceChildren(icon(settings().audio.sfx ? 'soundOn' : 'soundOff')),
-      );
-    });
     pauseBtn.replaceChildren(icon('pause'));
     attachTooltip(pauseBtn, t('game.paused'));
     // Fullscreen toggle for a more app-like, immersive mobile feel (#10/#22).
@@ -255,16 +274,35 @@ export class GameHost {
       {
         class: 'touch-assist',
         'aria-label': label,
-        onPointerdown: (e: Event) => {
-          e.preventDefault();
-          this.input.press(assist.action);
-          haptics.tick();
-        },
-        onPointerup: () => this.input.release(assist.action),
-        onPointerleave: () => this.input.release(assist.action),
+        ...this.holdHandlers(assist.action),
       },
       [label],
     );
+  }
+
+  /**
+   * Press-and-hold handlers for an on-screen button. The pointer is captured so a finger that
+   * drifts off the button keeps (and later releases) the action; cancel/lost-capture also release
+   * it, so an interrupted touch (call, notification, gesture) can never leave an input stuck.
+   */
+  private holdHandlers(action: Action): Record<string, EventListener> {
+    const release = (): void => this.input.release(action);
+    return {
+      onPointerdown: (e: Event) => {
+        e.preventDefault();
+        const pe = e as PointerEvent;
+        try {
+          (pe.currentTarget as HTMLElement).setPointerCapture(pe.pointerId);
+        } catch {
+          /* capture is best-effort */
+        }
+        this.input.press(action);
+        haptics.tick();
+      },
+      onPointerup: release,
+      onPointercancel: release,
+      onLostpointercapture: release,
+    };
   }
 
   private buildRotatePrompt(): HTMLElement {
@@ -287,13 +325,7 @@ export class GameHost {
         {
           class: dir,
           'aria-label': dir,
-          onPointerdown: (e: Event) => {
-            e.preventDefault();
-            this.input.press(dir);
-            haptics.tick();
-          },
-          onPointerup: () => this.input.release(dir),
-          onPointerleave: () => this.input.release(dir),
+          ...this.holdHandlers(dir),
         },
         [glyph],
       );
@@ -317,13 +349,7 @@ export class GameHost {
           class: cls,
           'aria-label': label,
           style: label.length > 3 ? 'font-size:10px' : label.length > 1 ? 'font-size:12px' : '',
-          onPointerdown: (e: Event) => {
-            e.preventDefault();
-            this.input.press(action);
-            haptics.tick();
-          },
-          onPointerup: () => this.input.release(action),
-          onPointerleave: () => this.input.release(action),
+          ...this.holdHandlers(action),
         },
         [label],
       );
@@ -410,8 +436,13 @@ export class GameHost {
   // ── pause / resume / restart ──
   private pause(): void {
     if (!this.running) return;
-    this.running = false;
+    this.setRunning(false);
+    this.paused = true;
     audio.sfx('select');
+    this.showPauseMenu();
+  }
+
+  private showPauseMenu(): void {
     const panel = el('div', { class: 'panel' }, [
       el('div', { class: 'panel__title' }, [t('game.paused')]),
       this.buildQuickToggles(),
@@ -463,7 +494,7 @@ export class GameHost {
       );
     }
     rows.push(
-      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [
+      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.showPauseMenu() }, [
         `←  ${t('game.back')}`,
       ]),
     );
@@ -486,7 +517,7 @@ export class GameHost {
         ),
       );
     rows.push(
-      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [
+      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.showPauseMenu() }, [
         `←  ${t('game.back')}`,
       ]),
     );
@@ -523,9 +554,11 @@ export class GameHost {
           updateSettings({ a11y: { ...settings().a11y, largeTargets: !a.largeTargets } });
           render();
         }),
-        el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [
-          `←  ${t('game.back')}`,
-        ]),
+        el(
+          'button',
+          { class: 'btn btn--primary btn--block', onClick: () => this.showPauseMenu() },
+          [`←  ${t('game.back')}`],
+        ),
       );
     };
     render();
@@ -589,7 +622,7 @@ export class GameHost {
       el('button', { class: 'btn btn--danger btn--block', onClick: () => this.exit() }, [
         `⌂  ${t('game.quit')}`,
       ]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.pause() }, [
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showPauseMenu() }, [
         t('game.keepPlaying'),
       ]),
     ]);
@@ -597,9 +630,10 @@ export class GameHost {
   }
 
   private resume(): void {
+    this.paused = false;
     this.clearOverlay();
     if (document.documentElement.classList.contains('a11y-reduced-motion')) {
-      this.running = true;
+      this.setRunning(true);
       return;
     }
     // 3-2-1 countdown so the player isn't dropped straight back into the action.
@@ -612,7 +646,7 @@ export class GameHost {
     const tick = (): void => {
       if (n <= 0) {
         overlay.remove();
-        this.running = true;
+        this.setRunning(true);
         return;
       }
       num.textContent = String(n);
@@ -621,8 +655,10 @@ export class GameHost {
       num.style.animation = '';
       audio.sfx('blip');
       n--;
-      window.setTimeout(tick, 700);
+      countdownTimer = window.setTimeout(tick, 700);
     };
+    let countdownTimer = 0;
+    this.cleanups.push(() => window.clearTimeout(countdownTimer));
     tick();
   }
 
@@ -641,8 +677,10 @@ export class GameHost {
     rawScore: number,
     custom: Record<string, number> = {},
   ): Promise<void> {
-    if (!this.running && this.game === null) return;
-    this.running = false;
+    if (this.ended || this.destroyed || this.game === null) return;
+    this.ended = true;
+    this.paused = false;
+    this.setRunning(false);
     audio.sfx('gameover');
     haptics.bump();
 
@@ -961,7 +999,8 @@ export class GameHost {
   }
 
   private teardown(): void {
-    this.running = false;
+    this.runId++;
+    this.setRunning(false);
     this.cleanups.forEach((fn) => fn());
     this.cleanups = [];
     if (this.startedAt > 0) {
@@ -974,6 +1013,7 @@ export class GameHost {
     this.tickFn = null;
     this.game?.destroy();
     this.game = null;
+    this.timers.clear();
     this.fx.clear();
     this.input.detach(pixi.canvas);
     pixi.clearWorld();

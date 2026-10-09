@@ -112,7 +112,7 @@ export default function createGame(ctx: GameContext): Game {
   let mistakes = 0;
   let hints = 3; // Feature: hint power-up
   const MAX_MISTAKES = 3; // Feature: three-strikes limit
-  const startTime = performance.now();
+  const startTime = ctx.timers.now() * 1000;
 
   ctx.hud.setScore(0);
   const setLabel = (): void => ctx.hud.setLabel(`✗ ${mistakes}/${MAX_MISTAKES} · 💡${hints}`);
@@ -250,7 +250,7 @@ export default function createGame(ctx: GameContext): Game {
         }
         if (checkSolved()) {
           over = true;
-          const elapsed = Math.round((performance.now() - startTime) / 1000);
+          const elapsed = Math.round((ctx.timers.now() * 1000 - startTime) / 1000);
           const timeBonus = Math.max(0, 600 - elapsed) * 10;
           const penaltyScore = Math.max(0, 5000 - mistakes * 200 + timeBonus);
           ctx.audio.sfx('powerup');
@@ -269,7 +269,7 @@ export default function createGame(ctx: GameContext): Game {
   const finishIfSolved = (): void => {
     if (!checkSolved()) return;
     over = true;
-    const elapsed = Math.round((performance.now() - startTime) / 1000);
+    const elapsed = Math.round((ctx.timers.now() * 1000 - startTime) / 1000);
     const timeBonus = Math.max(0, 600 - elapsed) * 10;
     ctx.audio.sfx('powerup');
     ctx.hud.toast('SOLVED!');
@@ -313,7 +313,7 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update() {
       if (over) return;
-      const elapsed = Math.round((performance.now() - startTime) / 1000);
+      const elapsed = Math.round((ctx.timers.now() * 1000 - startTime) / 1000);
       ctx.hud.setScore(elapsed);
     },
     destroy() {

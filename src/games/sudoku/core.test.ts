@@ -48,7 +48,6 @@ describe('sudoku core', () => {
     expect(removed).toBeGreaterThanOrEqual(40);
     expect(countSolutions(puzzle, 2)).toBe(1);
     for (let r = 0; r < N; r++)
-      for (let c = 0; c < N; c++)
-        if (puzzle[r]![c]) expect(puzzle[r]![c]).toBe(solved[r]![c]);
+      for (let c = 0; c < N; c++) if (puzzle[r]![c]) expect(puzzle[r]![c]).toBe(solved[r]![c]);
   });
 });

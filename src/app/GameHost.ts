@@ -160,8 +160,12 @@ export class GameHost {
       perf.tick(dt);
       this.fx.update(dt);
       if (!this.running || !this.game) return;
-      // Fold the daily time-scale in, but keep the per-step dt clamped for stability.
-      const step = Math.min(dt * timeScale, 0.05);
+      // Fold the daily time-scale into the (already 50 ms-clamped) frame time. Allow a little
+      // headroom above 50 ms so turbo runs don't silently lose simulated time at low FPS.
+      // A fixed-step accumulator was considered and rejected: games draw inside update(), so
+      // sub-stepping would re-tessellate every frame several times on exactly the slow devices
+      // that can least afford it.
+      const step = Math.min(dt * timeScale, 0.075);
       this.timers.update(step);
       this.game.update(step);
     };

@@ -58,6 +58,9 @@ const GAMEPAD_BUTTONS: Record<number, Action> = {
 export class InputManager extends Emitter<InputEvents> {
   private pressed = new Set<Action>();
   private gpDirPrev = new Set<Action>();
+  private gpDirNow = new Set<Action>();
+  /** Connected gamepads; the per-frame poll is skipped entirely while this is 0. */
+  private padCount = 0;
   private keyMap: Record<string, Action> = { ...DEFAULT_KEY_MAP };
   private gamepadDeadzone = 0.5;
   private toVirtual: (clientX: number, clientY: number) => { x: number; y: number } = (x, y) => ({
@@ -76,6 +79,13 @@ export class InputManager extends Emitter<InputEvents> {
     if (!a) return;
     e.preventDefault();
     if (!e.repeat) this.press(a);
+  };
+  private onPadConnected = (): void => {
+    this.padCount++;
+  };
+  private onPadDisconnected = (): void => {
+    this.padCount = Math.max(0, this.padCount - 1);
+    if (this.padCount === 0) this.releaseGamepad();
   };
   private onBlur = (): void => this.releaseAll();
   private onVisibility = (): void => {
@@ -103,6 +113,10 @@ export class InputManager extends Emitter<InputEvents> {
     window.addEventListener('pointercancel', this.onPointerCancel);
     window.addEventListener('blur', this.onBlur);
     document.addEventListener('visibilitychange', this.onVisibility);
+    window.addEventListener('gamepadconnected', this.onPadConnected);
+    window.addEventListener('gamepaddisconnected', this.onPadDisconnected);
+    // A pad that was already connected (and woken by a button press) before this game mounted.
+    this.padCount = [...(navigator.getGamepads?.() ?? [])].filter(Boolean).length;
   }
 
   configure(opts: { keyMap?: Record<string, Action>; gamepadDeadzone?: number }): void {
@@ -119,6 +133,8 @@ export class InputManager extends Emitter<InputEvents> {
     window.removeEventListener('pointercancel', this.onPointerCancel);
     window.removeEventListener('blur', this.onBlur);
     document.removeEventListener('visibilitychange', this.onVisibility);
+    window.removeEventListener('gamepadconnected', this.onPadConnected);
+    window.removeEventListener('gamepaddisconnected', this.onPadDisconnected);
     this.pressed.clear();
     this.blocked = false;
     this.clear();
@@ -165,16 +181,23 @@ export class InputManager extends Emitter<InputEvents> {
     return { x, y };
   }
 
-  /** Poll gamepads; call once per frame from the host loop. */
+  private releaseGamepad(): void {
+    for (const a of this.gpDirPrev) this.release(a);
+    this.gpDirPrev.clear();
+  }
+
+  /** Poll gamepads; call once per frame from the host loop. No-op (and no allocation) without one. */
   pollGamepad(): void {
+    if (this.padCount === 0) return;
     const pads = navigator.getGamepads?.() ?? [];
-    const now = new Set<Action>();
+    const now = this.gpDirNow;
+    now.clear();
     for (const pad of pads) {
       if (!pad) continue;
-      pad.buttons.forEach((btn, i) => {
+      for (let i = 0; i < pad.buttons.length; i++) {
         const a = GAMEPAD_BUTTONS[i];
-        if (a && btn.pressed) now.add(a);
-      });
+        if (a && pad.buttons[i]!.pressed) now.add(a);
+      }
       const [ax = 0, ay = 0] = pad.axes;
       if (ax < -this.gamepadDeadzone) now.add('left');
       else if (ax > this.gamepadDeadzone) now.add('right');
@@ -183,6 +206,8 @@ export class InputManager extends Emitter<InputEvents> {
     }
     for (const a of now) if (!this.gpDirPrev.has(a)) this.press(a);
     for (const a of this.gpDirPrev) if (!now.has(a)) this.release(a);
+    // Swap buffers instead of allocating a fresh Set every frame.
+    this.gpDirNow = this.gpDirPrev;
     this.gpDirPrev = now;
   }
 

@@ -1,10 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { bootApp, gameIds, launchGame, leaveGame, trackErrors } from './helpers';
 
-const IDS = gameIds();
+const ALL_IDS = gameIds();
+// GAME_IDS=pacman,tetris limits the run to specific games (handy while iterating on one game).
+const ONLY = process.env.GAME_IDS?.split(',').filter(Boolean);
+const IDS = ONLY?.length ? ALL_IDS.filter((id) => ONLY.includes(id)) : ALL_IDS;
 
 test('registry parsing finds all games', () => {
-  expect(IDS.length).toBeGreaterThanOrEqual(85);
+  expect(ALL_IDS.length).toBeGreaterThanOrEqual(85);
 });
 
 test.describe('every game starts, runs 3s and tears down', () => {

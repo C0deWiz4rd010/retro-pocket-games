@@ -9,6 +9,7 @@ import { haptics } from '@core/Haptics';
 import { wakeLock } from '@core/WakeLock';
 import { screenFX } from '@core/ScreenFX';
 import { perf } from '@core/PerfMonitor';
+import { onSettingsChange } from '@store/settings';
 import { RNG } from '@utils/rng';
 import { el, clear } from '@utils/dom';
 import { submitScore, getBest, loadScores } from '@store/scores';
@@ -141,6 +142,7 @@ export class GameHost {
     // Start the render loop (idle in menus), then CRT shader (if enabled) + FPS meter.
     pixi.setActive(true);
     screenFX.apply();
+    this.cleanups.push(onSettingsChange(() => screenFX.apply()));
     perf.attach(this.screenView);
 
     // Pause on Esc/P (keyboard) or Start (gamepad). Enter stays a game action. Pressing it again

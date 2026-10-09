@@ -22,7 +22,7 @@ export async function loadSettings(): Promise<void> {
       applyToDom(s);
       if (loaded) {
         persistSoon(s);
-        void onChange?.(s);
+        for (const fn of listeners) fn(s);
       }
     });
   }
@@ -51,10 +51,11 @@ if (typeof document !== 'undefined') {
   window.addEventListener('pagehide', flushSettings);
 }
 
-/** Optional side-effect hook fired after each settings change (set by main on boot). */
-let onChange: ((s: Settings) => void) | undefined;
-export function onSettingsChange(fn: (s: Settings) => void): void {
-  onChange = fn;
+/** Side-effect hooks fired after each settings change (music sync, CRT shader, ...). */
+const listeners = new Set<(s: Settings) => void>();
+export function onSettingsChange(fn: (s: Settings) => void): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
 }
 
 /** Shallow-merge a settings patch. */

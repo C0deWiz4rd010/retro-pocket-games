@@ -1,6 +1,5 @@
 import { el, clear, mount } from '@utils/dom';
 import { glyphEl } from '@utils/glyph';
-import { pixi } from '@core/PixiManager';
 import { audio } from '@core/AudioManager';
 import {
   COLLECTIONS,
@@ -22,7 +21,7 @@ import {
 import { currentStreak, playedToday, last7Days } from '@store/dailyStore';
 import { isFavorite, toggleFavorite, hasOnboarded, markOnboarded } from '@store/prefs';
 import { showOnboarding } from './onboarding';
-import { GameHost } from './GameHost';
+import type { GameHost } from './GameHost';
 import { renderSettings } from './views/Settings';
 import { renderBios } from './views/Bios';
 import { renderAchievements } from './views/Achievements';
@@ -58,6 +57,10 @@ export class App {
   private rail!: HTMLElement; // persistent launcher rail
   private scrim!: HTMLElement;
   private host: GameHost | null = null;
+  private screenEl!: HTMLElement;
+  private engine: Promise<typeof import('./GameHost')> | null = null;
+  /** Bumped on every navigation so a game launch that was still loading can abort. */
+  private launchSeq = 0;
   private homeFilter: GameMeta['group'] | 'all' = 'all';
   private homeCollection: GameCollection | null = null;
   private libraryQuery = '';
@@ -90,7 +93,7 @@ export class App {
 
     mount(el('div', { class: 'frame' }, [this.rail, device]));
 
-    await pixi.init(screen);
+    this.screenEl = screen;
     this.buildNav();
 
     window.addEventListener('hashchange', () => this.route());
@@ -121,6 +124,7 @@ export class App {
     });
 
     this.route();
+    this.preloadEngineWhenIdle();
 
     // First-run onboarding (5 screens) over the home screen.
     if (!hasOnboarded() && (location.hash === '' || location.hash === '#/')) {
@@ -166,7 +170,38 @@ export class App {
     document.querySelector('.screen__view')?.append(overlay);
   }
 
+  /**
+   * PixiJS + the game host are ~150 KB gzipped and not needed to show the menus, so they load on
+   * demand (and are prefetched when the browser is idle). Shared by every launch.
+   */
+  private loadEngine(): Promise<typeof import('./GameHost')> {
+    this.engine ??= (async () => {
+      const [{ pixi }, hostModule] = await Promise.all([
+        import('@core/PixiManager'),
+        import('./GameHost'),
+      ]);
+      await pixi.init(this.screenEl);
+      return hostModule;
+    })().catch((err) => {
+      this.engine = null; // allow a retry after a network failure
+      throw err;
+    });
+    return this.engine;
+  }
+
+  private preloadEngineWhenIdle(): void {
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return; // respect Data Saver
+    const run = (): void => void this.loadEngine().catch(() => undefined);
+    // Safari lacks requestIdleCallback.
+    const idle = (window as Window & { requestIdleCallback?: typeof requestIdleCallback })
+      .requestIdleCallback;
+    if (idle) idle(run, { timeout: 4000 });
+    else window.setTimeout(run, 2000);
+  }
+
   private route(): void {
+    this.launchSeq++;
     const hash = location.hash.replace(/^#\/?/, '');
     const [section, arg] = hash.split('/');
     this.teardownGame();
@@ -1365,6 +1400,9 @@ export class App {
       return;
     }
     this.markActiveNav(id);
+    const seq = this.launchSeq;
+    const { GameHost } = await this.loadEngine();
+    if (seq !== this.launchSeq) return; // navigated away while the engine was loading
     this.host = new GameHost(this.view, meta, () => this.go(''));
     await this.host.start({
       mode,
@@ -1381,6 +1419,9 @@ export class App {
     }
     this.markActiveNav('daily');
     const mod = dailyModifier(meta);
+    const seq = this.launchSeq;
+    const { GameHost } = await this.loadEngine();
+    if (seq !== this.launchSeq) return;
     this.host = new GameHost(this.view, meta, () => this.go(''));
     await this.host.start({
       seed: dailySeed(),

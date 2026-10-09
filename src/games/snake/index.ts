@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { fxRandom } from '@utils/rng';
 import type { Action, Dir } from '@core/InputManager';
 import { createSnake, setDir, step, type SnakeState, type Vec } from './core';
 
@@ -99,7 +100,7 @@ export default function createGame(ctx: GameContext): Game {
     const cy = gy * cell + cell / 2;
     for (let i = 0; i < n; i++) {
       const angle = (i / n) * Math.PI * 2;
-      const speed = 40 + Math.random() * 60;
+      const speed = 40 + fxRandom() * 60;
       particles.push({
         x: cx,
         y: cy,

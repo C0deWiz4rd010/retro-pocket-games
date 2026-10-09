@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { fxRandom } from '@utils/rng';
 
 interface Particle {
   x: number;
@@ -172,8 +173,8 @@ export default function createGame(ctx: GameContext): Game {
     g.poly([ax, ay, bx, by, cx, cy]).fill({ color: 0xb0bec5 });
     if ((ctx.input.isDown('a') || ctx.input.isDown('up')) && ship.fuel > 0) {
       const [fx, fy] = tx(0, 9);
-      const [f2x, f2y] = tx(-4, 16 + Math.random() * 6);
-      const [f3x, f3y] = tx(4, 16 + Math.random() * 6);
+      const [f2x, f2y] = tx(-4, 16 + fxRandom() * 6);
+      const [f3x, f3y] = tx(4, 16 + fxRandom() * 6);
       g.poly([fx, fy, f2x, f2y, f3x, f3y]).fill({ color: 0xff7b00 });
     }
   };

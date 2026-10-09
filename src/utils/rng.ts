@@ -48,3 +48,9 @@ export function seedFromString(str: string): number {
   }
   return h >>> 0;
 }
+
+/**
+ * Non-deterministic randomness for purely cosmetic effects (sparks, shake, flicker).
+ * Never use this for gameplay: it is not seeded, so daily runs would diverge.
+ */
+export const fxRandom = (): number => Math.random();

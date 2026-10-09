@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
-import type { RNG } from '@utils/rng';
+import { fxRandom, type RNG } from '@utils/rng';
 
 const COLS = 10;
 const ROWS = 20;
@@ -111,10 +111,10 @@ export default function createGame(ctx: GameContext): Game {
   const spawnParticles = (rowY: number, color: number): void => {
     for (let i = 0; i < 14; i++) {
       particles.push({
-        x: Math.random() * fieldW,
+        x: fxRandom() * fieldW,
         y: rowY * cell + cell / 2,
-        vx: (Math.random() - 0.5) * 160,
-        vy: (Math.random() - 0.5) * 120,
+        vx: (fxRandom() - 0.5) * 160,
+        vy: (fxRandom() - 0.5) * 120,
         life: 0.5,
         color,
       });
@@ -369,8 +369,8 @@ export default function createGame(ctx: GameContext): Game {
       if (shake > 0) shake = Math.max(0, shake - dt * 2);
       const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
       layer.position.set(
-        ox + (rmS > 0 ? (Math.random() * 2 - 1) * rmS * 6 : 0),
-        oy + (rmS > 0 ? (Math.random() * 2 - 1) * rmS * 6 : 0),
+        ox + (rmS > 0 ? (fxRandom() * 2 - 1) * rmS * 6 : 0),
+        oy + (rmS > 0 ? (fxRandom() * 2 - 1) * rmS * 6 : 0),
       );
       if (flashT > 0) {
         flashT -= dt;

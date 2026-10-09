@@ -51,4 +51,20 @@ export default tseslint.config(
       eqeqeq: ['error', 'always'],
     },
   },
+  {
+    // Gameplay must use ctx.rng (seeded) so daily challenges stay deterministic.
+    // Cosmetic-only randomness goes through fxRandom() from @utils/rng.
+    files: ['src/games/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message: 'Use ctx.rng for gameplay or fxRandom() for cosmetic effects.',
+        },
+      ],
+    },
+  },
 );

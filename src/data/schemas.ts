@@ -105,6 +105,8 @@ export const PrefsSchema = z.object({
   tutorialsSeen: z.array(z.string()).default([]),
   /** First-run app onboarding completed (bump the suffix to re-show after a redesign). */
   onboardedV1: z.boolean().default(false),
+  /** Last name typed on a leaderboard entry (prefilled next time; part of backups). */
+  playerName: z.string().max(8).default(''),
 });
 export type Prefs = z.infer<typeof PrefsSchema>;
 

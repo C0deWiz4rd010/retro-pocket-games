@@ -17,7 +17,7 @@ import { awardRun, addPlayTime } from '@store/profile';
 import { evaluateAchievements, buildContext, type Achievement } from '@store/achievements';
 import { recordDailyResult, currentStreak } from '@store/dailyStore';
 import { loadLeaderboard, qualifies, addEntry } from '@store/leaderboard';
-import { hasSeenTutorial, markTutorialSeen } from '@store/prefs';
+import { hasSeenTutorial, markTutorialSeen, playerName, setPlayerName } from '@store/prefs';
 import { settings, updateSettings } from '@store/settings';
 import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
@@ -959,7 +959,7 @@ export class GameHost {
       class: 'name-input',
       maxlength: '8',
       placeholder: t('game.enterName'),
-      value: localStorage.getItem('rp:name') ?? '',
+      value: playerName(),
     }) as HTMLInputElement;
     const wrap = el('div', { class: 'name-entry' }, [
       el('div', { style: 'color:var(--accent);font-size:13px;font-weight:700' }, [
@@ -973,7 +973,7 @@ export class GameHost {
             class: 'btn btn--primary',
             onClick: () => {
               const name = input.value.trim() || 'YOU';
-              localStorage.setItem('rp:name', name);
+              setPlayerName(name);
               void addEntry(this.meta.id, name, score);
               audio.sfx('coin');
               wrap.replaceChildren(el('div', { style: 'color:var(--ok);font-size:13px' }, ['✓']));

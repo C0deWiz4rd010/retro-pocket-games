@@ -1,13 +1,32 @@
 // Minimal CDP smoke test: launch Chrome, load the app, collect console + exceptions,
 // and report whether the app DOM mounted. Uses Node 22 built-in WebSocket/fetch.
 import { spawn } from 'node:child_process';
-import { mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const URL_TO_LOAD = process.argv[2] ?? 'http://localhost:4173/retro-pocket-games/#/';
-const CHROME =
-  process.env.CHROME ?? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+
+/** Locate a Chrome/Chromium binary: $CHROME wins, then common per-OS install paths. */
+function findChrome() {
+  if (process.env.CHROME) return process.env.CHROME;
+  const candidates = {
+    win32: [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+    ],
+    darwin: ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'],
+    linux: ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'],
+  };
+  const found = (candidates[process.platform] ?? []).find((c) => existsSync(c));
+  if (!found) {
+    console.error('Chrome not found. Set the CHROME env var to your browser executable.');
+    process.exit(2);
+  }
+  return found;
+}
+const CHROME = findChrome();
 const PORT = 9222;
 const userDir = mkdtempSync(join(tmpdir(), 'rp-cdp-'));
 

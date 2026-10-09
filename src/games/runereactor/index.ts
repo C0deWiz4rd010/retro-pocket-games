@@ -30,10 +30,14 @@ export default function createGame(ctx: GameContext): Game {
   const addBomb = (): void => {
     for (let tries = 0; tries < 30; tries++) {
       const i = ctx.rng.int(0, N * N - 1);
-      if (!bombs.has(i)) { bombs.add(i); return; }
+      if (!bombs.has(i)) {
+        bombs.add(i);
+        return;
+      }
     }
   };
-  addBomb(); addBomb();
+  addBomb();
+  addBomb();
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('40s · L1');
@@ -55,7 +59,15 @@ export default function createGame(ctx: GameContext): Game {
         const r = Math.floor(i / N);
         grid[i] = 0;
         score += (90 + chain * 30) * zone;
-        burst(sparks, ctx.rng, ox + c * cell + cell / 2, oy + r * cell + cell / 2, 0xb388ff, 20, 150);
+        burst(
+          sparks,
+          ctx.rng,
+          ox + c * cell + cell / 2,
+          oy + r * cell + cell / 2,
+          0xb388ff,
+          20,
+          150,
+        );
         add(c + 1, r);
         add(c - 1, r);
         add(c, r + 1);
@@ -85,10 +97,16 @@ export default function createGame(ctx: GameContext): Game {
     resolve();
     score += 12;
     // Feature: big chains add time
-    if (chain >= 4) { time = Math.min(60, time + 3); ctx.hud.toast(`CHAIN ${chain} · +3s`); }
+    if (chain >= 4) {
+      time = Math.min(60, time + 3);
+      ctx.hud.toast(`CHAIN ${chain} · +3s`);
+    }
     // Feature: zone multiplier rises with score
     const nz = 1 + Math.floor(score / 3000);
-    if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); }
+    if (nz > zone) {
+      zone = nz;
+      ctx.hud.toast(`ZONE ${zone} · x${zone}`);
+    }
     ctx.hud.setScore(score);
     ctx.audio.sfx(chain > 2 ? 'powerup' : 'blip');
     if (chain > 0) ctx.fx.floatingText(`CHAIN ${chain}`, W / 2, oy - 20, 0xb388ff);
@@ -103,13 +121,26 @@ export default function createGame(ctx: GameContext): Game {
         const value = grid[idx(N, c, r)] ?? 0;
         const x = ox + c * cell;
         const y = oy + r * cell;
-        g.roundRect(x + 4, y + 4, cell - 8, cell - 8, 8).fill({ color: COLORS[value] ?? 0xff4d8d, alpha: 0.78 });
+        g.roundRect(x + 4, y + 4, cell - 8, cell - 8, 8).fill({
+          color: COLORS[value] ?? 0xff4d8d,
+          alpha: 0.78,
+        });
         if (bombs.has(idx(N, c, r))) {
-          g.star(x + cell / 2, y + cell / 2, 4, cell * (0.26 + 0.04 * Math.sin(t * 6)), cell * 0.12).fill({ color: 0xffd200 });
+          g.star(
+            x + cell / 2,
+            y + cell / 2,
+            4,
+            cell * (0.26 + 0.04 * Math.sin(t * 6)),
+            cell * 0.12,
+          ).fill({ color: 0xffd200 });
         }
         for (let p = 0; p < value; p++) {
-          const a = t * 2 + p * (Math.PI * 2 / 4);
-          g.circle(x + cell / 2 + Math.cos(a) * cell * 0.18, y + cell / 2 + Math.sin(a) * cell * 0.18, cell * 0.045).fill({ color: 0xffffff, alpha: 0.5 });
+          const a = t * 2 + p * ((Math.PI * 2) / 4);
+          g.circle(
+            x + cell / 2 + Math.cos(a) * cell * 0.18,
+            y + cell / 2 + Math.sin(a) * cell * 0.18,
+            cell * 0.045,
+          ).fill({ color: 0xffffff, alpha: 0.5 });
         }
       }
     }
@@ -135,4 +166,3 @@ export default function createGame(ctx: GameContext): Game {
     },
   };
 }
-

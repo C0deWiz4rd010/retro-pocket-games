@@ -17,7 +17,13 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(g);
 
   // each hole: up amount 0..1, state
-  const holes = Array.from({ length: cols * rows }, () => ({ up: 0, active: false, golden: false, bomb: false, timer: 0 }));
+  const holes = Array.from({ length: cols * rows }, () => ({
+    up: 0,
+    active: false,
+    golden: false,
+    bomb: false,
+    timer: 0,
+  }));
   let score = 0;
   let misses = 0;
   let timeLeft = 30;
@@ -54,7 +60,10 @@ export default function createGame(ctx: GameContext): Game {
           comboTimer = 1.5;
           const mult = 1 + Math.floor(combo / 4);
           score += (h.golden ? 50 : 10) * mult;
-          if (h.golden) { timeLeft = Math.min(40, timeLeft + 2); ctx.fx.floatingText('+2s', c.x, c.y - 20, 0xffd200); }
+          if (h.golden) {
+            timeLeft = Math.min(40, timeLeft + 2);
+            ctx.fx.floatingText('+2s', c.x, c.y - 20, 0xffd200);
+          }
           if (combo >= 4 && combo % 4 === 0) ctx.hud.toast(`COMBO x${mult}`);
           ctx.audio.sfx(h.golden ? 'coin' : 'hit');
         }
@@ -81,7 +90,9 @@ export default function createGame(ctx: GameContext): Game {
       const h = holes[i]!;
       if (h.active && h.up > 0) {
         const moleY = c.y + ry - h.up * ry * 2.4;
-        g.circle(c.x, moleY, rx * 0.7).fill({ color: h.bomb ? 0x2b2b40 : h.golden ? 0xffd200 : 0x8d6e63 });
+        g.circle(c.x, moleY, rx * 0.7).fill({
+          color: h.bomb ? 0x2b2b40 : h.golden ? 0xffd200 : 0x8d6e63,
+        });
         g.circle(c.x - rx * 0.25, moleY - rx * 0.1, rx * 0.12).fill({ color: 0x101018 });
         g.circle(c.x + rx * 0.25, moleY - rx * 0.1, rx * 0.12).fill({ color: 0x101018 });
         if (h.bomb) g.rect(c.x - 1, moleY - rx * 0.9, 2, rx * 0.3).fill({ color: 0xff4d4d });
@@ -94,8 +105,13 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       timeLeft -= dt;
-      if (comboTimer > 0) comboTimer -= dt; else combo = 0;
-      ctx.hud.setLabel(combo >= 4 ? `${Math.ceil(timeLeft)}s · x${1 + Math.floor(combo / 4)}` : `${Math.ceil(timeLeft)}s`);
+      if (comboTimer > 0) comboTimer -= dt;
+      else combo = 0;
+      ctx.hud.setLabel(
+        combo >= 4
+          ? `${Math.ceil(timeLeft)}s · x${1 + Math.floor(combo / 4)}`
+          : `${Math.ceil(timeLeft)}s`,
+      );
       if (timeLeft <= 0) {
         over = true;
         ctx.audio.sfx('levelup');

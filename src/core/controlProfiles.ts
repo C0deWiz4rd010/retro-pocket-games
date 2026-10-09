@@ -96,7 +96,13 @@ const explicit: Record<string, ControlProfile> = {
   tetris: CONTROL_PROFILES.falling,
   g2048: { ...CONTROL_PROFILES.swipe, assist: { action: 'b', label: 'assist.undo' } },
   match3: CONTROL_PROFILES.tap,
-  sokoban: { ...CONTROL_PROFILES.grid, primaryActions: [{ action: 'a', label: 'ctl.a' }, { action: 'b', label: 'ctl.undo' }] },
+  sokoban: {
+    ...CONTROL_PROFILES.grid,
+    primaryActions: [
+      { action: 'a', label: 'ctl.a' },
+      { action: 'b', label: 'ctl.undo' },
+    ],
+  },
   minesweeper: { ...CONTROL_PROFILES.tap, assist: { action: 'a', label: 'assist.flag' } },
   memory: CONTROL_PROFILES.tap,
   lightsout: { ...CONTROL_PROFILES.tap, assist: { action: 'b', label: 'assist.hint' } },
@@ -130,7 +136,11 @@ const explicit: Record<string, ControlProfile> = {
   }),
 };
 
-export function controlsForGame(args: { id: string; kit: Kit; orientation: Orientation }): ControlProfile {
+export function controlsForGame(args: {
+  id: string;
+  kit: Kit;
+  orientation: Orientation;
+}): ControlProfile {
   const byId = explicit[args.id];
   if (byId) return byId;
   if (args.kit === 'shooter') return CONTROL_PROFILES.shooter;

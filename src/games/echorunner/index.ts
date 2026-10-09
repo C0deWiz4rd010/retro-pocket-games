@@ -49,7 +49,8 @@ export default function createGame(ctx: GameContext): Game {
   };
   addStep();
 
-  const currentHighlight = (): number => (phase === 'watch' && showTimer > 0 && showAt < sequence.length ? sequence[showAt]! : -1);
+  const currentHighlight = (): number =>
+    phase === 'watch' && showTimer > 0 && showAt < sequence.length ? sequence[showAt]! : -1;
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
     if (over || phase !== 'repeat') return;
@@ -65,10 +66,16 @@ export default function createGame(ctx: GameContext): Game {
       ctx.audio.sfx('coin');
       burst(sparks, ctx.rng, ox + c * cell + cell / 2, oy + r * cell + cell / 2, 0x60a5fa, 10, 110);
       if (inputAt >= sequence.length) {
-        if (!mistakeThisLevel) perfectStreak++; else perfectStreak = 0;
+        if (!mistakeThisLevel) perfectStreak++;
+        else perfectStreak = 0;
         const mult = 1 + Math.floor(perfectStreak / 3);
         score += sequence.length * 80 * mult;
-        ctx.fx.floatingText(perfectStreak >= 3 ? `FLAWLESS x${mult}` : `LEVEL ${sequence.length + 1}`, W / 2, oy - 24, 0xffd200);
+        ctx.fx.floatingText(
+          perfectStreak >= 3 ? `FLAWLESS x${mult}` : `LEVEL ${sequence.length + 1}`,
+          W / 2,
+          oy - 24,
+          0xffd200,
+        );
         ctx.audio.sfx('powerup');
         addStep();
       }
@@ -109,14 +116,21 @@ export default function createGame(ctx: GameContext): Game {
           .fill({ color: on ? 0x60a5fa : 0x111a33, alpha: on ? 0.95 : 0.82 })
           .stroke({ width: 2, color: on ? 0xffffff : 0x29456d, alpha: on ? 0.65 : 0.75 });
         if (phase === 'repeat' && inputAt < sequence.length && sequence[inputAt] === i) {
-          g.circle(x + cell / 2, y + cell / 2, cell * 0.1 + Math.sin(t * 7) * 2).fill({ color: 0xffd200, alpha: 0.35 });
+          g.circle(x + cell / 2, y + cell / 2, cell * 0.1 + Math.sin(t * 7) * 2).fill({
+            color: 0xffd200,
+            alpha: 0.35,
+          });
         }
       }
     }
     // input time ring during the repeat phase
     if (phase === 'repeat' && inputBudget > 0) {
       const frac = Math.max(0, inputTimer / inputBudget);
-      g.arc(W / 2, oy - 40, 16, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2).stroke({ width: 4, color: frac < 0.3 ? 0xff4d8d : 0x3ddc84, alpha: 0.9 });
+      g.arc(W / 2, oy - 40, 16, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2).stroke({
+        width: 4,
+        color: frac < 0.3 ? 0xff4d8d : 0x3ddc84,
+        alpha: 0.9,
+      });
     }
     drawSparks(g, sparks);
   }
@@ -156,4 +170,3 @@ export default function createGame(ctx: GameContext): Game {
     },
   };
 }
-

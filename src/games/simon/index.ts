@@ -9,7 +9,14 @@ const PADS = [
   { color: 0x00f7ff, dim: 0x067a7e, q: 3 }, // blue BR
 ];
 
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -22,7 +29,16 @@ export default function createGame(ctx: GameContext): Game {
   ctx.stage.addChild(layer);
   const g = new Graphics();
   layer.addChild(g);
-  const centerText = new Text({ text: '0', style: { fontFamily: 'Inter, sans-serif', fontWeight: '800', fontSize: R * 0.2, fill: 0xffffff, align: 'center' } });
+  const centerText = new Text({
+    text: '0',
+    style: {
+      fontFamily: 'Inter, sans-serif',
+      fontWeight: '800',
+      fontSize: R * 0.2,
+      fill: 0xffffff,
+      align: 'center',
+    },
+  });
   centerText.anchor.set(0.5);
   centerText.position.set(cx, cy);
   layer.addChild(centerText);
@@ -55,7 +71,14 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < 10; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 90;
-      particles.push({ x: p.x, y: p.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
+      particles.push({
+        x: p.x,
+        y: p.y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        life: 0.5,
+        color,
+      });
     }
   };
 
@@ -101,7 +124,14 @@ export default function createGame(ctx: GameContext): Game {
 
   const padForPoint = (x: number, y: number): number => (x < cx ? 0 : 1) + (y < cy ? 0 : 2);
   const offTap = ctx.input.on('tap', ({ x, y }) => press(padForPoint(x, y)));
-  const ACTIONS: Partial<Record<Action, number>> = { up: 0, left: 0, right: 1, down: 2, a: 3, b: 2 };
+  const ACTIONS: Partial<Record<Action, number>> = {
+    up: 0,
+    left: 0,
+    right: 1,
+    down: 2,
+    a: 3,
+    b: 2,
+  };
   const offDown = ctx.input.on('down', (a) => {
     const p = ACTIONS[a];
     if (p !== undefined) press(p);
@@ -116,13 +146,21 @@ export default function createGame(ctx: GameContext): Game {
       g.fill({ color: lit === p.q ? p.color : p.dim });
     });
     // particles
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
     g.circle(cx, cy, R * 0.32).fill({ color: 0x14141f });
     g.circle(cx, cy, R * 0.32).stroke({ width: 3, color: 0x2b2b40 });
     // input time ring
     if (phase === 'input' && inputBudget > 0) {
       const frac = Math.max(0, inputTimer / inputBudget);
-      g.arc(cx, cy, R * 0.38, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2).stroke({ width: 4, color: frac < 0.3 ? 0xff4d4d : 0x3ddc84, alpha: 0.9 });
+      g.arc(cx, cy, R * 0.38, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2).stroke({
+        width: 4,
+        color: frac < 0.3 ? 0xff4d4d : 0x3ddc84,
+        alpha: 0.9,
+      });
     }
   };
 
@@ -133,7 +171,9 @@ export default function createGame(ctx: GameContext): Game {
       // particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
 

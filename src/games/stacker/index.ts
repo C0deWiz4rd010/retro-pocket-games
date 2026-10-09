@@ -50,7 +50,12 @@ export default function createGame(ctx: GameContext): Game {
       placedX = below.x;
       overlap = below.w;
       if (combo % 3 === 0) overlap = Math.min(W * 0.7, overlap + 8); // Feature: width bonus on a streak
-      ctx.fx.floatingText(combo >= 3 ? `PERFECT x${1 + Math.floor(combo / 3)}` : 'PERFECT', W / 2, H * 0.3, 0x3ddc84);
+      ctx.fx.floatingText(
+        combo >= 3 ? `PERFECT x${1 + Math.floor(combo / 3)}` : 'PERFECT',
+        W / 2,
+        H * 0.3,
+        0x3ddc84,
+      );
       ctx.fx.screenShake(3, 0.08);
     } else {
       combo = 0;

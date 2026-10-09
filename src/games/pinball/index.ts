@@ -90,8 +90,12 @@ export default function createGame(ctx: GameContext): Game {
     const angR = rightUp ? 0.5 : -0.3;
     const lx0 = W / 2 - gapHalf;
     const rx0 = W / 2 + gapHalf;
-    g.moveTo(lx0, flipperY).lineTo(lx0 - flipperLen * Math.cos(angL), flipperY + flipperLen * Math.sin(angL)).stroke({ width: 10, color: 0x00f7ff, cap: 'round' });
-    g.moveTo(rx0, flipperY).lineTo(rx0 + flipperLen * Math.cos(angR), flipperY + flipperLen * Math.sin(angR)).stroke({ width: 10, color: 0x00f7ff, cap: 'round' });
+    g.moveTo(lx0, flipperY)
+      .lineTo(lx0 - flipperLen * Math.cos(angL), flipperY + flipperLen * Math.sin(angL))
+      .stroke({ width: 10, color: 0x00f7ff, cap: 'round' });
+    g.moveTo(rx0, flipperY)
+      .lineTo(rx0 + flipperLen * Math.cos(angR), flipperY + flipperLen * Math.sin(angR))
+      .stroke({ width: 10, color: 0x00f7ff, cap: 'round' });
     g.circle(ball.x, ball.y, ball.r).fill({ color: 0xffffff });
   };
 
@@ -115,7 +119,8 @@ export default function createGame(ctx: GameContext): Game {
         ball.vy = Math.abs(ball.vy);
       }
 
-      if (comboTimer > 0) comboTimer -= dt; else combo = 0;
+      if (comboTimer > 0) comboTimer -= dt;
+      else combo = 0;
       bumpers.forEach((b) => {
         if (b.flash > 0) b.flash -= dt;
         const d = Math.hypot(ball.x - b.x, ball.y - b.y);
@@ -129,7 +134,8 @@ export default function createGame(ctx: GameContext): Game {
           comboTimer = 2;
           const mult = 1 + Math.floor(combo / 4);
           score += 100 * mult;
-          if (combo >= 4 && combo % 4 === 0) ctx.fx.floatingText(`COMBO x${mult}`, b.x, b.y - 30, 0xffd200);
+          if (combo >= 4 && combo % 4 === 0)
+            ctx.fx.floatingText(`COMBO x${mult}`, b.x, b.y - 30, 0xffd200);
           b.lit = true;
           // Feature: jackpot when all bumpers are lit
           if (bumpers.every((x) => x.lit)) {
@@ -154,8 +160,18 @@ export default function createGame(ctx: GameContext): Game {
       const angR = rightUp ? 0.5 : -0.3;
       const lx0 = W / 2 - gapHalf;
       const rx0 = W / 2 + gapHalf;
-      flipperHit(lx0, flipperY, lx0 - flipperLen * Math.cos(angL), flipperY + flipperLen * Math.sin(angL));
-      flipperHit(rx0, flipperY, rx0 + flipperLen * Math.cos(angR), flipperY + flipperLen * Math.sin(angR));
+      flipperHit(
+        lx0,
+        flipperY,
+        lx0 - flipperLen * Math.cos(angL),
+        flipperY + flipperLen * Math.sin(angL),
+      );
+      flipperHit(
+        rx0,
+        flipperY,
+        rx0 + flipperLen * Math.cos(angR),
+        flipperY + flipperLen * Math.sin(angR),
+      );
 
       if (ball.y > H + 20) {
         balls--;

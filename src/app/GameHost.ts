@@ -85,8 +85,13 @@ export class GameHost {
     this.fx.attach(this.root);
 
     this.buildChrome();
-    const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
-    this.input.configure({ gamepadDeadzone: profile.gamepadDeadzone, keyMap: keyMapFromBindings(settings().keyBindings) });
+    const profile =
+      this.meta.controls ??
+      controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
+    this.input.configure({
+      gamepadDeadzone: profile.gamepadDeadzone,
+      keyMap: keyMapFromBindings(settings().keyBindings),
+    });
     this.input.attach(pixi.canvas, pixi.screenToVirtual);
     // Identify the play surface for assistive tech (canvas content is otherwise opaque).
     pixi.canvas.setAttribute('role', 'img');
@@ -98,7 +103,7 @@ export class GameHost {
       height: this.meta.virtual.h,
       input: this.input,
       audio,
-      rng: new RNG(opts.seed ?? (Date.now() & 0xffffffff)),
+      rng: new RNG(opts.seed ?? Date.now() & 0xffffffff),
       hud: this.makeHud(),
       fx: this.fx,
       timeScale: opts.timeScale ?? 1,
@@ -157,7 +162,9 @@ export class GameHost {
     this.screenView.dataset.orient = this.meta.orientation;
 
     this.hudScore = el('div', { class: 'hud__score' }, ['0']);
-    const labelText = this.opts.label ? `${this.opts.label} · ${this.meta.title.toUpperCase()}` : this.meta.title.toUpperCase();
+    const labelText = this.opts.label
+      ? `${this.opts.label} · ${this.meta.title.toUpperCase()}`
+      : this.meta.title.toUpperCase();
     this.hudLabel = el('div', { class: 'hud__label' }, [labelText]);
     this.hudLives = el('div', { class: 'hud__lives' });
     this.lastHudScore = 0;
@@ -165,63 +172,99 @@ export class GameHost {
     // Show the current best to beat (if any) as a subtle HUD badge.
     const best = getBest(this.meta.id);
     this.hudBest = el('div', { class: 'hud__best' }, [best > 0 ? `★ ${best}` : '']);
-    const muteBtn = el('button', {
-      class: 'iconbtn',
-      'aria-label': t('settings.sfx'),
-      onClick: (e: Event) => {
-        const on = !settings().audio.sfx;
-        updateSettings({ audio: { ...settings().audio, sfx: on } });
-        (e.currentTarget as HTMLElement).textContent = on ? '🔊' : '🔇';
-        if (on) audio.sfx('blip');
+    const muteBtn = el(
+      'button',
+      {
+        class: 'iconbtn',
+        'aria-label': t('settings.sfx'),
+        onClick: (e: Event) => {
+          const on = !settings().audio.sfx;
+          updateSettings({ audio: { ...settings().audio, sfx: on } });
+          (e.currentTarget as HTMLElement).textContent = on ? '🔊' : '🔇';
+          if (on) audio.sfx('blip');
+        },
       },
-    }, [settings().audio.sfx ? '🔊' : '🔇']);
-    const pauseBtn = el('button', { class: 'iconbtn', 'aria-label': t('game.paused'), onClick: () => this.pause() }, ['⏸']);
+      [settings().audio.sfx ? '🔊' : '🔇'],
+    );
+    const pauseBtn = el(
+      'button',
+      { class: 'iconbtn', 'aria-label': t('game.paused'), onClick: () => this.pause() },
+      ['⏸'],
+    );
     muteBtn.replaceChildren(icon(settings().audio.sfx ? 'soundOn' : 'soundOff'));
     attachTooltip(muteBtn, t('settings.sfx'));
     muteBtn.addEventListener('click', () => {
-      window.setTimeout(() => muteBtn.replaceChildren(icon(settings().audio.sfx ? 'soundOn' : 'soundOff')));
+      window.setTimeout(() =>
+        muteBtn.replaceChildren(icon(settings().audio.sfx ? 'soundOn' : 'soundOff')),
+      );
     });
     pauseBtn.replaceChildren(icon('pause'));
     attachTooltip(pauseBtn, t('game.paused'));
     // Fullscreen toggle for a more app-like, immersive mobile feel (#10/#22).
     const fsGlyph = (): string => (document.fullscreenElement ? '⛗' : '⛶');
-    const fsBtn = el('button', {
-      class: 'iconbtn',
-      'aria-label': t('settings.fullscreen'),
-      onClick: () => {
-        if (document.fullscreenElement) void document.exitFullscreen?.();
-        else void document.documentElement.requestFullscreen?.().catch(() => {});
+    const fsBtn = el(
+      'button',
+      {
+        class: 'iconbtn',
+        'aria-label': t('settings.fullscreen'),
+        onClick: () => {
+          if (document.fullscreenElement) void document.exitFullscreen?.();
+          else void document.documentElement.requestFullscreen?.().catch(() => {});
+        },
       },
-    }, [fsGlyph()]);
+      [fsGlyph()],
+    );
     attachTooltip(fsBtn, t('settings.fullscreen'));
-    const onFsChange = (): void => { fsBtn.textContent = fsGlyph(); };
+    const onFsChange = (): void => {
+      fsBtn.textContent = fsGlyph();
+    };
     document.addEventListener('fullscreenchange', onFsChange);
     this.cleanups.push(() => document.removeEventListener('fullscreenchange', onFsChange));
-    const hud = el('div', { class: 'hud' }, [this.hudScore, this.hudBest, this.hudLabel, this.hudLives, muteBtn, fsBtn, pauseBtn]);
+    const hud = el('div', { class: 'hud' }, [
+      this.hudScore,
+      this.hudBest,
+      this.hudLabel,
+      this.hudLives,
+      muteBtn,
+      fsBtn,
+      pauseBtn,
+    ]);
 
     this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
 
-    this.screenView.append(hud, this.buildControls(), this.buildAssist(), this.buildRotatePrompt(), this.overlayHost);
+    this.screenView.append(
+      hud,
+      this.buildControls(),
+      this.buildAssist(),
+      this.buildRotatePrompt(),
+      this.overlayHost,
+    );
   }
 
   /** A single secondary on-screen button for tap games whose D-pad is hidden
    * (e.g. minesweeper flag toggle, puzzle hint) so those actions stay reachable on touch. */
   private buildAssist(): HTMLElement | Text {
-    const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
+    const profile =
+      this.meta.controls ??
+      controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
     const assist = profile.assist;
     if (!assist) return document.createTextNode('');
     const label = t(assist.label);
-    return el('button', {
-      class: 'touch-assist',
-      'aria-label': label,
-      onPointerdown: (e: Event) => {
-        e.preventDefault();
-        this.input.press(assist.action);
-        haptics.tick();
+    return el(
+      'button',
+      {
+        class: 'touch-assist',
+        'aria-label': label,
+        onPointerdown: (e: Event) => {
+          e.preventDefault();
+          this.input.press(assist.action);
+          haptics.tick();
+        },
+        onPointerup: () => this.input.release(assist.action),
+        onPointerleave: () => this.input.release(assist.action),
       },
-      onPointerup: () => this.input.release(assist.action),
-      onPointerleave: () => this.input.release(assist.action),
-    }, [label]);
+      [label],
+    );
   }
 
   private buildRotatePrompt(): HTMLElement {
@@ -235,19 +278,25 @@ export class GameHost {
   }
 
   private buildControls(): HTMLElement {
-    const profile = this.meta.controls ?? controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
+    const profile =
+      this.meta.controls ??
+      controlsForGame({ id: this.meta.id, kit: this.meta.kit, orientation: this.meta.orientation });
     const dirBtn = (dir: Action, glyph: string) =>
-      el('button', {
-        class: dir,
-        'aria-label': dir,
-        onPointerdown: (e: Event) => {
-          e.preventDefault();
-          this.input.press(dir);
-          haptics.tick();
+      el(
+        'button',
+        {
+          class: dir,
+          'aria-label': dir,
+          onPointerdown: (e: Event) => {
+            e.preventDefault();
+            this.input.press(dir);
+            haptics.tick();
+          },
+          onPointerup: () => this.input.release(dir),
+          onPointerleave: () => this.input.release(dir),
         },
-        onPointerup: () => this.input.release(dir),
-        onPointerleave: () => this.input.release(dir),
-      }, [glyph]);
+        [glyph],
+      );
 
     const dpad = el('div', { class: 'dpad' }, [
       dirBtn('up', '▲'),
@@ -262,18 +311,22 @@ export class GameHost {
       profile.primaryActions.find((p) => p.action === action)?.label ?? fallbackKey;
     const actBtn = (cls: string, action: Action, labelKey: string) => {
       const label = t(labelKey);
-      return el('button', {
-        class: cls,
-        'aria-label': label,
-        style: label.length > 3 ? 'font-size:10px' : label.length > 1 ? 'font-size:12px' : '',
-        onPointerdown: (e: Event) => {
-          e.preventDefault();
-          this.input.press(action);
-          haptics.tick();
+      return el(
+        'button',
+        {
+          class: cls,
+          'aria-label': label,
+          style: label.length > 3 ? 'font-size:10px' : label.length > 1 ? 'font-size:12px' : '',
+          onPointerdown: (e: Event) => {
+            e.preventDefault();
+            this.input.press(action);
+            haptics.tick();
+          },
+          onPointerup: () => this.input.release(action),
+          onPointerleave: () => this.input.release(action),
         },
-        onPointerup: () => this.input.release(action),
-        onPointerleave: () => this.input.release(action),
-      }, [label]);
+        [label],
+      );
     };
 
     const actions = el('div', { class: 'actionbtns' }, [
@@ -282,10 +335,14 @@ export class GameHost {
     ]);
 
     // CSS (.touch--swipe/tap/none/drag) still governs which surfaces are visible per preset.
-    const touchEl = el('div', {
-      class: `touch touch--${profile.preset} touch--${settings().controls.touchLayout}`,
-      'data-pointer': profile.pointerMode,
-    }, [dpad, actions]);
+    const touchEl = el(
+      'div',
+      {
+        class: `touch touch--${profile.preset} touch--${settings().controls.touchLayout}`,
+        'data-pointer': profile.pointerMode,
+      },
+      [dpad, actions],
+    );
     this.touchEl = touchEl;
     return touchEl;
   }
@@ -332,18 +389,21 @@ export class GameHost {
   /** Queue achievement-unlock toasts so they don't overlap. */
   private toastAchievements(list: Achievement[]): void {
     list.forEach((a, i) => {
-      window.setTimeout(() => {
-        const node = el('div', { class: 'toast toast--ach' }, [
-          el('span', { class: 'toast--ach__icon' }, [a.icon]),
-          el('span', {}, [
-            el('div', { class: 'toast--ach__title' }, [t('ach.unlocked')]),
-            el('div', {}, [a.title]),
-          ]),
-        ]);
-        this.screenView.append(node);
-        audio.sfx('coin');
-        window.setTimeout(() => node.remove(), 2600);
-      }, 400 + i * 700);
+      window.setTimeout(
+        () => {
+          const node = el('div', { class: 'toast toast--ach' }, [
+            el('span', { class: 'toast--ach__icon' }, [a.icon]),
+            el('span', {}, [
+              el('div', { class: 'toast--ach__title' }, [t('ach.unlocked')]),
+              el('div', {}, [a.title]),
+            ]),
+          ]);
+          this.screenView.append(node);
+          audio.sfx('coin');
+          window.setTimeout(() => node.remove(), 2600);
+        },
+        400 + i * 700,
+      );
     });
   }
 
@@ -355,14 +415,30 @@ export class GameHost {
     const panel = el('div', { class: 'panel' }, [
       el('div', { class: 'panel__title' }, [t('game.paused')]),
       this.buildQuickToggles(),
-      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.resume() }, [`▶  ${t('game.resume')}`]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.restart() }, [`↻  ${t('game.restart')}`]),
-      el('div', { class: 'panel__row' }, [
-        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showControlsPanel() }, [`🎮  ${t('settings.controls')}`]),
-        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showRulesPanel() }, [`📖  ${t('game.rules')}`]),
+      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.resume() }, [
+        `▶  ${t('game.resume')}`,
       ]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showAccessibilityPanel() }, [`♿  ${t('settings.a11y')}`]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.confirmQuit() }, [`⌂  ${t('game.home')}`]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.restart() }, [
+        `↻  ${t('game.restart')}`,
+      ]),
+      el('div', { class: 'panel__row' }, [
+        el(
+          'button',
+          { class: 'btn btn--ghost btn--block', onClick: () => this.showControlsPanel() },
+          [`🎮  ${t('settings.controls')}`],
+        ),
+        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showRulesPanel() }, [
+          `📖  ${t('game.rules')}`,
+        ]),
+      ]),
+      el(
+        'button',
+        { class: 'btn btn--ghost btn--block', onClick: () => this.showAccessibilityPanel() },
+        [`♿  ${t('settings.a11y')}`],
+      ),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.confirmQuit() }, [
+        `⌂  ${t('game.home')}`,
+      ]),
     ]);
     this.showOverlay(panel);
   }
@@ -370,13 +446,27 @@ export class GameHost {
   /** Pause sub-panel: the current game's control hints. */
   private showControlsPanel(): void {
     const hints = this.meta.controls?.hints ?? [];
-    const rows: (Node | string)[] = [el('div', { class: 'panel__title' }, [t('settings.controls')])];
+    const rows: (Node | string)[] = [
+      el('div', { class: 'panel__title' }, [t('settings.controls')]),
+    ];
     if (hints.length) {
-      rows.push(el('ul', { class: 'pause-list' }, hints.map((h) => el('li', {}, [hintLabel(h)]))));
+      rows.push(
+        el(
+          'ul',
+          { class: 'pause-list' },
+          hints.map((h) => el('li', {}, [hintLabel(h)])),
+        ),
+      );
     } else {
-      rows.push(el('div', { style: 'color:var(--text-muted);font-size:13px' }, [t('controls.tapHint')]));
+      rows.push(
+        el('div', { style: 'color:var(--text-muted);font-size:13px' }, [t('controls.tapHint')]),
+      );
     }
-    rows.push(el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [`←  ${t('game.back')}`]));
+    rows.push(
+      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [
+        `←  ${t('game.back')}`,
+      ]),
+    );
     this.showOverlay(el('div', { class: 'panel' }, rows));
   }
 
@@ -387,8 +477,19 @@ export class GameHost {
       el('div', { class: 'panel__title' }, [t('game.rules')]),
       el('div', { class: 'run-comment' }, [this.meta.blurb]),
     ];
-    if (steps.length) rows.push(el('ul', { class: 'pause-list' }, steps.map((s) => el('li', {}, [s]))));
-    rows.push(el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [`←  ${t('game.back')}`]));
+    if (steps.length)
+      rows.push(
+        el(
+          'ul',
+          { class: 'pause-list' },
+          steps.map((s) => el('li', {}, [s])),
+        ),
+      );
+    rows.push(
+      el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [
+        `←  ${t('game.back')}`,
+      ]),
+    );
     this.showOverlay(el('div', { class: 'panel' }, rows));
   }
 
@@ -398,14 +499,33 @@ export class GameHost {
     const render = (): void => {
       const a = settings().a11y;
       const toggle = (on: boolean, label: string, onClick: () => void): HTMLElement =>
-        el('button', { class: `btn btn--ghost btn--block${on ? ' is-on' : ''}`, 'aria-pressed': String(on), onClick }, [`${on ? '☑' : '☐'}  ${label}`]);
+        el(
+          'button',
+          {
+            class: `btn btn--ghost btn--block${on ? ' is-on' : ''}`,
+            'aria-pressed': String(on),
+            onClick,
+          },
+          [`${on ? '☑' : '☐'}  ${label}`],
+        );
       clear(panel);
       panel.append(
         el('div', { class: 'panel__title' }, [t('settings.a11y')]),
-        toggle(a.reducedMotion, t('settings.reducedMotion'), () => { updateSettings({ a11y: { ...settings().a11y, reducedMotion: !a.reducedMotion } }); render(); }),
-        toggle(a.highContrast, t('settings.highContrast'), () => { updateSettings({ a11y: { ...settings().a11y, highContrast: !a.highContrast } }); render(); }),
-        toggle(a.largeTargets, t('settings.largeTargets'), () => { updateSettings({ a11y: { ...settings().a11y, largeTargets: !a.largeTargets } }); render(); }),
-        el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [`←  ${t('game.back')}`]),
+        toggle(a.reducedMotion, t('settings.reducedMotion'), () => {
+          updateSettings({ a11y: { ...settings().a11y, reducedMotion: !a.reducedMotion } });
+          render();
+        }),
+        toggle(a.highContrast, t('settings.highContrast'), () => {
+          updateSettings({ a11y: { ...settings().a11y, highContrast: !a.highContrast } });
+          render();
+        }),
+        toggle(a.largeTargets, t('settings.largeTargets'), () => {
+          updateSettings({ a11y: { ...settings().a11y, largeTargets: !a.largeTargets } });
+          render();
+        }),
+        el('button', { class: 'btn btn--primary btn--block', onClick: () => this.pause() }, [
+          `←  ${t('game.back')}`,
+        ]),
       );
     };
     render();
@@ -415,11 +535,15 @@ export class GameHost {
   /** Inline sound / FX quick-toggles on the pause overlay. */
   private buildQuickToggles(): HTMLElement {
     const chip = (on: boolean, label: string, onClick: () => void): HTMLElement =>
-      el('button', {
-        class: `quick-toggle${on ? ' on' : ''}`,
-        'aria-pressed': String(on),
-        onClick,
-      }, [label]);
+      el(
+        'button',
+        {
+          class: `quick-toggle${on ? ' on' : ''}`,
+          'aria-pressed': String(on),
+          onClick,
+        },
+        [label],
+      );
     const row = el('div', { class: 'quick-toggles' });
     const rebuild = (): void => {
       const s = settings();
@@ -433,7 +557,9 @@ export class GameHost {
           rebuild();
         }),
         chip(s.controls.haptics, `📳 ${t('settings.haptics')}`, () => {
-          updateSettings({ controls: { ...settings().controls, haptics: !settings().controls.haptics } });
+          updateSettings({
+            controls: { ...settings().controls, haptics: !settings().controls.haptics },
+          });
           if (settings().controls.haptics) haptics.bump();
           rebuild();
         }),
@@ -460,8 +586,12 @@ export class GameHost {
   private confirmQuit(): void {
     const panel = el('div', { class: 'panel' }, [
       el('div', { class: 'panel__title' }, [t('game.quitConfirm')]),
-      el('button', { class: 'btn btn--danger btn--block', onClick: () => this.exit() }, [`⌂  ${t('game.quit')}`]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.pause() }, [t('game.keepPlaying')]),
+      el('button', { class: 'btn btn--danger btn--block', onClick: () => this.exit() }, [
+        `⌂  ${t('game.quit')}`,
+      ]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.pause() }, [
+        t('game.keepPlaying'),
+      ]),
     ]);
     this.showOverlay(panel);
   }
@@ -507,7 +637,10 @@ export class GameHost {
     this.onExit();
   }
 
-  private async handleGameOver(rawScore: number, custom: Record<string, number> = {}): Promise<void> {
+  private async handleGameOver(
+    rawScore: number,
+    custom: Record<string, number> = {},
+  ): Promise<void> {
     if (!this.running && this.game === null) return;
     this.running = false;
     audio.sfx('gameover');
@@ -523,26 +656,29 @@ export class GameHost {
     const masteryRank = this.masteryRankForRun(score, custom);
     const reward = practice
       ? {
-        leveledUp: false,
-        newLevel: 0,
-        xpGain: 0,
-        tokenGain: 0,
-        breakdown: { base: 0, score: 0, improvement: 0, daily: 0, mastery: 0 },
-      }
+          leveledUp: false,
+          newLevel: 0,
+          xpGain: 0,
+          tokenGain: 0,
+          breakdown: { base: 0, score: 0, improvement: 0, daily: 0, mastery: 0 },
+        }
       : awardRun(this.meta.id, score, {
-        reward: this.meta.reward,
-        previousBest: prevBest,
-        daily: Boolean(this.opts.daily),
-        masteryRank,
-      });
+          reward: this.meta.reward,
+          previousBest: prevBest,
+          daily: Boolean(this.opts.daily),
+          masteryRank,
+        });
     const { leveledUp, newLevel, xpGain } = reward;
 
     // Daily streak (only when this run came from the daily challenge).
     let streak = currentStreak();
-    if (this.opts.daily && !practice) streak = recordDailyResult(this.meta.id, score, this.opts.label ?? '');
+    if (this.opts.daily && !practice)
+      streak = recordDailyResult(this.meta.id, score, this.opts.label ?? '');
 
     // Achievements — evaluated centrally from the run payload + profile, no per-game code.
-    const unlocked = practice ? [] : evaluateAchievements(buildContext(this.meta.id, score, custom, streak));
+    const unlocked = practice
+      ? []
+      : evaluateAchievements(buildContext(this.meta.id, score, custom, streak));
 
     const scoreEl = el('div', { class: 'panel__score' }, ['0']);
     this.countUp(scoreEl, score);
@@ -563,16 +699,26 @@ export class GameHost {
       el('div', { style: 'color:var(--text-muted);font-size:13px' }, [bestLine]),
       el('div', { class: 'run-comment' }, [this.gameOverComment(ratio, isBest, practice)]),
       this.performanceGrid(score, prevBest, ratio, custom),
-      el('div', { class: 'panel__xp' }, [practice ? t('go.rewardsPaused') : `+${xpGain} Pixel XP  +${reward.tokenGain} Pocket Chips`]),
+      el('div', { class: 'panel__xp' }, [
+        practice ? t('go.rewardsPaused') : `+${xpGain} Pixel XP  +${reward.tokenGain} Pocket Chips`,
+      ]),
       this.rewardBreakdown(reward.breakdown),
     ];
-    if (leveledUp) rows.push(el('div', { style: 'color:var(--ok);font-size:13px' }, [t('game.levelUp', { n: newLevel })]));
-    if (this.opts.daily) rows.push(el('div', { class: 'daily-progress' }, [
-      t('go.dailyTarget', {
-        a: Math.min(score, this.meta.dailyRules?.targetScore ?? score),
-        b: this.meta.dailyRules?.targetScore ?? score,
-      }),
-    ]));
+    if (leveledUp)
+      rows.push(
+        el('div', { style: 'color:var(--ok);font-size:13px' }, [
+          t('game.levelUp', { n: newLevel }),
+        ]),
+      );
+    if (this.opts.daily)
+      rows.push(
+        el('div', { class: 'daily-progress' }, [
+          t('go.dailyTarget', {
+            a: Math.min(score, this.meta.dailyRules?.targetScore ?? score),
+            b: this.meta.dailyRules?.targetScore ?? score,
+          }),
+        ]),
+      );
 
     // Leaderboard: offer a name entry if the score cracks the local top 10.
     if (!practice && qualifies(this.meta.id, score)) {
@@ -580,28 +726,44 @@ export class GameHost {
     }
 
     if (mult !== 1) {
-      rows.push(el('div', { style: 'color:var(--accent);font-size:12px' }, [`×${mult} ${t('game.bonus')}`]));
+      rows.push(
+        el('div', { style: 'color:var(--accent);font-size:12px' }, [`×${mult} ${t('game.bonus')}`]),
+      );
     }
 
     rows.push(
       el('div', { class: 'panel__row' }, [
-        el('button', { class: 'btn btn--primary btn--block', onClick: () => this.restart() }, [`↻  ${t('game.retry')}`]),
-        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.nextGame() }, [`⏭  ${t('game.next')}`]),
+        el('button', { class: 'btn btn--primary btn--block', onClick: () => this.restart() }, [
+          `↻  ${t('game.retry')}`,
+        ]),
+        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.nextGame() }, [
+          `⏭  ${t('game.next')}`,
+        ]),
       ]),
       el('div', { class: 'panel__row' }, [
-        el('button', {
-          class: 'btn btn--ghost btn--block',
-          onClick: () => {
-            this.teardown();
-            location.hash = `#/scores/${this.meta.id}`;
+        el(
+          'button',
+          {
+            class: 'btn btn--ghost btn--block',
+            onClick: () => {
+              this.teardown();
+              location.hash = `#/scores/${this.meta.id}`;
+            },
           },
-        }, [`🏅  ${t('game.leaderboard')}`]),
-        el('button', {
-          class: 'btn btn--ghost btn--block',
-          onClick: () => void shareScoreCard(this.meta, score, isBest),
-        }, [`↗  ${t('game.share')}`]),
+          [`🏅  ${t('game.leaderboard')}`],
+        ),
+        el(
+          'button',
+          {
+            class: 'btn btn--ghost btn--block',
+            onClick: () => void shareScoreCard(this.meta, score, isBest),
+          },
+          [`↗  ${t('game.share')}`],
+        ),
       ]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [`⌂  ${t('game.home')}`]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [
+        `⌂  ${t('game.home')}`,
+      ]),
     );
 
     this.showOverlay(el('div', { class: 'panel' }, rows));
@@ -609,7 +771,8 @@ export class GameHost {
     const said = [t('a11y.gameOver', { title, score })];
     if (isBest) said.push(t('game.newBest'));
     if (leveledUp) said.push(t('game.levelUp', { n: newLevel }));
-    if (unlocked.length) said.push(`${t('ach.unlocked')}: ${unlocked.map((a) => a.title).join(', ')}`);
+    if (unlocked.length)
+      said.push(`${t('ach.unlocked')}: ${unlocked.map((a) => a.title).join(', ')}`);
     announce(said.join(' '));
     // Celebrate a genuine new best with a confetti burst over the screen.
     if (isBest && prevBest > 0) confettiBurst(this.screenView);
@@ -662,7 +825,12 @@ export class GameHost {
     return t('go.commentRough');
   }
 
-  private performanceGrid(score: number, prevBest: number, ratio: number, custom: Record<string, number>): HTMLElement {
+  private performanceGrid(
+    score: number,
+    prevBest: number,
+    ratio: number,
+    custom: Record<string, number>,
+  ): HTMLElement {
     const delta = prevBest > 0 ? score - prevBest : score;
     return el('div', { class: 'performance-grid' }, [
       this.performanceCell(`${Math.round(ratio * 100)}%`, t('go.cellTarget')),
@@ -681,7 +849,12 @@ export class GameHost {
   private masteryRankForRun(score: number, custom: Record<string, number>): number {
     let rank = 0;
     for (const goal of this.meta.masteryGoals ?? []) {
-      const value = goal.metric === 'score' ? score : goal.metric === 'custom' ? custom[goal.customKey ?? ''] ?? 0 : 0;
+      const value =
+        goal.metric === 'score'
+          ? score
+          : goal.metric === 'custom'
+            ? (custom[goal.customKey ?? ''] ?? 0)
+            : 0;
       if (value >= goal.target) rank++;
     }
     return Math.min(3, rank);
@@ -701,12 +874,16 @@ export class GameHost {
       [t('go.rewDaily'), breakdown.daily],
       [t('go.rewMastery'), breakdown.mastery],
     ].filter(([, value]) => Number(value) > 0);
-    return el('div', { class: 'reward-breakdown' }, rows.map(([label, value]) =>
-      el('div', { class: 'reward-breakdown__row' }, [
-        el('span', {}, [String(label)]),
-        el('b', {}, [`+${value}`]),
-      ]),
-    ));
+    return el(
+      'div',
+      { class: 'reward-breakdown' },
+      rows.map(([label, value]) =>
+        el('div', { class: 'reward-breakdown__row' }, [
+          el('span', {}, [String(label)]),
+          el('b', {}, [`+${value}`]),
+        ]),
+      ),
+    );
   }
 
   private buildNameEntry(score: number): HTMLElement {
@@ -717,19 +894,25 @@ export class GameHost {
       value: localStorage.getItem('rp:name') ?? '',
     }) as HTMLInputElement;
     const wrap = el('div', { class: 'name-entry' }, [
-      el('div', { style: 'color:var(--accent);font-size:13px;font-weight:700' }, [t('game.newRecord')]),
+      el('div', { style: 'color:var(--accent);font-size:13px;font-weight:700' }, [
+        t('game.newRecord'),
+      ]),
       el('div', { class: 'name-entry__row' }, [
         input,
-        el('button', {
-          class: 'btn btn--primary',
-          onClick: () => {
-            const name = input.value.trim() || 'YOU';
-            localStorage.setItem('rp:name', name);
-            void addEntry(this.meta.id, name, score);
-            audio.sfx('coin');
-            wrap.replaceChildren(el('div', { style: 'color:var(--ok);font-size:13px' }, ['✓']));
+        el(
+          'button',
+          {
+            class: 'btn btn--primary',
+            onClick: () => {
+              const name = input.value.trim() || 'YOU';
+              localStorage.setItem('rp:name', name);
+              void addEntry(this.meta.id, name, score);
+              audio.sfx('coin');
+              wrap.replaceChildren(el('div', { style: 'color:var(--ok);font-size:13px' }, ['✓']));
+            },
           },
-        }, [t('game.save')]),
+          [t('game.save')],
+        ),
       ]),
     ]);
     return wrap;
@@ -746,7 +929,9 @@ export class GameHost {
     this.screenView.append(ov);
     enterPop(panel);
     const focusables = (): HTMLElement[] =>
-      [...panel.querySelectorAll<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])')].filter((n) => !n.hasAttribute('disabled'));
+      [
+        ...panel.querySelectorAll<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])'),
+      ].filter((n) => !n.hasAttribute('disabled'));
     focusables()[0]?.focus();
     // Trap Tab within the modal dialog.
     const trap = (e: KeyboardEvent): void => {
@@ -755,8 +940,13 @@ export class GameHost {
       if (!items.length) return;
       const first = items[0]!;
       const last = items[items.length - 1]!;
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     ov.addEventListener('keydown', trap);
     this.overlayFocusCleanup = () => ov.removeEventListener('keydown', trap);

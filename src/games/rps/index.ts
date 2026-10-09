@@ -9,8 +9,14 @@ export default function createGame(ctx: GameContext): Game {
   const layer = new Container();
   ctx.stage.addChild(layer);
   const g = new Graphics();
-  const result = new Text({ text: 'BEST OF FIVE', style: { fontFamily: 'VT323, monospace', fontSize: 32, fill: 0xfb7185, align: 'center' } });
-  const sub = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff, align: 'center' } });
+  const result = new Text({
+    text: 'BEST OF FIVE',
+    style: { fontFamily: 'VT323, monospace', fontSize: 32, fill: 0xfb7185, align: 'center' },
+  });
+  const sub = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff, align: 'center' },
+  });
   result.anchor.set(0.5);
   sub.anchor.set(0.5);
   result.position.set(W / 2, H * 0.22);
@@ -61,7 +67,9 @@ export default function createGame(ctx: GameContext): Game {
     if (win === 1) {
       player++;
       streak++;
-      if (streak >= 2) { totalScore += streak * 30; }
+      if (streak >= 2) {
+        totalScore += streak * 30;
+      }
       result.text = streak >= 2 ? `YOU WIN (STREAK x${streak})` : 'YOU WIN';
       ctx.audio.sfx('coin');
     } else if (win === 2) {
@@ -80,7 +88,9 @@ export default function createGame(ctx: GameContext): Game {
       // Feature: win the match → bank it and start a harder one
       totalScore += 500 + matchNo * 200 - cpu * 80;
       matchNo++;
-      player = 0; cpu = 0; rounds = 0;
+      player = 0;
+      cpu = 0;
+      rounds = 0;
       ctx.hud.toast(`MATCH WON! → ${matchNo}`);
       ctx.audio.sfx('levelup');
       ctx.hud.setScore(totalScore);
@@ -108,8 +118,13 @@ export default function createGame(ctx: GameContext): Game {
     const y = H * 0.6;
     CHOICES.forEach((choice, i) => {
       const x = W * (0.18 + i * 0.32);
-      g.roundRect(x - 48, y, 96, 86, 12).fill({ color: 0x1f1723 }).stroke({ width: 2, color: 0xfb7185 });
-      const t = new Text({ text: choice, style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xffffff, align: 'center' } });
+      g.roundRect(x - 48, y, 96, 86, 12)
+        .fill({ color: 0x1f1723 })
+        .stroke({ width: 2, color: 0xfb7185 });
+      const t = new Text({
+        text: choice,
+        style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xffffff, align: 'center' },
+      });
       t.anchor.set(0.5);
       t.position.set(x, y + 43);
       addTemp(t);

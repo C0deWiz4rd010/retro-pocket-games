@@ -24,7 +24,12 @@ export default function createGame(ctx: GameContext): Game {
   let bonus = 0;
   let pickSpawn = 2.5;
   const rocks: Rock[] = [];
-  interface Pickup { a: number; r: number; speed: number; kind: 'coin' | 'shield' }
+  interface Pickup {
+    a: number;
+    r: number;
+    speed: number;
+    kind: 'coin' | 'shield';
+  }
   const pickups: Pickup[] = []; // Feature: collectible orbs
 
   ctx.hud.setScore(score);
@@ -50,14 +55,22 @@ export default function createGame(ctx: GameContext): Game {
       pickSpawn -= dt;
       invuln = Math.max(0, invuln - dt);
       const nz = 1 + Math.floor(score / 2500);
-      if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); }
+      if (nz > zone) {
+        zone = nz;
+        ctx.hud.toast(`ZONE ${zone} · x${zone}`);
+      }
       if (spawn <= 0) {
         spawn = Math.max(0.22, 0.82 - score / 12000);
         addRock();
       }
       if (pickSpawn <= 0) {
         pickSpawn = 4 + ctx.rng.next() * 3;
-        pickups.push({ a: ctx.rng.next() * Math.PI * 2, r: Math.max(W, H) * 0.58, speed: 60 + ctx.rng.next() * 30, kind: ctx.rng.next() < 0.3 ? 'shield' : 'coin' });
+        pickups.push({
+          a: ctx.rng.next() * Math.PI * 2,
+          r: Math.max(W, H) * 0.58,
+          speed: 60 + ctx.rng.next() * 30,
+          kind: ctx.rng.next() < 0.3 ? 'shield' : 'coin',
+        });
       }
       const px = cx + Math.cos(angle) * orbitR;
       const py = cy + Math.sin(angle) * orbitR;
@@ -84,7 +97,10 @@ export default function createGame(ctx: GameContext): Game {
             ctx.audio.sfx('hit');
             ctx.fx.screenShake(6, 0.15);
             ctx.hud.setLives(lives);
-            if (lives <= 0) { ctx.gameOver(score); return; }
+            if (lives <= 0) {
+              ctx.gameOver(score);
+              return;
+            }
           }
         }
       }
@@ -92,12 +108,21 @@ export default function createGame(ctx: GameContext): Game {
       for (let i = pickups.length - 1; i >= 0; i--) {
         const p = pickups[i]!;
         p.r -= p.speed * dt;
-        if (p.r < 10) { pickups.splice(i, 1); continue; }
-        const ppx = cx + Math.cos(p.a) * p.r, ppy = cy + Math.sin(p.a) * p.r;
+        if (p.r < 10) {
+          pickups.splice(i, 1);
+          continue;
+        }
+        const ppx = cx + Math.cos(p.a) * p.r,
+          ppy = cy + Math.sin(p.a) * p.r;
         if (Math.hypot(px - ppx, py - ppy) < 9 + 10) {
           pickups.splice(i, 1);
-          if (p.kind === 'shield') { shield = true; ctx.hud.toast('SHIELD'); }
-          else { bonus += 150 * zone; ctx.fx.floatingText('+150', ppx, ppy, 0xffd200); }
+          if (p.kind === 'shield') {
+            shield = true;
+            ctx.hud.toast('SHIELD');
+          } else {
+            bonus += 150 * zone;
+            ctx.fx.floatingText('+150', ppx, ppy, 0xffd200);
+          }
           ctx.audio.sfx(p.kind === 'shield' ? 'powerup' : 'coin');
         }
       }
@@ -114,7 +139,8 @@ export default function createGame(ctx: GameContext): Game {
         g.circle(rx, ry, rock.size).fill({ color: 0xfb7185 });
       }
       for (const p of pickups) {
-        const ppx = cx + Math.cos(p.a) * p.r, ppy = cy + Math.sin(p.a) * p.r;
+        const ppx = cx + Math.cos(p.a) * p.r,
+          ppy = cy + Math.sin(p.a) * p.r;
         g.circle(ppx, ppy, 9).fill({ color: p.kind === 'shield' ? 0x3ddc84 : 0xffd200 });
       }
     },

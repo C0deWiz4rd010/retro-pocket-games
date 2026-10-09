@@ -21,9 +21,9 @@ export default function createGame(ctx: GameContext): Game {
 
   // layout: two grids side by side, or stacked if portrait
   const portrait = H > W;
-  const playerOx = portrait ? (W - gw) / 2 : (W / 2 - gw - 10);
+  const playerOx = portrait ? (W - gw) / 2 : W / 2 - gw - 10;
   const playerOy = portrait ? padding + 20 : (H - gw) / 2;
-  const enemyOx = portrait ? (W - gw) / 2 : (W / 2 + 10);
+  const enemyOx = portrait ? (W - gw) / 2 : W / 2 + 10;
   const enemyOy = portrait ? playerOy + gw + 40 : (H - gw) / 2;
 
   const layer = new Container();
@@ -31,9 +31,15 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   layer.addChild(g);
 
-  const playerLabel = new Text({ text: 'YOUR FLEET', style: { fontFamily: 'VT323, monospace', fontSize: 14, fill: 0x9bffce } });
+  const playerLabel = new Text({
+    text: 'YOUR FLEET',
+    style: { fontFamily: 'VT323, monospace', fontSize: 14, fill: 0x9bffce },
+  });
   playerLabel.position.set(playerOx, playerOy - 18);
-  const enemyLabel = new Text({ text: 'ENEMY - TAP TO FIRE', style: { fontFamily: 'VT323, monospace', fontSize: 14, fill: 0xff4d4d } });
+  const enemyLabel = new Text({
+    text: 'ENEMY - TAP TO FIRE',
+    style: { fontFamily: 'VT323, monospace', fontSize: 14, fill: 0xff4d4d },
+  });
   enemyLabel.position.set(enemyOx, enemyOy - 18);
   layer.addChild(playerLabel, enemyLabel);
 
@@ -51,7 +57,10 @@ export default function createGame(ctx: GameContext): Game {
         let ok = true;
         for (let i = 0; i < len; i++) {
           const ci = idx(c + (horiz ? i : 0), r + (horiz ? 0 : i));
-          if (board.cells[ci] !== 'empty') { ok = false; break; }
+          if (board.cells[ci] !== 'empty') {
+            ok = false;
+            break;
+          }
           cells.push(ci);
         }
         if (ok) {
@@ -81,7 +90,8 @@ export default function createGame(ctx: GameContext): Game {
   let sonarArmed = false;
   const sonarReveal = new Set<number>();
 
-  const shipsLeft = (board: Board): number => board.ships.filter((s) => s.hits < s.cells.length).length;
+  const shipsLeft = (board: Board): number =>
+    board.ships.filter((s) => s.hits < s.cells.length).length;
   const updateLabels = (): void => {
     playerLabel.text = `YOUR FLEET · ${shipsLeft(player)}`;
     enemyLabel.text = sonarArmed ? 'SONAR: TAP A ZONE' : `ENEMY · ${shipsLeft(enemy)} · 📡${sonar}`;
@@ -124,18 +134,25 @@ export default function createGame(ctx: GameContext): Game {
     drawBoard(enemy, enemyOx, enemyOy, true);
     // sonar hints on the enemy board
     for (const i of sonarReveal) {
-      const c = i % GRID, r = Math.floor(i / GRID);
-      const x = enemyOx + c * cell, y = enemyOy + r * cell;
-      if (enemy.cells[i] === 'ship') g.circle(x + cell / 2, y + cell / 2, cell * 0.28).stroke({ width: 2, color: 0x00f7ff, alpha: 0.7 });
+      const c = i % GRID,
+        r = Math.floor(i / GRID);
+      const x = enemyOx + c * cell,
+        y = enemyOy + r * cell;
+      if (enemy.cells[i] === 'ship')
+        g.circle(x + cell / 2, y + cell / 2, cell * 0.28).stroke({
+          width: 2,
+          color: 0x00f7ff,
+          alpha: 0.7,
+        });
       else g.circle(x + cell / 2, y + cell / 2, cell * 0.08).fill({ color: 0x00f7ff, alpha: 0.4 });
     }
   };
 
-  const checkWin = (board: Board): boolean =>
-    board.ships.every((s) => s.hits >= s.cells.length);
+  const checkWin = (board: Board): boolean => board.ships.every((s) => s.hits >= s.cells.length);
 
   const shootEnemy = (ci: number): void => {
-    if (enemy.cells[ci] === 'hit' || enemy.cells[ci] === 'miss' || enemy.cells[ci] === 'sunk') return;
+    if (enemy.cells[ci] === 'hit' || enemy.cells[ci] === 'miss' || enemy.cells[ci] === 'sunk')
+      return;
     if (!playerTurn || over) return;
 
     const wasShip = enemy.cells[ci] === 'ship';
@@ -199,7 +216,8 @@ export default function createGame(ctx: GameContext): Game {
       // checkerboard hunt pattern
       const candidates: number[] = [];
       for (let i = 0; i < GRID * GRID; i++) {
-        const c = i % GRID, r = Math.floor(i / GRID);
+        const c = i % GRID,
+          r = Math.floor(i / GRID);
         if (!aiShot.has(i) && (c + r) % 2 === 0) candidates.push(i);
       }
       if (!candidates.length) {
@@ -215,7 +233,13 @@ export default function createGame(ctx: GameContext): Game {
     if (wasShip) {
       ctx.audio.sfx('hit');
       aiLastHit = ci;
-      if (!aiHuntDir) aiHuntDir = ctx.rng.pick([{ dc: 1, dr: 0 }, { dc: -1, dr: 0 }, { dc: 0, dr: 1 }, { dc: 0, dr: -1 }]);
+      if (!aiHuntDir)
+        aiHuntDir = ctx.rng.pick([
+          { dc: 1, dr: 0 },
+          { dc: -1, dr: 0 },
+          { dc: 0, dr: 1 },
+          { dc: 0, dr: -1 },
+        ]);
       for (const ship of player.ships) {
         if (ship.cells.includes(ci)) {
           ship.hits++;
@@ -253,13 +277,15 @@ export default function createGame(ctx: GameContext): Game {
       sonarArmed = false;
       sonar--;
       let found = 0;
-      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-        const nc = c + dc, nr = r + dr;
-        if (nc < 0 || nc >= GRID || nr < 0 || nr >= GRID) continue;
-        const i = idx(nc, nr);
-        sonarReveal.add(i);
-        if (enemy.cells[i] === 'ship') found++;
-      }
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) {
+          const nc = c + dc,
+            nr = r + dr;
+          if (nc < 0 || nc >= GRID || nr < 0 || nr >= GRID) continue;
+          const i = idx(nc, nr);
+          sonarReveal.add(i);
+          if (enemy.cells[i] === 'ship') found++;
+        }
       ctx.hud.toast(`SONAR: ${found} ship cell${found === 1 ? '' : 's'} near`);
       ctx.audio.sfx('powerup');
       updateLabels();

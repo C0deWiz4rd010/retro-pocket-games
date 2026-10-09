@@ -31,7 +31,8 @@ export default function createGame(ctx: GameContext): Game {
   let winLine: number[] = [];
 
   ctx.hud.setScore(0);
-  const setLabel = (): void => ctx.hud.setLabel(`GAME ${gameNo}/${SERIES} · YOU ${pWins}-${cWins} CPU`);
+  const setLabel = (): void =>
+    ctx.hud.setLabel(`GAME ${gameNo}/${SERIES} · YOU ${pWins}-${cWins} CPU`);
   setLabel();
 
   const drop = (col: number, who: number): number => {
@@ -44,7 +45,12 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const winningLine = (who: number): number[] | null => {
-    const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
+    const dirs = [
+      [1, 0],
+      [0, 1],
+      [1, 1],
+      [1, -1],
+    ];
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
         if (at(c, r) === who)
@@ -76,9 +82,22 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const endGame = (winner: number): void => {
-    if (winner === 1) { pWins++; score += 1000; winLine = winningLine(1) ?? []; ctx.audio.sfx('levelup'); ctx.hud.toast('YOU WIN!'); }
-    else if (winner === 2) { cWins++; score += 100; winLine = winningLine(2) ?? []; ctx.audio.sfx('gameover'); ctx.hud.toast('CPU WINS'); }
-    else { score += 300; ctx.hud.toast('DRAW'); }
+    if (winner === 1) {
+      pWins++;
+      score += 1000;
+      winLine = winningLine(1) ?? [];
+      ctx.audio.sfx('levelup');
+      ctx.hud.toast('YOU WIN!');
+    } else if (winner === 2) {
+      cWins++;
+      score += 100;
+      winLine = winningLine(2) ?? [];
+      ctx.audio.sfx('gameover');
+      ctx.hud.toast('CPU WINS');
+    } else {
+      score += 300;
+      ctx.hud.toast('DRAW');
+    }
     ctx.hud.setScore(score);
     setLabel();
     draw();
@@ -87,7 +106,10 @@ export default function createGame(ctx: GameContext): Game {
       over = true;
       const bonus = pWins > cWins ? 1500 : 0;
       ctx.hud.toast(pWins > cWins ? 'SERIES WON!' : pWins < cWins ? 'SERIES LOST' : 'SERIES TIED');
-      window.setTimeout(() => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }), 900);
+      window.setTimeout(
+        () => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }),
+        900,
+      );
     } else {
       over = true; // block input until the next game starts
       window.setTimeout(nextGame, 1100);
@@ -116,12 +138,15 @@ export default function createGame(ctx: GameContext): Game {
         let bad = false;
         for (let pc = 0; pc < COLS && !bad; pc++) {
           const pr = drop(pc, 1);
-          if (pr >= 0) { if (wins(1)) bad = true; board[pr * COLS + pc] = 0; }
+          if (pr >= 0) {
+            if (wins(1)) bad = true;
+            board[pr * COLS + pc] = 0;
+          }
         }
         board[r * COLS + c] = 0;
         return !bad;
       });
-      col = (safe[0] ?? order[0]) ?? 0;
+      col = safe[0] ?? order[0] ?? 0;
     }
     const r = drop(col, 2);
     if (r >= 0) {
@@ -162,15 +187,23 @@ export default function createGame(ctx: GameContext): Game {
 
   function draw(): void {
     g.clear();
-    if (!over) g.circle(ox + cursor * size + size / 2, oy - size * 0.5, size * 0.18).fill({ color: turn === 1 ? 0xffca28 : 0xff4d4d });
+    if (!over)
+      g.circle(ox + cursor * size + size / 2, oy - size * 0.5, size * 0.18).fill({
+        color: turn === 1 ? 0xffca28 : 0xff4d4d,
+      });
     g.roundRect(ox - 4, oy - 4, boardW + 8, boardH + 8, 10).fill({ color: 0x1d1d6e });
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++) {
         const v = at(c, r);
         const col = v === 1 ? 0xffca28 : v === 2 ? 0xff4d4d : 0x0a0a12;
-        g.circle(ox + c * size + size / 2, oy + r * size + size / 2, size * 0.4).fill({ color: col });
+        g.circle(ox + c * size + size / 2, oy + r * size + size / 2, size * 0.4).fill({
+          color: col,
+        });
         if (winLine.includes(r * COLS + c)) {
-          g.circle(ox + c * size + size / 2, oy + r * size + size / 2, size * 0.4).stroke({ width: 4, color: 0xffffff });
+          g.circle(ox + c * size + size / 2, oy + r * size + size / 2, size * 0.4).stroke({
+            width: 4,
+            color: 0xffffff,
+          });
         }
       }
   }

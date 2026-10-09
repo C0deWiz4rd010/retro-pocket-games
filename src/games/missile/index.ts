@@ -11,8 +11,19 @@ interface Incoming {
   mirv: number; // Feature: remaining splits
   splitY: number;
 }
-interface Crate { x: number; y: number; vy: number } // Feature: ammo crate
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Crate {
+  x: number;
+  y: number;
+  vy: number;
+} // Feature: ammo crate
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 interface Counter {
   x: number;
   y: number;
@@ -41,9 +52,15 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(bgG, g);
 
   const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 40; i++) stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * groundY * 0.85, s: ctx.rng.next() * 1.3 + 0.4 });
+  for (let i = 0; i < 40; i++)
+    stars.push({
+      x: ctx.rng.next() * W,
+      y: ctx.rng.next() * groundY * 0.85,
+      s: ctx.rng.next() * 1.3 + 0.4,
+    });
   bgG.rect(0, 0, W, H).fill({ color: 0x05060f });
-  for (const s of stars) bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.12 + s.s * 0.18 });
+  for (const s of stars)
+    bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.12 + s.s * 0.18 });
 
   const cities = [0.16, 0.32, 0.48, 0.64, 0.8].map((f) => ({ x: f * W, alive: true }));
   const battery = { x: W / 2, y: groundY, ammo: 10 };
@@ -79,7 +96,14 @@ export default function createGame(ctx: GameContext): Game {
     updateLabel();
     const ang = Math.atan2(ty - battery.y, tx - battery.x);
     const sp = 420;
-    counters.push({ x: battery.x, y: battery.y, tx, ty, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp });
+    counters.push({
+      x: battery.x,
+      y: battery.y,
+      tx,
+      ty,
+      vx: Math.cos(ang) * sp,
+      vy: Math.sin(ang) * sp,
+    });
     ctx.audio.sfx('shoot');
   };
   const offTap = ctx.input.on('tap', ({ x, y }) => fireAt(x, y));
@@ -90,7 +114,16 @@ export default function createGame(ctx: GameContext): Game {
     const ty = groundY;
     const ang = Math.atan2(ty - y, tx - x);
     const sp = 40 + wave * 6;
-    incoming.push({ x, y, tx, ty, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, mirv, splitY: groundY * (0.4 + ctx.rng.next() * 0.2) });
+    incoming.push({
+      x,
+      y,
+      tx,
+      ty,
+      vx: Math.cos(ang) * sp,
+      vy: Math.sin(ang) * sp,
+      mirv,
+      splitY: groundY * (0.4 + ctx.rng.next() * 0.2),
+    });
   };
   const spawnIncoming = (): void => {
     // Feature: from wave 3, some missiles are MIRVs that split mid-flight
@@ -108,21 +141,37 @@ export default function createGame(ctx: GameContext): Game {
         g.rect(c.x + 4, groundY - 24, 6, 8).fill({ color: 0x42a5f5 });
       }
     });
-    g.poly([battery.x, battery.y - 18, battery.x - 12, battery.y, battery.x + 12, battery.y]).fill({ color: 0x3ddc84 });
+    g.poly([battery.x, battery.y - 18, battery.x - 12, battery.y, battery.x + 12, battery.y]).fill({
+      color: 0x3ddc84,
+    });
     incoming.forEach((m) => {
-      g.moveTo(m.x - m.vx * 0.06, m.y - m.vy * 0.06).lineTo(m.x, m.y).stroke({ width: 2, color: 0xff4d4d });
+      g.moveTo(m.x - m.vx * 0.06, m.y - m.vy * 0.06)
+        .lineTo(m.x, m.y)
+        .stroke({ width: 2, color: 0xff4d4d });
       g.circle(m.x, m.y, 3).fill({ color: 0xffd200 });
     });
     counters.forEach((m) => {
-      g.moveTo(battery.x, battery.y).lineTo(m.x, m.y).stroke({ width: 1, color: 0x00f7ff, alpha: 0.25 });
+      g.moveTo(battery.x, battery.y)
+        .lineTo(m.x, m.y)
+        .stroke({ width: 1, color: 0x00f7ff, alpha: 0.25 });
       g.circle(m.x, m.y, 2.5).fill({ color: 0x00f7ff });
     });
-    blasts.forEach((b) => g.circle(b.x, b.y, b.r).fill({ color: b.kills >= 2 ? 0xfff6b0 : 0xffd27f, alpha: 0.6 }));
+    blasts.forEach((b) =>
+      g.circle(b.x, b.y, b.r).fill({ color: b.kills >= 2 ? 0xfff6b0 : 0xffd27f, alpha: 0.6 }),
+    );
     if (crate) {
       g.roundRect(crate.x - 9, crate.y - 7, 18, 14, 2).fill({ color: 0x3ddc84 });
-      g.roundRect(crate.x - 9, crate.y - 7, 18, 14, 2).stroke({ width: 1.5, color: 0xffffff, alpha: 0.7 });
+      g.roundRect(crate.x - 9, crate.y - 7, 18, 14, 2).stroke({
+        width: 1.5,
+        color: 0xffffff,
+        alpha: 0.7,
+      });
     }
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
   };
 
   return {
@@ -139,13 +188,22 @@ export default function createGame(ctx: GameContext): Game {
       counters.forEach((m) => {
         m.x += m.vx * dt;
         m.y += m.vy * dt;
-        if ((m.vy < 0 && m.y <= m.ty) || (m.vy > 0 && m.y >= m.ty) || Math.hypot(m.x - m.tx, m.y - m.ty) < 8) {
+        if (
+          (m.vy < 0 && m.y <= m.ty) ||
+          (m.vy > 0 && m.y >= m.ty) ||
+          Math.hypot(m.x - m.tx, m.y - m.ty) < 8
+        ) {
           blasts.push({ x: m.x, y: m.y, r: 4, max: 34, growing: true, kills: 0 });
           ctx.audio.sfx('explosion');
         }
       });
       counters = counters.filter(
-        (m) => !((m.vy < 0 && m.y <= m.ty) || (m.vy > 0 && m.y >= m.ty) || Math.hypot(m.x - m.tx, m.y - m.ty) < 8),
+        (m) =>
+          !(
+            (m.vy < 0 && m.y <= m.ty) ||
+            (m.vy > 0 && m.y >= m.ty) ||
+            Math.hypot(m.x - m.tx, m.y - m.ty) < 8
+          ),
       );
 
       // blasts grow then shrink, destroy incoming inside radius
@@ -223,7 +281,9 @@ export default function createGame(ctx: GameContext): Game {
       // particles + shake
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
       if (shake > 0) shake = Math.max(0, shake - dt * 2);
@@ -251,7 +311,10 @@ export default function createGame(ctx: GameContext): Game {
         return;
       }
       const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0, rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0);
+      layer.position.set(
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
+      );
       draw();
     },
     destroy() {

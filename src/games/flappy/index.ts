@@ -1,9 +1,29 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 
-interface Pipe { x: number; gapY: number; scored: boolean; phase: number; amp: number; coin: boolean; coinTaken: boolean }
-interface Cloud { x: number; y: number; s: number; speed: number }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Pipe {
+  x: number;
+  gapY: number;
+  scored: boolean;
+  phase: number;
+  amp: number;
+  coin: boolean;
+  coinTaken: boolean;
+}
+interface Cloud {
+  x: number;
+  y: number;
+  s: number;
+  speed: number;
+}
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -36,7 +56,12 @@ export default function createGame(ctx: GameContext): Game {
   let dayT = 0; // 0 = day, 1 = night
 
   for (let i = 0; i < 5; i++) {
-    clouds.push({ x: ctx.rng.next() * W, y: 40 + ctx.rng.next() * (H * 0.5), s: 0.6 + ctx.rng.next() * 0.8, speed: 14 + ctx.rng.next() * 18 });
+    clouds.push({
+      x: ctx.rng.next() * W,
+      y: 40 + ctx.rng.next() * (H * 0.5),
+      s: 0.6 + ctx.rng.next() * 0.8,
+      speed: 14 + ctx.rng.next() * 18,
+    });
   }
 
   const flap = (): void => {
@@ -94,12 +119,16 @@ export default function createGame(ctx: GameContext): Game {
     bgG.rect(0, 0, W, H * 0.6).fill({ color: skyTop });
     bgG.rect(0, H * 0.4, W, H).fill({ color: skyBot, alpha: 0.6 });
     // sun / moon
-    bgG.circle(W * 0.78, lerp(80, 120, dayT), 26).fill({ color: mix(0xffe98a, 0xeef0ff, dayT), alpha: 0.9 });
+    bgG
+      .circle(W * 0.78, lerp(80, 120, dayT), 26)
+      .fill({ color: mix(0xffe98a, 0xeef0ff, dayT), alpha: 0.9 });
     // clouds
     for (const c of clouds) {
       const a = 0.5 - dayT * 0.3;
       bgG.ellipse(c.x, c.y, 26 * c.s, 12 * c.s).fill({ color: 0xffffff, alpha: a });
-      bgG.ellipse(c.x + 18 * c.s, c.y + 4 * c.s, 18 * c.s, 9 * c.s).fill({ color: 0xffffff, alpha: a });
+      bgG
+        .ellipse(c.x + 18 * c.s, c.y + 4 * c.s, 18 * c.s, 9 * c.s)
+        .fill({ color: 0xffffff, alpha: a });
     }
     // ground
     bgG.rect(0, H - groundH, W, groundH).fill({ color: mix(0x2a3d2a, 0x16201a, dayT) });
@@ -122,17 +151,27 @@ export default function createGame(ctx: GameContext): Game {
       }
     });
     // particles
-    particles.forEach((p) => g.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life }));
+    particles.forEach((p) =>
+      g.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life }),
+    );
     // bird (rotates with velocity)
     const rot = Math.max(-0.5, Math.min(1.1, bird.vy / 600));
-    const bx = bird.x, by = bird.y;
-    const cos = Math.cos(rot), sin = Math.sin(rot);
-    const rp = (dx: number, dy: number): { x: number; y: number } => ({ x: bx + dx * cos - dy * sin, y: by + dx * sin + dy * cos });
-    if (shield || invuln > 0) g.circle(bx, by, bird.r + 6).stroke({ width: 2.5, color: 0x00f7ff, alpha: 0.7 });
+    const bx = bird.x,
+      by = bird.y;
+    const cos = Math.cos(rot),
+      sin = Math.sin(rot);
+    const rp = (dx: number, dy: number): { x: number; y: number } => ({
+      x: bx + dx * cos - dy * sin,
+      y: by + dx * sin + dy * cos,
+    });
+    if (shield || invuln > 0)
+      g.circle(bx, by, bird.r + 6).stroke({ width: 2.5, color: 0x00f7ff, alpha: 0.7 });
     g.circle(bx, by, bird.r).fill({ color: 0xffd200 });
     const eye = rp(4, -4);
     g.circle(eye.x, eye.y, 3).fill({ color: 0x101018 });
-    const b0 = rp(bird.r, 0), b1 = rp(bird.r + 8, -3), b2 = rp(bird.r + 8, 3);
+    const b0 = rp(bird.r, 0),
+      b1 = rp(bird.r + 8, -3),
+      b2 = rp(bird.r + 8, 3);
     g.moveTo(b0.x, b0.y).lineTo(b1.x, b1.y).lineTo(b2.x, b2.y).fill({ color: 0xff7b00 });
   };
 

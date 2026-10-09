@@ -29,15 +29,22 @@ async function renderAll(): Promise<HTMLElement> {
           'div',
           { class: 'score-list' },
           withScores.map(({ g, best }) =>
-            el('button', { class: 'score-row', onClick: () => (location.hash = `#/scores/${g.id}`) }, [
-              el('span', { class: 'score-row__glyph' }, [glyphEl(g.glyph)]),
-              el('span', { class: 'score-row__title' }, [g.title]),
-              el('span', { class: 'score-row__best' }, [`★ ${best.toLocaleString()}`]),
-            ]),
+            el(
+              'button',
+              { class: 'score-row', onClick: () => (location.hash = `#/scores/${g.id}`) },
+              [
+                el('span', { class: 'score-row__glyph' }, [glyphEl(g.glyph)]),
+                el('span', { class: 'score-row__title' }, [g.title]),
+                el('span', { class: 'score-row__best' }, [`★ ${best.toLocaleString()}`]),
+              ],
+            ),
           ),
         );
 
-  return el('div', { class: 'scroll' }, [el('div', { class: 'section-title' }, [t('scores.title')]), list]);
+  return el('div', { class: 'scroll' }, [
+    el('div', { class: 'section-title' }, [t('scores.title')]),
+    list,
+  ]);
 }
 
 async function renderOne(gameId: string): Promise<HTMLElement> {
@@ -64,9 +71,11 @@ async function renderOne(gameId: string): Promise<HTMLElement> {
     el('div', { class: 'lb-hero' }, [
       el('div', { class: 'lb-hero__glyph' }, [glyphEl(meta.glyph)]),
       el('div', { class: 'lb-hero__title' }, [meta.title]),
-      el('button', { class: 'btn btn--primary', onClick: () => (location.hash = `#/play/${gameId}`) }, [
-        `▶  ${t('home.playToday')}`,
-      ]),
+      el(
+        'button',
+        { class: 'btn btn--primary', onClick: () => (location.hash = `#/play/${gameId}`) },
+        [`▶  ${t('home.playToday')}`],
+      ),
     ]),
     el('div', { class: 'section-title' }, [t('lb.title')]),
     board,

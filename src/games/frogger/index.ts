@@ -12,7 +12,14 @@ interface Mover {
   kind: MoverKind;
   phase: number; // turtle dive phase offset
 }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 const DIRS: Record<string, { x: number; y: number }> = {
   up: { x: 0, y: -1 },
@@ -53,7 +60,15 @@ export default function createGame(ctx: GameContext): Game {
       const w = isRiver ? cell * (turtle ? 2 : 2 + Math.floor(ctx.rng.next() * 2)) : cell * 1.4;
       const count = 3;
       for (let i = 0; i < count; i++)
-        movers.push({ x: (cols / count) * i * cell + ctx.rng.next() * cell, w, lane, speed, log: isRiver, kind, phase: ctx.rng.next() * Math.PI * 2 });
+        movers.push({
+          x: (cols / count) * i * cell + ctx.rng.next() * cell,
+          w,
+          lane,
+          speed,
+          log: isRiver,
+          kind,
+          phase: ctx.rng.next() * Math.PI * 2,
+        });
     }
   };
   buildMovers();
@@ -144,7 +159,9 @@ export default function createGame(ctx: GameContext): Game {
     }
     for (let i = 0; i < 5; i++) {
       const hx = (i + 0.5) * (cols / 5) * cell;
-      bgG.roundRect(hx - cell * 0.4, 2, cell * 0.8, cell - 4, 4).fill({ color: homes[i] ? 0x3ddc84 : 0x0d1f0d });
+      bgG
+        .roundRect(hx - cell * 0.4, 2, cell * 0.8, cell - 4, 4)
+        .fill({ color: homes[i] ? 0x3ddc84 : 0x0d1f0d });
       if (flySlot === i) bgG.circle(hx, cell / 2, cell * 0.18).fill({ color: 0xffd200 });
     }
     g.clear();
@@ -153,17 +170,32 @@ export default function createGame(ctx: GameContext): Game {
         const up = surfaced(m);
         const segs = Math.round(m.w / cell);
         for (let s = 0; s < segs; s++) {
-          g.circle(m.x + cell * (s + 0.5), m.lane * cell + cell / 2, cell * 0.38).fill({ color: up ? 0x2e9e6b : 0x16335a, alpha: up ? 1 : 0.35 });
+          g.circle(m.x + cell * (s + 0.5), m.lane * cell + cell / 2, cell * 0.38).fill({
+            color: up ? 0x2e9e6b : 0x16335a,
+            alpha: up ? 1 : 0.35,
+          });
         }
       } else {
-        g.roundRect(m.x, m.lane * cell + 4, m.w, cell - 8, 5).fill({ color: m.kind === 'log' ? 0x8a5a2b : 0xff5252 });
-        if (m.kind === 'car') g.rect(m.x + 4, m.lane * cell + cell * 0.3, m.w - 8, 3).fill({ color: 0xffd200, alpha: 0.7 });
+        g.roundRect(m.x, m.lane * cell + 4, m.w, cell - 8, 5).fill({
+          color: m.kind === 'log' ? 0x8a5a2b : 0xff5252,
+        });
+        if (m.kind === 'car')
+          g.rect(m.x + 4, m.lane * cell + cell * 0.3, m.w - 8, 3).fill({
+            color: 0xffd200,
+            alpha: 0.7,
+          });
       }
     });
     // particles
-    particles.forEach((p) => g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) }));
+    particles.forEach((p) =>
+      g
+        .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
+        .fill({ color: p.color, alpha: Math.min(1, p.life * 2) }),
+    );
     // frog with eyes
-    const fx = frogX + 4, fy = frog.row * cell + 4, fs = cell - 8;
+    const fx = frogX + 4,
+      fy = frog.row * cell + 4,
+      fs = cell - 8;
     g.roundRect(fx, fy, fs, fs, 6).fill({ color: 0x9bffce });
     const ed = DIRS[frog.facing]!;
     const ecx = fx + fs / 2 + ed.x * fs * 0.2;
@@ -171,7 +203,7 @@ export default function createGame(ctx: GameContext): Game {
     g.circle(ecx - 3, ecy - 3, 2).fill({ color: 0x0a0a12 });
     g.circle(ecx + 3, ecy - 3, 2).fill({ color: 0x0a0a12 });
     // timer bar
-    const tw = (cols * cell) * (time / maxTime);
+    const tw = cols * cell * (time / maxTime);
     g.rect(0, rows * cell - 4, cols * cell, 4).fill({ color: 0x000000, alpha: 0.4 });
     g.rect(0, rows * cell - 4, tw, 4).fill({ color: time < 8 ? 0xff4d4d : 0x3ddc84 });
   };
@@ -208,7 +240,12 @@ export default function createGame(ctx: GameContext): Game {
 
       if (riverRows.includes(frog.row)) {
         const ride = movers.find(
-          (m) => m.log && surfaced(m) && m.lane === frog.row && frogX + cell / 2 > m.x && frogX + cell / 2 < m.x + m.w,
+          (m) =>
+            m.log &&
+            surfaced(m) &&
+            m.lane === frog.row &&
+            frogX + cell / 2 > m.x &&
+            frogX + cell / 2 < m.x + m.w,
         );
         if (ride) {
           frogX += ride.speed * dt;
@@ -220,7 +257,11 @@ export default function createGame(ctx: GameContext): Game {
         }
       } else if (roadRows.includes(frog.row)) {
         const hit = movers.some(
-          (m) => !m.log && m.lane === frog.row && frogX + cell * 0.7 > m.x && frogX + cell * 0.3 < m.x + m.w,
+          (m) =>
+            !m.log &&
+            m.lane === frog.row &&
+            frogX + cell * 0.7 > m.x &&
+            frogX + cell * 0.3 < m.x + m.w,
         );
         if (hit) return die();
       } else if (frog.row === 0) {

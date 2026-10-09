@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
-import type { RNG } from '@utils/rng';
+import { fxRandom, type RNG } from '@utils/rng';
 
 const COLS = 10;
 const ROWS = 20;
@@ -17,15 +17,52 @@ interface Piece {
 
 const SHAPES: { m: number[][]; color: number }[] = [
   { m: [[1, 1, 1, 1]], color: 0x00f7ff }, // I
-  { m: [[1, 1], [1, 1]], color: 0xffd200 }, // O
-  { m: [[0, 1, 0], [1, 1, 1]], color: 0xb14cff }, // T
-  { m: [[0, 1, 1], [1, 1, 0]], color: 0x3ddc84 }, // S
-  { m: [[1, 1, 0], [0, 1, 1]], color: 0xff4d4d }, // Z
-  { m: [[1, 0, 0], [1, 1, 1]], color: 0x4a7bff }, // J
-  { m: [[0, 0, 1], [1, 1, 1]], color: 0xff7b00 }, // L
+  {
+    m: [
+      [1, 1],
+      [1, 1],
+    ],
+    color: 0xffd200,
+  }, // O
+  {
+    m: [
+      [0, 1, 0],
+      [1, 1, 1],
+    ],
+    color: 0xb14cff,
+  }, // T
+  {
+    m: [
+      [0, 1, 1],
+      [1, 1, 0],
+    ],
+    color: 0x3ddc84,
+  }, // S
+  {
+    m: [
+      [1, 1, 0],
+      [0, 1, 1],
+    ],
+    color: 0xff4d4d,
+  }, // Z
+  {
+    m: [
+      [1, 0, 0],
+      [1, 1, 1],
+    ],
+    color: 0x4a7bff,
+  }, // J
+  {
+    m: [
+      [0, 0, 1],
+      [1, 1, 1],
+    ],
+    color: 0xff7b00,
+  }, // L
 ];
 
-const rotate = (m: number[][]): number[][] => m[0]!.map((_, x) => m.map((row) => row[x]!).reverse());
+const rotate = (m: number[][]): number[][] =>
+  m[0]!.map((_, x) => m.map((row) => row[x]!).reverse());
 const bag = (rng: RNG): number[] => rng.shuffle([0, 1, 2, 3, 4, 5, 6]);
 
 export default function createGame(ctx: GameContext): Game {
@@ -62,17 +99,37 @@ export default function createGame(ctx: GameContext): Game {
   let combo = -1; // Feature: back-to-back line-clear combo
   let lastMoveWasRotate = false; // for T-spin detection
   let shake = 0;
-  interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+  interface Particle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    color: number;
+  }
   const particles: Particle[] = [];
   const spawnParticles = (rowY: number, color: number): void => {
     for (let i = 0; i < 14; i++) {
-      particles.push({ x: Math.random() * fieldW, y: rowY * cell + cell / 2, vx: (Math.random() - 0.5) * 160, vy: (Math.random() - 0.5) * 120, life: 0.5, color });
+      particles.push({
+        x: fxRandom() * fieldW,
+        y: rowY * cell + cell / 2,
+        vx: (fxRandom() - 0.5) * 160,
+        vy: (fxRandom() - 0.5) * 120,
+        life: 0.5,
+        color,
+      });
     }
   };
 
   const makePiece = (id: number): Piece => {
     const s = SHAPES[id]!;
-    return { id, m: s.m.map((r) => [...r]), color: s.color, x: Math.floor((COLS - s.m[0]!.length) / 2), y: 0 };
+    return {
+      id,
+      m: s.m.map((r) => [...r]),
+      color: s.color,
+      x: Math.floor((COLS - s.m[0]!.length) / 2),
+      y: 0,
+    };
   };
   const spawn = (): Piece => {
     if (queue.length < 7) queue.push(...bag(ctx.rng));
@@ -176,7 +233,12 @@ export default function createGame(ctx: GameContext): Game {
   // T-spin: a just-rotated T-piece wedged with 3+ corners blocked.
   const isTSpin = (): boolean => {
     if (piece.id !== 2 || !lastMoveWasRotate) return false;
-    const corners = [[0, 0], [2, 0], [0, 2], [2, 2]];
+    const corners = [
+      [0, 0],
+      [2, 0],
+      [0, 2],
+      [2, 2],
+    ];
     let blocked = 0;
     for (const [dx, dy] of corners) {
       const bx = piece.x + dx!;
@@ -238,7 +300,8 @@ export default function createGame(ctx: GameContext): Game {
     const mc = cell * 0.7;
     s.m.forEach((row, y) =>
       row.forEach((v, x) => {
-        if (v) sideG.roundRect(px + x * mc, py + y * mc, mc - 2, mc - 2, 2).fill({ color: s.color });
+        if (v)
+          sideG.roundRect(px + x * mc, py + y * mc, mc - 2, mc - 2, 2).fill({ color: s.color });
       }),
     );
   };
@@ -258,17 +321,31 @@ export default function createGame(ctx: GameContext): Game {
     while (!collides(piece, piece.x, gy + 1)) gy++;
     piece.m.forEach((row, y) =>
       row.forEach((v, x) => {
-        if (v) g.roundRect((piece.x + x) * cell + 1, (gy + y) * cell + 1, cell - 2, cell - 2, 3).fill({ color: piece.color, alpha: 0.18 });
+        if (v)
+          g.roundRect((piece.x + x) * cell + 1, (gy + y) * cell + 1, cell - 2, cell - 2, 3).fill({
+            color: piece.color,
+            alpha: 0.18,
+          });
       }),
     );
     piece.m.forEach((row, y) =>
       row.forEach((v, x) => {
         if (v && piece.y + y >= 0)
-          g.roundRect((piece.x + x) * cell + 1, (piece.y + y) * cell + 1, cell - 2, cell - 2, 3).fill({ color: piece.color });
+          g.roundRect(
+            (piece.x + x) * cell + 1,
+            (piece.y + y) * cell + 1,
+            cell - 2,
+            cell - 2,
+            3,
+          ).fill({ color: piece.color });
       }),
     );
 
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
 
     sideG.clear();
     const sx = fieldW + cell * 0.6;
@@ -283,12 +360,18 @@ export default function createGame(ctx: GameContext): Game {
       // particles + shake animate independently of lock state
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 200 * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 200 * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
       if (shake > 0) shake = Math.max(0, shake - dt * 2);
       const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(ox + (rmS > 0 ? (Math.random() * 2 - 1) * rmS * 6 : 0), oy + (rmS > 0 ? (Math.random() * 2 - 1) * rmS * 6 : 0));
+      layer.position.set(
+        ox + (rmS > 0 ? (fxRandom() * 2 - 1) * rmS * 6 : 0),
+        oy + (rmS > 0 ? (fxRandom() * 2 - 1) * rmS * 6 : 0),
+      );
       if (flashT > 0) {
         flashT -= dt;
         if (flashT <= 0) {

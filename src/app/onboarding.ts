@@ -2,7 +2,11 @@ import { el } from '@utils/dom';
 import { audio } from '@core/AudioManager';
 import { t } from '@i18n/index';
 
-interface Screen { glyph: string; title: string; body: string }
+interface Screen {
+  glyph: string;
+  title: string;
+  body: string;
+}
 
 const SCREENS: () => Screen[] = () => [
   { glyph: '🕹️', title: t('onboard.s1t'), body: t('onboard.s1b') },
@@ -23,7 +27,11 @@ export function showOnboarding(onDone: () => void): HTMLElement {
   const glyph = el('div', { class: 'onboard__glyph' });
   const title = el('div', { class: 'onboard__title' });
   const body = el('div', { class: 'onboard__body' });
-  const dots = el('div', { class: 'onboard__dots' }, screens.map(() => el('span', { class: 'onboard__dot' })));
+  const dots = el(
+    'div',
+    { class: 'onboard__dots' },
+    screens.map(() => el('span', { class: 'onboard__dot' })),
+  );
   const nextBtn = el('button', { class: 'btn btn--primary btn--block' }, []);
 
   const render = (): void => {
@@ -51,7 +59,9 @@ export function showOnboarding(onDone: () => void): HTMLElement {
     }
   });
 
-  const skip = el('button', { class: 'onboard__skip', onClick: () => finish() }, [t('onboard.skip')]);
+  const skip = el('button', { class: 'onboard__skip', onClick: () => finish() }, [
+    t('onboard.skip'),
+  ]);
 
   const card = el('div', { class: 'onboard__card', role: 'dialog', 'aria-modal': 'true' }, [
     skip,

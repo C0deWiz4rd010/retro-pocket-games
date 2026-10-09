@@ -44,26 +44,39 @@ export interface RewardInput {
  * game's `reward.targetScore` so titles with wildly different score scales award comparable XP,
  * then adds base + improvement + daily + mastery bonuses. See docs/11 §10.
  */
-export function computeReward(score: number, opts: RewardInput = {}): Omit<RunReward, 'leveledUp' | 'newLevel'> {
+export function computeReward(
+  score: number,
+  opts: RewardInput = {},
+): Omit<RunReward, 'leveledUp' | 'newLevel'> {
   const target = Math.max(1, opts.reward?.targetScore ?? 1000);
   const normalized = Math.min(2.5, score / target);
-  const base = opts.reward?.sessionMin === 1 ? 8 : opts.reward?.sessionMin && opts.reward.sessionMin >= 4 ? 18 : 12;
+  const base =
+    opts.reward?.sessionMin === 1
+      ? 8
+      : opts.reward?.sessionMin && opts.reward.sessionMin >= 4
+        ? 18
+        : 12;
   const scoreXp = Math.round(38 * normalized * (opts.reward?.difficulty ?? 1));
-  const improvement = score > (opts.previousBest ?? 0) ? Math.min(28, Math.max(6, Math.round((score - (opts.previousBest ?? 0)) / target * 30))) : 0;
+  const improvement =
+    score > (opts.previousBest ?? 0)
+      ? Math.min(28, Math.max(6, Math.round(((score - (opts.previousBest ?? 0)) / target) * 30)))
+      : 0;
   const daily = opts.daily ? 15 : 0;
   const mastery = (opts.masteryRank ?? 0) * 10;
   const breakdown = { base, score: scoreXp, improvement, daily, mastery };
-  const xpGain = Math.max(5, Object.values(breakdown).reduce((sum, n) => sum + n, 0));
-  const tokenGain = Math.max(1, Math.floor(xpGain / 20) + (opts.daily ? 1 : 0) + (improvement > 0 ? 1 : 0));
+  const xpGain = Math.max(
+    5,
+    Object.values(breakdown).reduce((sum, n) => sum + n, 0),
+  );
+  const tokenGain = Math.max(
+    1,
+    Math.floor(xpGain / 20) + (opts.daily ? 1 : 0) + (improvement > 0 ? 1 : 0),
+  );
   return { xpGain, tokenGain, breakdown };
 }
 
 /** Award XP + tokens after a run, level up as needed, and persist. */
-export function awardRun(
-  gameId: string,
-  score: number,
-  opts: RewardInput = {},
-): RunReward {
+export function awardRun(gameId: string, score: number, opts: RewardInput = {}): RunReward {
   const p = structuredClone(profile());
   const { xpGain, tokenGain, breakdown } = computeReward(score, opts);
 

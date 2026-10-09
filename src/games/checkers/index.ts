@@ -6,8 +6,10 @@ const N = 8; // board size
 type Piece = { color: 0 | 1; king: boolean } | null;
 
 interface Move {
-  fr: number; fc: number;
-  tr: number; tc: number;
+  fr: number;
+  fc: number;
+  tr: number;
+  tc: number;
   captures: { r: number; c: number }[];
 }
 
@@ -61,14 +63,25 @@ export default function createGame(ctx: GameContext): Game {
     const moves: Move[] = [];
     const dir = color === 0 ? -1 : 1; // player (0) moves up, AI (1) moves down
 
-    const getJumps = (r: number, c: number, piece: { color: 0 | 1; king: boolean }, visited: Set<string>): Move[] => {
+    const getJumps = (
+      r: number,
+      c: number,
+      piece: { color: 0 | 1; king: boolean },
+      visited: Set<string>,
+    ): Move[] => {
       const jumps: Move[] = [];
       const dirs = piece.king ? [-1, 1] : [dir];
       for (const dr of dirs) {
         for (const dc of [-1, 1]) {
-          const mr = r + dr, mc = c + dc;
-          const lr = r + dr * 2, lc = c + dc * 2;
-          if (isValid(lr, lc) && board[mr]?.[mc]?.color === (color === 0 ? 1 : 0) && !board[lr]![lc]) {
+          const mr = r + dr,
+            mc = c + dc;
+          const lr = r + dr * 2,
+            lc = c + dc * 2;
+          if (
+            isValid(lr, lc) &&
+            board[mr]?.[mc]?.color === (color === 0 ? 1 : 0) &&
+            !board[lr]![lc]
+          ) {
             const key = `${lr},${lc}`;
             if (!visited.has(key)) {
               visited.add(key);
@@ -115,7 +128,8 @@ export default function createGame(ctx: GameContext): Game {
         const dirs = p.king ? [-1, 1] : [dir];
         for (const dr of dirs) {
           for (const dc of [-1, 1]) {
-            const nr = r + dr, nc = c + dc;
+            const nr = r + dr,
+              nc = c + dc;
             if (isValid(nr, nc) && !board[nr]![nc]) {
               moves.push({ fr: r, fc: c, tr: nr, tc: nc, captures: [] });
             }
@@ -130,7 +144,9 @@ export default function createGame(ctx: GameContext): Game {
     const piece = board[m.fr]![m.fc]!;
     board[m.tr]![m.tc] = piece;
     board[m.fr]![m.fc] = null;
-    m.captures.forEach(({ r, c }) => { board[r]![c] = null; });
+    m.captures.forEach(({ r, c }) => {
+      board[r]![c] = null;
+    });
     // promote to king
     if (piece.color === 0 && m.tr === 0) piece.king = true;
     if (piece.color === 1 && m.tr === N - 1) piece.king = true;
@@ -164,7 +180,9 @@ export default function createGame(ctx: GameContext): Game {
     // Feature: 1-ply lookahead — among the best moves, prefer the one that least exposes
     // the AI to an immediate recapture.
     const snapshot = (): Piece[][] => board.map((row) => row.map((p) => (p ? { ...p } : null)));
-    const restore = (snap: Piece[][]): void => { for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) board[r]![c] = snap[r]![c] ?? null; };
+    const restore = (snap: Piece[][]): void => {
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) board[r]![c] = snap[r]![c] ?? null;
+    };
     let chosen = candidates[0]!;
     let bestReply = Infinity;
     for (const m of candidates) {
@@ -173,7 +191,10 @@ export default function createGame(ctx: GameContext): Game {
       const reply = getMoves(0);
       const maxCap = reply.reduce((mx, rm) => Math.max(mx, rm.captures.length), 0);
       restore(snap);
-      if (maxCap < bestReply || (maxCap === bestReply && ctx.rng.next() < 0.3)) { bestReply = maxCap; chosen = m; }
+      if (maxCap < bestReply || (maxCap === bestReply && ctx.rng.next() < 0.3)) {
+        bestReply = maxCap;
+        chosen = m;
+      }
     }
     applyMove(chosen);
     if (chosen.captures.length) {
@@ -216,17 +237,25 @@ export default function createGame(ctx: GameContext): Game {
       const cappers = new Set(moves.filter((m) => m.captures.length).map((m) => `${m.fr},${m.fc}`));
       for (const key of cappers) {
         const [pr, pc] = key.split(',').map(Number);
-        g.roundRect(ox + pc! * cell + 1, oy + pr! * cell + 1, cell - 2, cell - 2, 4).stroke({ width: 2, color: 0xff4d4d, alpha: 0.8 });
+        g.roundRect(ox + pc! * cell + 1, oy + pr! * cell + 1, cell - 2, cell - 2, 4).stroke({
+          width: 2,
+          color: 0xff4d4d,
+          alpha: 0.8,
+        });
       }
     }
     if (sel) {
       const selMoves = moves.filter((m) => m.fr === sel!.r && m.fc === sel!.c);
       selMoves.forEach((m) => {
-        g.roundRect(ox + m.tc * cell + 3, oy + m.tr * cell + 3, cell - 6, cell - 6, 4)
-          .fill({ color: 0x3ddc84, alpha: 0.4 });
+        g.roundRect(ox + m.tc * cell + 3, oy + m.tr * cell + 3, cell - 6, cell - 6, 4).fill({
+          color: 0x3ddc84,
+          alpha: 0.4,
+        });
       });
-      g.roundRect(ox + sel.c * cell + 1, oy + sel.r * cell + 1, cell - 2, cell - 2, 4)
-        .stroke({ width: 2, color: 0xffd200 });
+      g.roundRect(ox + sel.c * cell + 1, oy + sel.r * cell + 1, cell - 2, cell - 2, 4).stroke({
+        width: 2,
+        color: 0xffd200,
+      });
     }
 
     for (let r = 0; r < N; r++) {
@@ -260,7 +289,9 @@ export default function createGame(ctx: GameContext): Game {
     if (sel) {
       // try to apply move
       const moves = getMoves(0);
-      const m = moves.find((mv) => mv.fr === sel!.r && mv.fc === sel!.c && mv.tr === r && mv.tc === c);
+      const m = moves.find(
+        (mv) => mv.fr === sel!.r && mv.fc === sel!.c && mv.tr === r && mv.tc === c,
+      );
       if (m) {
         const wasKing = board[m.fr]![m.fc]!.king;
         applyMove(m);
@@ -268,13 +299,21 @@ export default function createGame(ctx: GameContext): Game {
           ctx.audio.sfx('coin');
           score += m.captures.length * 100;
           // Feature: multi-capture bonus
-          if (m.captures.length >= 2) { score += m.captures.length * 75; ctx.hud.toast(`${m.captures.length}× CAPTURE!`); }
+          if (m.captures.length >= 2) {
+            score += m.captures.length * 75;
+            ctx.hud.toast(`${m.captures.length}× CAPTURE!`);
+          }
           ctx.hud.setScore(score);
         } else {
           ctx.audio.sfx('blip');
         }
         // Feature: king-promotion bonus
-        if (!wasKing && board[m.tr]![m.tc]!.king) { score += 200; ctx.hud.toast('KING ME! +200'); ctx.hud.setScore(score); ctx.audio.sfx('powerup'); }
+        if (!wasKing && board[m.tr]![m.tc]!.king) {
+          score += 200;
+          ctx.hud.toast('KING ME! +200');
+          ctx.hud.setScore(score);
+          ctx.audio.sfx('powerup');
+        }
         sel = null;
         playerTurn = false;
         ctx.hud.setLabel('AI THINKING…');

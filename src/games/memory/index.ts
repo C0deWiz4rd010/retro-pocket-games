@@ -28,7 +28,10 @@ export default function createGame(ctx: GameContext): Game {
   const matched = new Array(cols * rows).fill(false);
   const labels: Text[] = [];
   for (let i = 0; i < cols * rows; i++) {
-    const t = new Text({ text: '', style: { fontFamily: 'Inter', fontSize: ch * 0.5, fill: 0x101018 } });
+    const t = new Text({
+      text: '',
+      style: { fontFamily: 'Inter', fontSize: ch * 0.5, fill: 0x101018 },
+    });
     t.anchor.set(0.5);
     t.visible = false;
     labels.push(t);
@@ -59,7 +62,9 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < cols * rows; i++) {
       const { x, y } = cellRect(i);
       const show = revealed[i] || matched[i] || preview > 0;
-      g.roundRect(x, y, cw, ch, 8).fill({ color: matched[i] ? 0x1d6e44 : show ? 0xe6e6f0 : 0x2b2b40 });
+      g.roundRect(x, y, cw, ch, 8).fill({
+        color: matched[i] ? 0x1d6e44 : show ? 0xe6e6f0 : 0x2b2b40,
+      });
       const lbl = labels[i]!;
       if (show) {
         lbl.text = SYMBOLS[deck[i]! % SYMBOLS.length]!;
@@ -118,7 +123,10 @@ export default function createGame(ctx: GameContext): Game {
       if (over) return;
       if (preview > 0) {
         preview -= dt;
-        if (preview <= 0) { ctx.hud.setLabel(`${Math.ceil(timeLeft)}s`); draw(); }
+        if (preview <= 0) {
+          ctx.hud.setLabel(`${Math.ceil(timeLeft)}s`);
+          draw();
+        }
         return;
       }
       timeLeft -= dt;
@@ -128,7 +136,9 @@ export default function createGame(ctx: GameContext): Game {
         ctx.gameOver(score, { moves });
         return;
       }
-      ctx.hud.setLabel(streak > 1 ? `STREAK x${streak} · ${Math.ceil(timeLeft)}s` : `${Math.ceil(timeLeft)}s`);
+      ctx.hud.setLabel(
+        streak > 1 ? `STREAK x${streak} · ${Math.ceil(timeLeft)}s` : `${Math.ceil(timeLeft)}s`,
+      );
       if (lock > 0) {
         lock -= dt;
         if (lock <= 0) {

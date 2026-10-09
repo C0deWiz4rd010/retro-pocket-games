@@ -20,7 +20,14 @@ interface Brick {
   maxHp: number;
   kind: BrickKind;
 }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 type PowerKind = 'multi' | 'wide' | 'slow' | 'life' | 'laser';
 interface Drop {
   x: number;
@@ -92,7 +99,14 @@ export default function createGame(ctx: GameContext): Game {
           kind = 'steel';
           hp = 3;
         }
-        bricks.push({ x: 10 + c * brickW, y: 60 + r * (brickH + 6), c: BRICK_COLORS[r % BRICK_COLORS.length]!, hp, maxHp: hp, kind });
+        bricks.push({
+          x: 10 + c * brickW,
+          y: 60 + r * (brickH + 6),
+          c: BRICK_COLORS[r % BRICK_COLORS.length]!,
+          hp,
+          maxHp: hp,
+          kind,
+        });
       }
   };
 
@@ -181,7 +195,8 @@ export default function createGame(ctx: GameContext): Game {
       // clear neighbours in a radius (chain bombs included)
       for (let j = bricks.length - 1; j >= 0; j--) {
         const n = bricks[j]!;
-        if (Math.abs(n.x - b.x) <= brickW * 1.1 && Math.abs(n.y - b.y) <= (brickH + 6) * 1.1) hitBrick(j, true);
+        if (Math.abs(n.x - b.x) <= brickW * 1.1 && Math.abs(n.y - b.y) <= (brickH + 6) * 1.1)
+          hitBrick(j, true);
       }
     } else {
       ctx.audio.sfx('hit');
@@ -197,14 +212,24 @@ export default function createGame(ctx: GameContext): Game {
       if (b.kind === 'bomb') {
         g.circle(b.x + (brickW - 4) / 2, b.y + brickH / 2, 4).fill({ color: 0xfff1c0 });
       } else if (b.hp > 1) {
-        g.roundRect(b.x + 3, b.y + 3, brickW - 10, brickH - 6, 2).stroke({ width: 1, color: 0xffffff, alpha: 0.5 });
+        g.roundRect(b.x + 3, b.y + 3, brickW - 10, brickH - 6, 2).stroke({
+          width: 1,
+          color: 0xffffff,
+          alpha: 0.5,
+        });
       }
     });
     // particles
-    particles.forEach((p) => g.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life }));
+    particles.forEach((p) =>
+      g.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life }),
+    );
     // ball trails
     balls.forEach((b) =>
-      b.trail.forEach((t, i) => g.circle(t.x, t.y, 6 * (i / b.trail.length) * 0.8).fill({ color: 0x00f7ff, alpha: (i / b.trail.length) * 0.4 })),
+      b.trail.forEach((t, i) =>
+        g
+          .circle(t.x, t.y, 6 * (i / b.trail.length) * 0.8)
+          .fill({ color: 0x00f7ff, alpha: (i / b.trail.length) * 0.4 }),
+      ),
     );
     drops.forEach((d) => {
       g.roundRect(d.x - 9, d.y - 6, 18, 12, 3).fill({ color: POWER_META[d.kind].color });
@@ -238,7 +263,10 @@ export default function createGame(ctx: GameContext): Game {
       lasers.forEach((l) => (l.y -= 540 * dt));
       for (let li = lasers.length - 1; li >= 0; li--) {
         const l = lasers[li]!;
-        if (l.y < -12) { lasers.splice(li, 1); continue; }
+        if (l.y < -12) {
+          lasers.splice(li, 1);
+          continue;
+        }
         let hit = false;
         for (let bi = 0; bi < bricks.length && !hit; bi++) {
           const b = bricks[bi]!;
@@ -349,7 +377,10 @@ export default function createGame(ctx: GameContext): Game {
       }
       if (shake > 0) shake = Math.max(0, shake - dt * 2);
       const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0, rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0);
+      layer.position.set(
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0,
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0,
+      );
 
       draw();
     },

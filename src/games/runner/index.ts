@@ -66,14 +66,21 @@ export default function createGame(ctx: GameContext): Game {
 
   const spawn = (): void => {
     const air = ctx.rng.next() < 0.3;
-    obstacles.push({ x: spawnX, w: 16 + ctx.rng.next() * 16, h: air ? 24 : 26 + ctx.rng.next() * 24, air });
+    obstacles.push({
+      x: spawnX,
+      w: 16 + ctx.rng.next() * 16,
+      h: air ? 24 : 26 + ctx.rng.next() * 24,
+      air,
+    });
     // spawn a coin cluster ~60% of the time, between obstacles
     if (ctx.rng.next() < 0.6) {
       const cy = groundY - 40 - (air ? 0 : ctx.rng.next() * 20);
       const count = 1 + Math.floor(ctx.rng.next() * 3);
-      for (let i = 0; i < count; i++) coins.push({ x: spawnX + 60 + i * 22, y: cy, collected: false });
+      for (let i = 0; i < count; i++)
+        coins.push({ x: spawnX + 60 + i * 22, y: cy, collected: false });
     }
-    if (!shield && ctx.rng.next() < 0.08) powerups.push({ x: spawnX + 90, y: groundY - 60 - ctx.rng.next() * 30 });
+    if (!shield && ctx.rng.next() < 0.08)
+      powerups.push({ x: spawnX + 90, y: groundY - 60 - ctx.rng.next() * 30 });
   };
   spawn();
 
@@ -89,11 +96,19 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(c.x, c.y, 4 * pulse).fill({ color: 0xfff6b0 });
     }
     // power-ups
-    for (const p of powerups) { g.circle(p.x, p.y, 11).stroke({ width: 3, color: 0x3ddc84 }); g.circle(p.x, p.y, 5).fill({ color: 0x3ddc84 }); }
+    for (const p of powerups) {
+      g.circle(p.x, p.y, 11).stroke({ width: 3, color: 0x3ddc84 });
+      g.circle(p.x, p.y, 5).fill({ color: 0x3ddc84 });
+    }
     // runner
     const h = runner.ducking && onGround() ? runner.h * 0.5 : runner.h;
     const ry = runner.y - h;
-    if (shield || invuln > 0) g.circle(runner.x, runner.y - h / 2, h * 0.8).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
+    if (shield || invuln > 0)
+      g.circle(runner.x, runner.y - h / 2, h * 0.8).stroke({
+        width: 2,
+        color: 0x3ddc84,
+        alpha: 0.6,
+      });
     g.roundRect(runner.x - 10, ry, 20, h, 4).fill({ color: 0x9ccc65 });
     // legs
     if (onGround()) {
@@ -115,7 +130,8 @@ export default function createGame(ctx: GameContext): Game {
       speed += dt * 6;
       dist += speed * dt;
       if (invuln > 0) invuln -= dt;
-      if (comboTimer > 0) comboTimer -= dt; else combo = 0;
+      if (comboTimer > 0) comboTimer -= dt;
+      else combo = 0;
       ctx.hud.setScore(Math.floor(dist / 10) + bonus);
 
       runner.vy += GRAV * dt;
@@ -138,21 +154,25 @@ export default function createGame(ctx: GameContext): Game {
       // collect coins (Feature: combo multiplier)
       for (const c of coins) {
         if (c.collected) continue;
-        if (Math.abs(runner.x - c.x) < 14 && Math.abs((runner.y - runner.h / 2) - c.y) < 18) {
+        if (Math.abs(runner.x - c.x) < 14 && Math.abs(runner.y - runner.h / 2 - c.y) < 18) {
           c.collected = true;
           combo++;
           comboTimer = 1.6;
           const mult = 1 + Math.floor(combo / 5);
           bonus += 20 * mult;
-          if (combo >= 5 && combo % 5 === 0) ctx.fx.floatingText(`COMBO x${mult}`, runner.x, runner.y - 50, 0xffd200);
+          if (combo >= 5 && combo % 5 === 0)
+            ctx.fx.floatingText(`COMBO x${mult}`, runner.x, runner.y - 50, 0xffd200);
           ctx.audio.sfx('coin');
         }
       }
       // power-up pickups
       for (let i = powerups.length - 1; i >= 0; i--) {
         const p = powerups[i]!;
-        if (p.x < -20) { powerups.splice(i, 1); continue; }
-        if (Math.abs(runner.x - p.x) < 16 && Math.abs((runner.y - runner.h / 2) - p.y) < 24) {
+        if (p.x < -20) {
+          powerups.splice(i, 1);
+          continue;
+        }
+        if (Math.abs(runner.x - p.x) < 16 && Math.abs(runner.y - runner.h / 2 - p.y) < 24) {
           powerups.splice(i, 1);
           shield = true;
           ctx.hud.toast('SHIELD');

@@ -41,7 +41,13 @@ export const SettingsSchema = z.object({
       /** On-screen control size multiplier (compact ↔ large). */
       touchScale: z.number().min(0.8).max(1.3).default(1),
     })
-    .default({ touchLayout: 'right', tilt: false, haptics: true, touchOpacity: 0.9, touchScale: 1 }),
+    .default({
+      touchLayout: 'right',
+      tilt: false,
+      haptics: true,
+      touchOpacity: 0.9,
+      touchScale: 1,
+    }),
   a11y: z
     .object({
       reducedMotion: z.boolean().default(false),
@@ -53,9 +59,7 @@ export const SettingsSchema = z.object({
   locale: z.enum(['en', 'de']).default('en'),
   /** Desktop key rebindings: action name → KeyboardEvent.code override (empty = defaults). */
   keyBindings: z.record(z.string(), z.string()).default({}),
-  bios: z
-    .object({ showEachLaunch: z.boolean().default(false) })
-    .default({ showEachLaunch: false }),
+  bios: z.object({ showEachLaunch: z.boolean().default(false) }).default({ showEachLaunch: false }),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 
@@ -78,9 +82,7 @@ export type Profile = z.infer<typeof ProfileSchema>;
 export const GameScoresSchema = z.object({
   best: z.number().default(0),
   lastPlayed: z.number().default(0),
-  history: z
-    .array(z.object({ score: z.number(), at: z.number() }))
-    .default([]),
+  history: z.array(z.object({ score: z.number(), at: z.number() })).default([]),
   custom: z.record(z.string(), z.number()).optional(),
 });
 export type GameScores = z.infer<typeof GameScoresSchema>;
@@ -93,9 +95,7 @@ export type Achievements = z.infer<typeof AchievementsSchema>;
 
 /** Local leaderboard per game — top entries with a player-entered name. */
 export const LeaderboardSchema = z.object({
-  entries: z
-    .array(z.object({ name: z.string(), score: z.number(), at: z.number() }))
-    .default([]),
+  entries: z.array(z.object({ name: z.string(), score: z.number(), at: z.number() })).default([]),
 });
 export type Leaderboard = z.infer<typeof LeaderboardSchema>;
 
@@ -113,10 +113,7 @@ export const DailySchema = z.object({
   streak: z.number().int().nonnegative().default(0),
   bestStreak: z.number().int().nonnegative().default(0),
   results: z
-    .record(
-      z.string(),
-      z.object({ gameId: z.string(), score: z.number(), modifier: z.string() }),
-    )
+    .record(z.string(), z.object({ gameId: z.string(), score: z.number(), modifier: z.string() }))
     .default({}),
 });
 export type Daily = z.infer<typeof DailySchema>;

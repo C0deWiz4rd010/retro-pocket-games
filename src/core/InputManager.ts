@@ -80,7 +80,10 @@ export class InputManager extends Emitter<InputEvents> {
     if (a) this.release(a);
   };
 
-  attach(canvas: HTMLElement, toVirtual: (cx: number, cy: number) => { x: number; y: number }): void {
+  attach(
+    canvas: HTMLElement,
+    toVirtual: (cx: number, cy: number) => { x: number; y: number },
+  ): void {
     this.toVirtual = toVirtual;
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);

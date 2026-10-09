@@ -21,11 +21,7 @@ export function renderSettings(): HTMLElement {
 function rows(rerender: () => void): HTMLElement[] {
   const s = settings();
 
-  const seg = <T extends string>(
-    current: T,
-    opts: Opt<T>[],
-    onPick: (v: T) => void,
-  ): HTMLElement =>
+  const seg = <T extends string>(current: T, opts: Opt<T>[], onPick: (v: T) => void): HTMLElement =>
     el(
       'div',
       { class: 'seg' },
@@ -71,7 +67,8 @@ function rows(rerender: () => void): HTMLElement[] {
 
   const patchScreenFx = (p: Partial<Settings['screenFx']>) =>
     updateSettings({ screenFx: { ...s.screenFx, ...p } });
-  const patchAudio = (p: Partial<Settings['audio']>) => updateSettings({ audio: { ...s.audio, ...p } });
+  const patchAudio = (p: Partial<Settings['audio']>) =>
+    updateSettings({ audio: { ...s.audio, ...p } });
   const patchA11y = (p: Partial<Settings['a11y']>) => updateSettings({ a11y: { ...s.a11y, ...p } });
   const patchControls = (p: Partial<Settings['controls']>) =>
     updateSettings({ controls: { ...s.controls, ...p } });
@@ -87,15 +84,19 @@ function rows(rerender: () => void): HTMLElement[] {
     'div',
     { class: 'theme-swatches' },
     (['cyberpunk', 'gameboy', 'c64', 'amber'] as const).map((th) =>
-      el('button', {
-        class: `theme-swatch${s.theme === th ? ' on' : ''}`,
-        'aria-label': th,
-        onClick: () => {
-          audio.sfx('blip');
-          updateSettings({ theme: th });
-          rerender();
+      el(
+        'button',
+        {
+          class: `theme-swatch${s.theme === th ? ' on' : ''}`,
+          'aria-label': th,
+          onClick: () => {
+            audio.sfx('blip');
+            updateSettings({ theme: th });
+            rerender();
+          },
         },
-      }, THEME_COLORS[th]!.map((c) => el('span', { style: `background:${c}` }))),
+        THEME_COLORS[th]!.map((c) => el('span', { style: `background:${c}` })),
+      ),
     ),
   );
 
@@ -155,7 +156,10 @@ function rows(rerender: () => void): HTMLElement[] {
         (mode) => patchScreenFx({ mode }),
       ),
     ),
-    row(t('settings.crtIntensity'), slider(s.screenFx.intensity, (intensity) => patchScreenFx({ intensity }))),
+    row(
+      t('settings.crtIntensity'),
+      slider(s.screenFx.intensity, (intensity) => patchScreenFx({ intensity })),
+    ),
     row(
       t('settings.language'),
       seg(
@@ -172,21 +176,37 @@ function rows(rerender: () => void): HTMLElement[] {
     ),
 
     el('div', { class: 'section-title' }, [t('settings.audio')]),
-    row(t('settings.volume'), slider(s.audio.master, (master) => patchAudio({ master }))),
-    row(t('settings.sfx'), toggle(s.audio.sfx, (sfx) => patchAudio({ sfx }))),
-    row(t('settings.music'), toggle(s.audio.music, (music) => patchAudio({ music }))),
-    row(t('settings.muteOnBlur'), toggle(s.audio.muteOnBlur, (muteOnBlur) => patchAudio({ muteOnBlur }))),
+    row(
+      t('settings.volume'),
+      slider(s.audio.master, (master) => patchAudio({ master })),
+    ),
+    row(
+      t('settings.sfx'),
+      toggle(s.audio.sfx, (sfx) => patchAudio({ sfx })),
+    ),
+    row(
+      t('settings.music'),
+      toggle(s.audio.music, (music) => patchAudio({ music })),
+    ),
+    row(
+      t('settings.muteOnBlur'),
+      toggle(s.audio.muteOnBlur, (muteOnBlur) => patchAudio({ muteOnBlur })),
+    ),
 
     el('div', { class: 'section-title' }, [t('settings.controls')]),
     row(
       t('settings.haptics'),
       el('div', { style: 'display:flex;gap:8px;align-items:center' }, [
         s.controls.haptics
-          ? el('button', {
-              class: 'btn btn--ghost',
-              style: 'min-height:36px;padding:0 12px',
-              onClick: () => haptics.pattern([0, 20, 40, 30]),
-            }, [t('settings.test')])
+          ? el(
+              'button',
+              {
+                class: 'btn btn--ghost',
+                style: 'min-height:36px;padding:0 12px',
+                onClick: () => haptics.pattern([0, 20, 40, 30]),
+              },
+              [t('settings.test')],
+            )
           : '',
         toggle(s.controls.haptics, (h) => patchControls({ haptics: h })),
       ]),
@@ -224,34 +244,51 @@ function rows(rerender: () => void): HTMLElement[] {
     el('div', { class: 'section-title' }, [t('settings.keyBindings')]),
     ...REBINDABLE.map(({ action, label, def }) => {
       const code = s.keyBindings[action] ?? def;
-      const btn = el('button', {
-        class: 'btn btn--ghost',
-        style: 'min-width:74px',
-        onClick: () => {
-          btn.textContent = `· ${t('settings.pressKey')} ·`;
-          const onKey = (e: KeyboardEvent): void => {
-            e.preventDefault();
-            window.removeEventListener('keydown', onKey, true);
-            if (e.code !== 'Escape') {
-              updateSettings({ keyBindings: { ...settings().keyBindings, [action]: e.code } });
-            }
-            rerender();
-          };
-          window.addEventListener('keydown', onKey, true);
+      const btn = el(
+        'button',
+        {
+          class: 'btn btn--ghost',
+          style: 'min-width:74px',
+          onClick: () => {
+            btn.textContent = `· ${t('settings.pressKey')} ·`;
+            const onKey = (e: KeyboardEvent): void => {
+              e.preventDefault();
+              window.removeEventListener('keydown', onKey, true);
+              if (e.code !== 'Escape') {
+                updateSettings({ keyBindings: { ...settings().keyBindings, [action]: e.code } });
+              }
+              rerender();
+            };
+            window.addEventListener('keydown', onKey, true);
+          },
         },
-      }, [codeLabel(code)]);
+        [codeLabel(code)],
+      );
       return row(label, btn);
     }),
     el('div', { class: 'panel__row', style: 'padding:2px 0 6px' }, [
-      el('button', {
-        class: 'btn btn--ghost btn--block',
-        onClick: () => { updateSettings({ keyBindings: {} }); rerender(); },
-      }, [t('settings.resetKeys')]),
+      el(
+        'button',
+        {
+          class: 'btn btn--ghost btn--block',
+          onClick: () => {
+            updateSettings({ keyBindings: {} });
+            rerender();
+          },
+        },
+        [t('settings.resetKeys')],
+      ),
     ]),
 
     el('div', { class: 'section-title' }, [t('settings.a11y')]),
-    row(t('settings.reducedMotion'), toggle(s.a11y.reducedMotion, (reducedMotion) => patchA11y({ reducedMotion }))),
-    row(t('settings.highContrast'), toggle(s.a11y.highContrast, (highContrast) => patchA11y({ highContrast }))),
+    row(
+      t('settings.reducedMotion'),
+      toggle(s.a11y.reducedMotion, (reducedMotion) => patchA11y({ reducedMotion })),
+    ),
+    row(
+      t('settings.highContrast'),
+      toggle(s.a11y.highContrast, (highContrast) => patchA11y({ highContrast })),
+    ),
     row(
       t('settings.colorblind'),
       seg(
@@ -265,22 +302,35 @@ function rows(rerender: () => void): HTMLElement[] {
         (colorblind) => patchA11y({ colorblind }),
       ),
     ),
-    row(t('settings.largeTargets'), toggle(s.a11y.largeTargets, (largeTargets) => patchA11y({ largeTargets }))),
+    row(
+      t('settings.largeTargets'),
+      toggle(s.a11y.largeTargets, (largeTargets) => patchA11y({ largeTargets })),
+    ),
 
     el('div', { class: 'section-title' }, [t('settings.data')]),
     el('div', { class: 'panel__row', style: 'padding:8px 0 8px' }, [
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => void doExport() }, [`⬇ ${t('settings.export')}`]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => doImport() }, [`⬆ ${t('settings.import')}`]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => void doExport() }, [
+        `⬇ ${t('settings.export')}`,
+      ]),
+      el('button', { class: 'btn btn--ghost btn--block', onClick: () => doImport() }, [
+        `⬆ ${t('settings.import')}`,
+      ]),
     ]),
     el('div', { class: 'panel__row', style: 'padding:0 0 20px' }, [
-      el('button', {
-        class: 'btn btn--danger btn--block',
-        onClick: () => confirmReset(),
-      }, [`⟲ ${t('settings.reset')}`]),
+      el(
+        'button',
+        {
+          class: 'btn btn--danger btn--block',
+          onClick: () => confirmReset(),
+        },
+        [`⟲ ${t('settings.reset')}`],
+      ),
     ]),
-    el('div', { style: 'text-align:center;color:var(--text-muted);font-size:11px;padding-bottom:20px' }, [
-      `${t('settings.footer')} · v${import.meta.env.VITE_APP_VERSION ?? '0.0.0'}`,
-    ]),
+    el(
+      'div',
+      { style: 'text-align:center;color:var(--text-muted);font-size:11px;padding-bottom:20px' },
+      [`${t('settings.footer')} · v${import.meta.env.VITE_APP_VERSION ?? '0.0.0'}`],
+    ),
   ];
 }
 
@@ -296,7 +346,12 @@ const REBINDABLE: { action: Action; label: string; def: string }[] = [
 
 /** Friendly label for a KeyboardEvent.code (e.g. KeyZ → Z, ArrowUp → ↑). */
 function codeLabel(code: string): string {
-  const arrows: Record<string, string> = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' };
+  const arrows: Record<string, string> = {
+    ArrowUp: '↑',
+    ArrowDown: '↓',
+    ArrowLeft: '←',
+    ArrowRight: '→',
+  };
   if (arrows[code]) return arrows[code]!;
   if (code === 'Space') return 'Space';
   if (code.startsWith('Key')) return code.slice(3);
@@ -317,7 +372,11 @@ async function doExport(): Promise<void> {
 
 /** Restore progress from a previously exported JSON backup, then reload. */
 function doImport(): void {
-  const input = el('input', { type: 'file', accept: 'application/json', style: 'display:none' }) as HTMLInputElement;
+  const input = el('input', {
+    type: 'file',
+    accept: 'application/json',
+    style: 'display:none',
+  }) as HTMLInputElement;
   input.addEventListener('change', () => {
     const file = input.files?.[0];
     if (!file) return;
@@ -325,11 +384,13 @@ function doImport(): void {
     reader.onload = () => {
       try {
         const data = JSON.parse(String(reader.result));
-        void importAll(data).then((n) => {
-          audio.sfx('coin');
-          window.alert(t('settings.importDone', { n }));
-          location.reload();
-        }).catch(() => window.alert(t('settings.importFail')));
+        void importAll(data)
+          .then((n) => {
+            audio.sfx('coin');
+            window.alert(t('settings.importDone', { n }));
+            location.reload();
+          })
+          .catch(() => window.alert(t('settings.importFail')));
       } catch {
         window.alert(t('settings.importFail'));
       }
@@ -348,10 +409,14 @@ function confirmReset(): void {
   const panel = el('div', { class: 'panel', role: 'dialog', 'aria-modal': 'true' }, [
     el('div', { class: 'panel__title' }, ['⚠']),
     el('div', { style: 'font-size:15px' }, [t('settings.resetConfirm')]),
-    el('button', {
-      class: 'btn btn--danger btn--block',
-      onClick: () => void wipeAll().then(() => location.reload()),
-    }, [t('settings.resetYes')]),
+    el(
+      'button',
+      {
+        class: 'btn btn--danger btn--block',
+        onClick: () => void wipeAll().then(() => location.reload()),
+      },
+      [t('settings.resetYes')],
+    ),
     el('button', { class: 'btn btn--ghost btn--block', onClick: () => overlay.remove() }, [
       t('settings.cancel'),
     ]),

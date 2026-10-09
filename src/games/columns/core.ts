@@ -57,7 +57,10 @@ export function at(s: ColumnsState, c: number, r: number): number {
   return s.board[idx(s.cols, c, r)] ?? EMPTY;
 }
 
-export function pieceCells(s: ColumnsState, piece = s.piece): { c: number; r: number; value: number }[] {
+export function pieceCells(
+  s: ColumnsState,
+  piece = s.piece,
+): { c: number; r: number; value: number }[] {
   return piece.cells.map((value, i) => ({ c: piece.col, r: piece.row + i, value }));
 }
 

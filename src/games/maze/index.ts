@@ -65,10 +65,11 @@ export default function createGame(ctx: GameContext): Game {
 
   const openCells = (): number[] => {
     const out: number[] = [];
-    for (let r = 1; r < rows - 1; r++) for (let c = 1; c < cols - 1; c++) {
-      const i = wi(c, r);
-      if (!wall[i] && !(c === 1 && r === 1) && !(c === exit.c && r === exit.r)) out.push(i);
-    }
+    for (let r = 1; r < rows - 1; r++)
+      for (let c = 1; c < cols - 1; c++) {
+        const i = wi(c, r);
+        if (!wall[i] && !(c === 1 && r === 1) && !(c === exit.c && r === exit.r)) out.push(i);
+      }
     return out;
   };
   const placeItems = (): void => {
@@ -90,18 +91,30 @@ export default function createGame(ctx: GameContext): Game {
     while (q.length) {
       const i = q.shift()!;
       if (i === goal) break;
-      const c = i % cols, r = Math.floor(i / cols);
-      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-        const nc = c + dx!, nr = r + dy!;
+      const c = i % cols,
+        r = Math.floor(i / cols);
+      for (const [dx, dy] of [
+        [0, -1],
+        [0, 1],
+        [-1, 0],
+        [1, 0],
+      ]) {
+        const nc = c + dx!,
+          nr = r + dy!;
         if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
         const j = wi(nc, nr);
         if (wall[j] || seen.has(j)) continue;
-        seen.add(j); prev.set(j, i); q.push(j);
+        seen.add(j);
+        prev.set(j, i);
+        q.push(j);
       }
     }
     const path: number[] = [];
     let cur = goal;
-    while (cur !== start && prev.has(cur)) { path.push(cur); cur = prev.get(cur)!; }
+    while (cur !== start && prev.has(cur)) {
+      path.push(cur);
+      cur = prev.get(cur)!;
+    }
     return path;
   };
 
@@ -119,8 +132,18 @@ export default function createGame(ctx: GameContext): Game {
     player.r = nr;
     ctx.audio.sfx('blip');
     const pi = wi(nc, nr);
-    if (coins.delete(pi)) { totalScore += 50; ctx.hud.setScore(totalScore); ctx.audio.sfx('coin'); }
-    if (pi === key) { key = -1; hasKey = true; ctx.hud.toast('KEY!'); ctx.audio.sfx('powerup'); drawMaze(); }
+    if (coins.delete(pi)) {
+      totalScore += 50;
+      ctx.hud.setScore(totalScore);
+      ctx.audio.sfx('coin');
+    }
+    if (pi === key) {
+      key = -1;
+      hasKey = true;
+      ctx.hud.toast('KEY!');
+      ctx.audio.sfx('powerup');
+      drawMaze();
+    }
     if (player.c === exit.c && player.r === exit.r && hasKey) {
       const bonus = Math.ceil(timeLeft) * 10 + level * 100;
       totalScore += bonus;
@@ -152,7 +175,10 @@ export default function createGame(ctx: GameContext): Game {
     ctx.hud.toast(`HINT (${hints})`);
     draw();
   };
-  const offDown = ctx.input.on('down', (a) => { if (a === 'a' || a === 'b' || a === 'start') useHint(); else move(a); });
+  const offDown = ctx.input.on('down', (a) => {
+    if (a === 'a' || a === 'b' || a === 'start') useHint();
+    else move(a);
+  });
   const offSwipe = ctx.input.on('swipe', move);
 
   const drawMaze = (): void => {
@@ -160,23 +186,40 @@ export default function createGame(ctx: GameContext): Game {
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < cols; c++)
         if (wall[wi(c, r)]) mazeG.rect(c * cell, r * cell, cell, cell).fill({ color: 0x2b2b40 });
-    mazeG.roundRect(exit.c * cell + 2, exit.r * cell + 2, cell - 4, cell - 4, 3).fill({ color: hasKey ? 0x3ddc84 : 0x5a5a3a });
+    mazeG
+      .roundRect(exit.c * cell + 2, exit.r * cell + 2, cell - 4, cell - 4, 3)
+      .fill({ color: hasKey ? 0x3ddc84 : 0x5a5a3a });
   };
   drawMaze();
 
   const draw = (): void => {
     g.clear();
     // hint path
-    if (flashT > 0) for (const i of pathFlash) g.rect((i % cols) * cell + cell * 0.3, Math.floor(i / cols) * cell + cell * 0.3, cell * 0.4, cell * 0.4).fill({ color: 0xffd200, alpha: 0.35 + Math.sin(flashT * 14) * 0.2 });
+    if (flashT > 0)
+      for (const i of pathFlash)
+        g.rect(
+          (i % cols) * cell + cell * 0.3,
+          Math.floor(i / cols) * cell + cell * 0.3,
+          cell * 0.4,
+          cell * 0.4,
+        ).fill({ color: 0xffd200, alpha: 0.35 + Math.sin(flashT * 14) * 0.2 });
     // coins
-    for (const i of coins) g.circle((i % cols) * cell + cell / 2, Math.floor(i / cols) * cell + cell / 2, cell * 0.18).fill({ color: 0xffd200 });
+    for (const i of coins)
+      g.circle(
+        (i % cols) * cell + cell / 2,
+        Math.floor(i / cols) * cell + cell / 2,
+        cell * 0.18,
+      ).fill({ color: 0xffd200 });
     // key
     if (key >= 0) {
-      const kx = (key % cols) * cell + cell / 2, ky = Math.floor(key / cols) * cell + cell / 2;
+      const kx = (key % cols) * cell + cell / 2,
+        ky = Math.floor(key / cols) * cell + cell / 2;
       g.circle(kx, ky - cell * 0.1, cell * 0.14).stroke({ width: 2, color: 0xffd200 });
       g.rect(kx - 1, ky, 2, cell * 0.22).fill({ color: 0xffd200 });
     }
-    g.circle(player.c * cell + cell / 2, player.r * cell + cell / 2, cell * 0.34).fill({ color: 0x00f7ff });
+    g.circle(player.c * cell + cell / 2, player.r * cell + cell / 2, cell * 0.34).fill({
+      color: 0x00f7ff,
+    });
   };
   draw();
 
@@ -184,7 +227,11 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       timeLeft -= dt;
-      if (flashT > 0) { flashT -= dt; if (flashT <= 0) pathFlash = []; draw(); }
+      if (flashT > 0) {
+        flashT -= dt;
+        if (flashT <= 0) pathFlash = [];
+        draw();
+      }
       ctx.hud.setLabel(`LV${level} ${Math.ceil(timeLeft)}s${hasKey ? ' 🔑' : ''}`);
       if (timeLeft <= 0) {
         over = true;

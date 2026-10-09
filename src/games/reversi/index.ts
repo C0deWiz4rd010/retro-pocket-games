@@ -3,9 +3,14 @@ import type { Game, GameContext } from '@core/types';
 
 const N = 8;
 const DIRS = [
-  [-1, -1], [0, -1], [1, -1],
-  [-1, 0], [1, 0],
-  [-1, 1], [0, 1], [1, 1],
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+  [-1, 0],
+  [1, 0],
+  [-1, 1],
+  [0, 1],
+  [1, 1],
 ];
 
 export default function createGame(ctx: GameContext): Game {
@@ -38,18 +43,16 @@ export default function createGame(ctx: GameContext): Game {
 
   // Feature: positional weights for a much stronger CPU (corners good, X/C squares bad)
   const WEIGHTS = [
-    120, -20, 20, 5, 5, 20, -20, 120,
-    -20, -40, -5, -5, -5, -5, -40, -20,
-    20, -5, 15, 3, 3, 15, -5, 20,
-    5, -5, 3, 3, 3, 3, -5, 5,
-    5, -5, 3, 3, 3, 3, -5, 5,
-    20, -5, 15, 3, 3, 15, -5, 20,
-    -20, -40, -5, -5, -5, -5, -40, -20,
-    120, -20, 20, 5, 5, 20, -20, 120,
+    120, -20, 20, 5, 5, 20, -20, 120, -20, -40, -5, -5, -5, -5, -40, -20, 20, -5, 15, 3, 3, 15, -5,
+    20, 5, -5, 3, 3, 3, 3, -5, 5, 5, -5, 3, 3, 3, 3, -5, 5, 20, -5, 15, 3, 3, 15, -5, 20, -20, -40,
+    -5, -5, -5, -5, -40, -20, 120, -20, 20, 5, 5, 20, -20, 120,
   ];
 
   ctx.hud.setScore(2);
-  const setLabel = (): void => { const { p, cpu } = counts(); ctx.hud.setLabel(`YOU ${p} · CPU ${cpu} · 💡${hints}`); };
+  const setLabel = (): void => {
+    const { p, cpu } = counts();
+    ctx.hud.setLabel(`YOU ${p} · CPU ${cpu} · 💡${hints}`);
+  };
 
   const flips = (c: number, r: number, who: number): number[][] => {
     if (at(c, r) !== 0) return [];
@@ -64,14 +67,16 @@ export default function createGame(ctx: GameContext): Game {
         cc += dx!;
         rr += dy!;
       }
-      if (line.length && cc >= 0 && cc < N && rr >= 0 && rr < N && at(cc, rr) === who) out.push(...line);
+      if (line.length && cc >= 0 && cc < N && rr >= 0 && rr < N && at(cc, rr) === who)
+        out.push(...line);
     }
     return out;
   };
 
   const legal = (who: number): number[][] => {
     const moves: number[][] = [];
-    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (flips(c, r, who).length) moves.push([c, r]);
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) if (flips(c, r, who).length) moves.push([c, r]);
     return moves;
   };
 
@@ -142,10 +147,14 @@ export default function createGame(ctx: GameContext): Game {
     if (over || hints <= 0) return;
     const moves = legal(1);
     if (!moves.length) return;
-    let best = moves[0]!, bestScore = -Infinity;
+    let best = moves[0]!,
+      bestScore = -Infinity;
     for (const mv of moves) {
       const s = WEIGHTS[mv[1]! * N + mv[0]!]! + flips(mv[0]!, mv[1]!, 1).length;
-      if (s > bestScore) { bestScore = s; best = mv; }
+      if (s > bestScore) {
+        bestScore = s;
+        best = mv;
+      }
     }
     hints--;
     flashCell = best[1]! * N + best[0]!;
@@ -154,7 +163,9 @@ export default function createGame(ctx: GameContext): Game {
     setLabel();
     draw();
   };
-  const offDown = ctx.input.on('down', (a) => { if (a === 'a' || a === 'b' || a === 'start') useHint(); });
+  const offDown = ctx.input.on('down', (a) => {
+    if (a === 'a' || a === 'b' || a === 'start') useHint();
+  });
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
     if (over) return;
@@ -179,14 +190,27 @@ export default function createGame(ctx: GameContext): Game {
       for (let c = 0; c < N; c++) {
         g.rect(ox + c * cell + 1, oy + r * cell + 1, cell - 2, cell - 2).fill({ color: 0x1d6e44 });
         const i = r * N + c;
-        if (i === lastMove) g.rect(ox + c * cell + 1, oy + r * cell + 1, cell - 2, cell - 2).fill({ color: 0x3a8f5e });
+        if (i === lastMove)
+          g.rect(ox + c * cell + 1, oy + r * cell + 1, cell - 2, cell - 2).fill({
+            color: 0x3a8f5e,
+          });
         const v = at(c, r);
-        if (v) g.circle(ox + c * cell + cell / 2, oy + r * cell + cell / 2, cell * 0.4).fill({ color: v === 1 ? 0x101018 : 0xffffff });
-        if (i === flashCell && flashT > 0) g.circle(ox + c * cell + cell / 2, oy + r * cell + cell / 2, cell * 0.42).stroke({ width: 4, color: 0x00f7ff, alpha: 0.5 + Math.sin(flashT * 16) * 0.4 });
+        if (v)
+          g.circle(ox + c * cell + cell / 2, oy + r * cell + cell / 2, cell * 0.4).fill({
+            color: v === 1 ? 0x101018 : 0xffffff,
+          });
+        if (i === flashCell && flashT > 0)
+          g.circle(ox + c * cell + cell / 2, oy + r * cell + cell / 2, cell * 0.42).stroke({
+            width: 4,
+            color: 0x00f7ff,
+            alpha: 0.5 + Math.sin(flashT * 16) * 0.4,
+          });
       }
     if (!over)
       for (const mv of legal(1))
-        g.circle(ox + mv[0]! * cell + cell / 2, oy + mv[1]! * cell + cell / 2, cell * 0.1).fill({ color: 0x9bffce });
+        g.circle(ox + mv[0]! * cell + cell / 2, oy + mv[1]! * cell + cell / 2, cell * 0.1).fill({
+          color: 0x9bffce,
+        });
   }
   setLabel();
   draw();

@@ -12,8 +12,22 @@ const BLUE = 0x38bdf8;
 const GREEN = 0x3ddc84;
 
 type Kind = 'red' | 'blue' | 'shield';
-interface Particle { x: number; y: number; vx: number; vy: number; kind: Kind; alive: boolean }
-interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  kind: Kind;
+  alive: boolean;
+}
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -42,7 +56,8 @@ export default function createGame(ctx: GameContext): Game {
 
   ctx.hud.setScore(0);
   ctx.hud.setLives(lives);
-  const setLabel = (): void => ctx.hud.setLabel(`${polarity === 'red' ? '🔴' : '🔵'} ${shield ? '🛡 ' : ''}ZONE ${zone}`);
+  const setLabel = (): void =>
+    ctx.hud.setLabel(`${polarity === 'red' ? '🔴' : '🔵'} ${shield ? '🛡 ' : ''}ZONE ${zone}`);
   setLabel();
 
   const flip = (): void => {
@@ -51,7 +66,8 @@ export default function createGame(ctx: GameContext): Game {
     setLabel();
   };
   const offDown = ctx.input.on('down', (a) => {
-    if (a === 'a' || a === 'b' || a === 'up' || a === 'left' || a === 'right' || a === 'down') flip();
+    if (a === 'a' || a === 'b' || a === 'up' || a === 'left' || a === 'right' || a === 'down')
+      flip();
   });
   const offTap = ctx.input.on('tap', flip);
 
@@ -72,7 +88,14 @@ export default function createGame(ctx: GameContext): Game {
     const aim = Math.atan2(cy - y, cx - x);
     const roll = ctx.rng.next();
     const kind: Kind = roll > 0.92 && !shield ? 'shield' : ctx.rng.next() < 0.5 ? 'red' : 'blue';
-    particles.push({ x, y, vx: Math.cos(aim) * speed, vy: Math.sin(aim) * speed, kind, alive: true });
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(aim) * speed,
+      vy: Math.sin(aim) * speed,
+      kind,
+      alive: true,
+    });
   };
 
   const colorOf = (k: Kind): number => (k === 'red' ? RED : k === 'blue' ? BLUE : GREEN);
@@ -81,20 +104,36 @@ export default function createGame(ctx: GameContext): Game {
     g.clear();
     g.rect(0, 0, W, H).fill({ color: 0x05060f });
     // faint orbit rings
-    for (let r = ringR + 40; r < Math.max(W, H); r += 70) g.circle(cx, cy, r).stroke({ width: 1, color: 0x1b2440, alpha: 0.5 });
+    for (let r = ringR + 40; r < Math.max(W, H); r += 70)
+      g.circle(cx, cy, r).stroke({ width: 1, color: 0x1b2440, alpha: 0.5 });
     // sparks
-    for (const s of sparks) g.circle(s.x, s.y, 3 * Math.min(1, s.life * 2)).fill({ color: s.color, alpha: Math.min(1, s.life * 2) });
+    for (const s of sparks)
+      g.circle(s.x, s.y, 3 * Math.min(1, s.life * 2)).fill({
+        color: s.color,
+        alpha: Math.min(1, s.life * 2),
+      });
     // particles + incoming charge trails
     for (const p of particles) {
       const col = colorOf(p.kind);
-      g.moveTo(p.x - p.vx * 0.08, p.y - p.vy * 0.08).lineTo(p.x, p.y).stroke({ width: 2, color: col, alpha: 0.4 });
+      g.moveTo(p.x - p.vx * 0.08, p.y - p.vy * 0.08)
+        .lineTo(p.x, p.y)
+        .stroke({ width: 2, color: col, alpha: 0.4 });
       g.circle(p.x, p.y, p.kind === 'shield' ? 9 : 8).fill({ color: col });
       if (p.kind === 'shield') g.circle(p.x, p.y, 5).fill({ color: 0x07160d });
     }
     // shield aura
-    if (shield) g.circle(cx, cy, ringR + 6).stroke({ width: 2, color: GREEN, alpha: 0.5 + Math.sin(t * 8) * 0.2 });
+    if (shield)
+      g.circle(cx, cy, ringR + 6).stroke({
+        width: 2,
+        color: GREEN,
+        alpha: 0.5 + Math.sin(t * 8) * 0.2,
+      });
     // ring (current polarity colour) + core
-    g.circle(cx, cy, ringR).stroke({ width: 4, color: polarity === 'red' ? RED : BLUE, alpha: 0.85 });
+    g.circle(cx, cy, ringR).stroke({
+      width: 4,
+      color: polarity === 'red' ? RED : BLUE,
+      alpha: 0.85,
+    });
     g.circle(cx, cy, coreR).fill({ color: polarity === 'red' ? RED : BLUE });
     g.circle(cx, cy, coreR * 0.5).fill({ color: 0xffffff, alpha: 0.25 });
   };
@@ -105,10 +144,18 @@ export default function createGame(ctx: GameContext): Game {
       t += dt;
       score += Math.floor(dt * 12 * zone);
       const nz = 1 + Math.floor(score / 1500);
-      if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); ctx.audio.sfx('powerup'); setLabel(); }
+      if (nz > zone) {
+        zone = nz;
+        ctx.hud.toast(`ZONE ${zone} · x${zone}`);
+        ctx.audio.sfx('powerup');
+        setLabel();
+      }
 
       spawnAcc += dt;
-      if (spawnAcc >= Math.max(0.45, 1.1 - zone * 0.06)) { spawnAcc = 0; spawn(); }
+      if (spawnAcc >= Math.max(0.45, 1.1 - zone * 0.06)) {
+        spawnAcc = 0;
+        spawn();
+      }
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
@@ -128,7 +175,8 @@ export default function createGame(ctx: GameContext): Game {
             combo++;
             const mult = 1 + Math.floor(combo / 5);
             score += 60 * mult;
-            if (combo >= 5 && combo % 5 === 0) ctx.fx.floatingText(`COMBO x${mult}`, p.x, p.y, 0xffd200);
+            if (combo >= 5 && combo % 5 === 0)
+              ctx.fx.floatingText(`COMBO x${mult}`, p.x, p.y, 0xffd200);
             ctx.audio.sfx('coin');
             burst(cx + (p.x - cx) * 0.6, cy + (p.y - cy) * 0.6, colorOf(p.kind), 8);
           } else {
@@ -146,7 +194,12 @@ export default function createGame(ctx: GameContext): Game {
               ctx.audio.sfx('hit');
               ctx.fx.screenShake(7, 0.16);
               burst(cx, cy, colorOf(p.kind), 16);
-              if (lives <= 0) { over = true; ctx.audio.sfx('explosion'); ctx.gameOver(score, { zone }); return; }
+              if (lives <= 0) {
+                over = true;
+                ctx.audio.sfx('explosion');
+                ctx.gameOver(score, { zone });
+                return;
+              }
             }
           }
         }
@@ -154,7 +207,9 @@ export default function createGame(ctx: GameContext): Game {
 
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i]!;
-        s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.life -= dt;
         if (s.life <= 0) sparks.splice(i, 1);
       }
 

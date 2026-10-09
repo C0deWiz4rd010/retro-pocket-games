@@ -41,7 +41,8 @@ export default function createGame(ctx: GameContext): Game {
   const gi = (c: number, r: number): number => r * cols + c;
   for (let r = 0; r < rows; r++)
     for (let c = 0; c < cols; c++) {
-      if (r === 0 || c === 0 || r === rows - 1 || c === cols - 1 || (r % 2 === 0 && c % 2 === 0)) grid[gi(c, r)] = 1;
+      if (r === 0 || c === 0 || r === rows - 1 || c === cols - 1 || (r % 2 === 0 && c % 2 === 0))
+        grid[gi(c, r)] = 1;
       else if (ctx.rng.next() < 0.45 && !(c <= 2 && r <= 2)) grid[gi(c, r)] = 2;
     }
 
@@ -49,7 +50,8 @@ export default function createGame(ctx: GameContext): Game {
   let bombs: Bomb[] = [];
   let blasts: { c: number; r: number; t: number }[] = [];
   let enemies: Enemy[] = [];
-  const particles: { x: number; y: number; vx: number; vy: number; life: number; color: number }[] = [];
+  const particles: { x: number; y: number; vx: number; vy: number; life: number; color: number }[] =
+    [];
   let range = 1;
   let maxBombs = 1;
   let pierce = false; // Feature: blasts pass through soft blocks
@@ -65,7 +67,8 @@ export default function createGame(ctx: GameContext): Game {
 
   const placeExit = (): void => {
     const blocks: { c: number; r: number }[] = [];
-    for (let r = 1; r < rows - 1; r++) for (let c = 1; c < cols - 1; c++) if (grid[gi(c, r)] === 2) blocks.push({ c, r });
+    for (let r = 1; r < rows - 1; r++)
+      for (let c = 1; c < cols - 1; c++) if (grid[gi(c, r)] === 2) blocks.push({ c, r });
     exit = blocks.length ? ctx.rng.pick(blocks) : null;
     exitRevealed = false;
   };
@@ -80,7 +83,8 @@ export default function createGame(ctx: GameContext): Game {
     }
   };
 
-  const setLabel = (): void => ctx.hud.setLabel(`L${level}${pierce ? ' ⊕' : ''}${shield ? ' 🛡' : ''}`);
+  const setLabel = (): void =>
+    ctx.hud.setLabel(`L${level}${pierce ? ' ⊕' : ''}${shield ? ' 🛡' : ''}`);
 
   const spawnEnemies = (n: number): void => {
     enemies = [];
@@ -156,7 +160,8 @@ export default function createGame(ctx: GameContext): Game {
     for (const p of cells) burst(p.c, p.r, 0xff7b00, 4);
     ctx.audio.sfx('explosion');
     // chain other bombs
-    for (const other of bombs) if (cells.some((p) => p.c === other.c && p.r === other.r)) other.t = 0;
+    for (const other of bombs)
+      if (cells.some((p) => p.c === other.c && p.r === other.r)) other.t = 0;
     // kill enemies / player in blast
     enemies = enemies.filter((e) => {
       if (cells.some((p) => p.c === e.c && p.r === e.r)) {
@@ -202,11 +207,13 @@ export default function createGame(ctx: GameContext): Game {
         const x = c * cell;
         const y = r * cell;
         if (v === 1) g.rect(x, y, cell, cell).fill({ color: 0x4a4a5a });
-        else if (v === 2) g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: 0x8a5a2b });
+        else if (v === 2)
+          g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: 0x8a5a2b });
         else g.rect(x, y, cell, cell).fill({ color: 0x14141f });
         if (v === 3) g.circle(x + cell / 2, y + cell / 2, cell * 0.2).fill({ color: 0xff7b00 });
         if (v === 4) g.circle(x + cell / 2, y + cell / 2, cell * 0.2).fill({ color: 0x00f7ff });
-        if (v === 5) g.star(x + cell / 2, y + cell / 2, 4, cell * 0.22, cell * 0.1).fill({ color: 0xc084fc });
+        if (v === 5)
+          g.star(x + cell / 2, y + cell / 2, 4, cell * 0.22, cell * 0.1).fill({ color: 0xc084fc });
         if (v === 6) g.circle(x + cell / 2, y + cell / 2, cell * 0.2).fill({ color: 0x3ddc84 });
       }
     // exit portal (visible once its block is destroyed)
@@ -218,17 +225,36 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(ex, ey, rr).stroke({ width: 3, color: ready ? 0x3ddc84 : 0x9aa0ff, alpha: 0.9 });
       g.circle(ex, ey, rr * 0.5).fill({ color: ready ? 0x3ddc84 : 0x4a4a7a, alpha: 0.7 });
     }
-    blasts.forEach((b) => g.rect(b.c * cell + 2, b.r * cell + 2, cell - 4, cell - 4).fill({ color: 0xff7b00, alpha: 0.7 }));
+    blasts.forEach((b) =>
+      g
+        .rect(b.c * cell + 2, b.r * cell + 2, cell - 4, cell - 4)
+        .fill({ color: 0xff7b00, alpha: 0.7 }),
+    );
     bombs.forEach((b) => {
       const sc = 0.3 + 0.06 * Math.sin(pulse * 12) * (b.t < 1 ? 2 : 1);
       g.circle(b.c * cell + cell / 2, b.r * cell + cell / 2, cell * sc).fill({ color: 0x101018 });
-      g.circle(b.c * cell + cell / 2, b.r * cell + cell / 2, cell * sc * 0.4).fill({ color: b.t < 0.6 ? 0xff4d4d : 0xff7b00 });
+      g.circle(b.c * cell + cell / 2, b.r * cell + cell / 2, cell * sc * 0.4).fill({
+        color: b.t < 0.6 ? 0xff4d4d : 0xff7b00,
+      });
     });
-    enemies.forEach((e) => g.roundRect(e.c * cell + 3, e.r * cell + 3, cell - 6, cell - 6, 4).fill({ color: 0xff4d4d }));
-    g.roundRect(player.c * cell + 3, player.r * cell + 3, cell - 6, cell - 6, 5).fill({ color: shield ? 0x9bffce : 0x3ddc84 });
-    if (shield) g.circle(player.c * cell + cell / 2, player.r * cell + cell / 2, cell * 0.5).stroke({ width: 2, color: 0x00f7ff, alpha: 0.6 });
+    enemies.forEach((e) =>
+      g.roundRect(e.c * cell + 3, e.r * cell + 3, cell - 6, cell - 6, 4).fill({ color: 0xff4d4d }),
+    );
+    g.roundRect(player.c * cell + 3, player.r * cell + 3, cell - 6, cell - 6, 5).fill({
+      color: shield ? 0x9bffce : 0x3ddc84,
+    });
+    if (shield)
+      g.circle(player.c * cell + cell / 2, player.r * cell + cell / 2, cell * 0.5).stroke({
+        width: 2,
+        color: 0x00f7ff,
+        alpha: 0.6,
+      });
     // particles
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
   };
 
   return {
@@ -239,7 +265,9 @@ export default function createGame(ctx: GameContext): Game {
       // particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
       // pick up powerups
@@ -269,7 +297,13 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       // Feature: reach the revealed exit (after clearing enemies) to advance
-      if (exit && exitRevealed && enemies.length === 0 && player.c === exit.c && player.r === exit.r) {
+      if (
+        exit &&
+        exitRevealed &&
+        enemies.length === 0 &&
+        player.c === exit.c &&
+        player.r === exit.r
+      ) {
         level++;
         score += 300;
         ctx.hud.setScore(score);
@@ -278,7 +312,8 @@ export default function createGame(ctx: GameContext): Game {
         ctx.hud.toast(`LEVEL ${level}!`);
         for (let r = 1; r < rows - 1; r++)
           for (let c = 1; c < cols - 1; c++)
-            if (grid[gi(c, r)] === 0 && !(c <= 2 && r <= 2) && ctx.rng.next() < 0.4) grid[gi(c, r)] = 2;
+            if (grid[gi(c, r)] === 0 && !(c <= 2 && r <= 2) && ctx.rng.next() < 0.4)
+              grid[gi(c, r)] = 2;
         spawnEnemies(3 + level);
         placeExit();
         player.c = 1;
@@ -306,7 +341,8 @@ export default function createGame(ctx: GameContext): Game {
           const opts = Object.values(DIRS).filter((d) => grid[gi(e.c + d.x, e.r + d.y)] === 0);
           if (opts.length) {
             // mostly keep direction
-            if (grid[gi(e.c + e.dir.x, e.r + e.dir.y)] !== 0 || ctx.rng.next() < 0.3) e.dir = ctx.rng.pick(opts);
+            if (grid[gi(e.c + e.dir.x, e.r + e.dir.y)] !== 0 || ctx.rng.next() < 0.3)
+              e.dir = ctx.rng.pick(opts);
             e.c += e.dir.x;
             e.r += e.dir.y;
           }
@@ -325,7 +361,8 @@ export default function createGame(ctx: GameContext): Game {
           ctx.hud.toast(`LEVEL ${level}`);
           for (let r = 1; r < rows - 1; r++)
             for (let c = 1; c < cols - 1; c++)
-              if (grid[gi(c, r)] === 0 && !(c <= 2 && r <= 2) && ctx.rng.next() < 0.4) grid[gi(c, r)] = 2;
+              if (grid[gi(c, r)] === 0 && !(c <= 2 && r <= 2) && ctx.rng.next() < 0.4)
+                grid[gi(c, r)] = 2;
           spawnEnemies(3 + level);
           placeExit();
         } else if (!exitRevealed) {
@@ -335,7 +372,10 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
       const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0), oy + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0));
+      layer.position.set(
+        ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0),
+        oy + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0),
+      );
       draw();
     },
     destroy() {

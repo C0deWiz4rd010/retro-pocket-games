@@ -21,10 +21,14 @@ function generateFull(rng: { next(): number; shuffle<T>(a: T[]): T[] }): number[
     for (const n of nums) {
       if (!rows[r]!.has(n) && !cols[c]!.has(n) && !boxes[bi]!.has(n)) {
         grid[r]![c] = n;
-        rows[r]!.add(n); cols[c]!.add(n); boxes[bi]!.add(n);
+        rows[r]!.add(n);
+        cols[c]!.add(n);
+        boxes[bi]!.add(n);
         if (fill(pos + 1)) return true;
         grid[r]![c] = 0;
-        rows[r]!.delete(n); cols[c]!.delete(n); boxes[bi]!.delete(n);
+        rows[r]!.delete(n);
+        cols[c]!.delete(n);
+        boxes[bi]!.delete(n);
       }
     }
     return false;
@@ -49,7 +53,10 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(g);
   const labels: Text[] = [];
   for (let i = 0; i < N * N; i++) {
-    const t = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.58, fill: 0xffffff } });
+    const t = new Text({
+      text: '',
+      style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.58, fill: 0xffffff },
+    });
     t.anchor.set(0.5);
     labels.push(t);
     layer.addChild(t);
@@ -57,12 +64,18 @@ export default function createGame(ctx: GameContext): Game {
   // number picker row at bottom
   const pickerLabels: Text[] = [];
   for (let n = 1; n <= 9; n++) {
-    const t = new Text({ text: String(n), style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.7, fill: 0xffd200 } });
+    const t = new Text({
+      text: String(n),
+      style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.7, fill: 0xffd200 },
+    });
     t.anchor.set(0.5);
     pickerLabels.push(t);
     layer.addChild(t);
   }
-  const eraseLabel = new Text({ text: 'X', style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.6, fill: 0xff4d4d } });
+  const eraseLabel = new Text({
+    text: 'X',
+    style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.6, fill: 0xff4d4d },
+  });
   eraseLabel.anchor.set(0.5);
   layer.addChild(eraseLabel);
 
@@ -120,7 +133,12 @@ export default function createGame(ctx: GameContext): Game {
         const i = r * N + c;
         const isGiven = given[r]![c];
         const isSel = sel?.r === r && sel?.c === c;
-        const isRelated = sel && (sel.r === r || sel.c === c || (Math.floor(sel.r / BOX) === Math.floor(r / BOX) && Math.floor(sel.c / BOX) === Math.floor(c / BOX)));
+        const isRelated =
+          sel &&
+          (sel.r === r ||
+            sel.c === c ||
+            (Math.floor(sel.r / BOX) === Math.floor(r / BOX) &&
+              Math.floor(sel.c / BOX) === Math.floor(c / BOX)));
         const val = userGrid[r]![c];
         const wrong = val !== 0 && !isGiven && val !== solution[r]![c];
         // Feature: highlight every cell holding the same number as the selection
@@ -159,21 +177,30 @@ export default function createGame(ctx: GameContext): Game {
     for (let n = 1; n <= 9; n++) {
       const px = ox + (n - 1) * pickerCellW + pickerCellW / 2;
       const isActive = selectedNum === n;
-      g.roundRect(ox + (n - 1) * pickerCellW + 2, pickerY - cell * 0.4, pickerCellW - 4, cell * 0.8, 4)
-        .fill({ color: isActive ? 0x3344aa : 0x1d1d40 });
+      g.roundRect(
+        ox + (n - 1) * pickerCellW + 2,
+        pickerY - cell * 0.4,
+        pickerCellW - 4,
+        cell * 0.8,
+        4,
+      ).fill({ color: isActive ? 0x3344aa : 0x1d1d40 });
       pickerLabels[n - 1]!.position.set(px, pickerY);
     }
     // erase button
     const ex = ox + 9 * pickerCellW + pickerCellW / 2;
-    g.roundRect(ox + 9 * pickerCellW + 2, pickerY - cell * 0.4, pickerCellW - 4, cell * 0.8, 4)
-      .fill({ color: selectedNum === -1 ? 0x661111 : 0x1d1d40 });
+    g.roundRect(
+      ox + 9 * pickerCellW + 2,
+      pickerY - cell * 0.4,
+      pickerCellW - 4,
+      cell * 0.8,
+      4,
+    ).fill({ color: selectedNum === -1 ? 0x661111 : 0x1d1d40 });
     eraseLabel.position.set(ex, pickerY);
   };
 
   const checkSolved = (): boolean => {
     for (let r = 0; r < N; r++)
-      for (let c = 0; c < N; c++)
-        if (userGrid[r]![c] !== solution[r]![c]) return false;
+      for (let c = 0; c < N; c++) if (userGrid[r]![c] !== solution[r]![c]) return false;
     return true;
   };
 
@@ -182,8 +209,16 @@ export default function createGame(ctx: GameContext): Game {
     // tap on picker
     if (y > pickerY - cell * 0.5 && y < pickerY + cell * 0.5) {
       const pi = Math.floor((x - ox) / pickerCellW);
-      if (pi >= 0 && pi <= 8) { selectedNum = pi + 1; draw(); return; }
-      if (pi === 9) { selectedNum = -1; draw(); return; }
+      if (pi >= 0 && pi <= 8) {
+        selectedNum = pi + 1;
+        draw();
+        return;
+      }
+      if (pi === 9) {
+        selectedNum = -1;
+        draw();
+        return;
+      }
     }
     // tap on grid
     const c = Math.floor((x - ox) / cell);
@@ -239,16 +274,25 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx('powerup');
     ctx.hud.toast('SOLVED!');
     draw();
-    ctx.gameOver(Math.max(0, 5000 - mistakes * 200 + timeBonus + hints * 150), { mistakes, seconds: elapsed });
+    ctx.gameOver(Math.max(0, 5000 - mistakes * 200 + timeBonus + hints * 150), {
+      mistakes,
+      seconds: elapsed,
+    });
   };
 
   const useHint = (): void => {
     if (over || hints <= 0) return;
     // fill the selected empty/wrong cell, else the first incorrect cell
     let target: { r: number; c: number } | null = null;
-    if (sel && !given[sel.r]![sel.c] && userGrid[sel.r]![sel.c] !== solution[sel.r]![sel.c]) target = sel;
+    if (sel && !given[sel.r]![sel.c] && userGrid[sel.r]![sel.c] !== solution[sel.r]![sel.c])
+      target = sel;
     if (!target) {
-      outer: for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!given[r]![c] && userGrid[r]![c] !== solution[r]![c]) { target = { r, c }; break outer; }
+      outer: for (let r = 0; r < N; r++)
+        for (let c = 0; c < N; c++)
+          if (!given[r]![c] && userGrid[r]![c] !== solution[r]![c]) {
+            target = { r, c };
+            break outer;
+          }
     }
     if (!target) return;
     hints--;
@@ -260,7 +304,9 @@ export default function createGame(ctx: GameContext): Game {
     draw();
     finishIfSolved();
   };
-  const offDown = ctx.input.on('down', (a) => { if (a === 'a' || a === 'b' || a === 'start') useHint(); });
+  const offDown = ctx.input.on('down', (a) => {
+    if (a === 'a' || a === 'b' || a === 'start') useHint();
+  });
 
   draw();
 

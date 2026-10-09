@@ -8,8 +8,20 @@ interface Segment {
   dir: number; // 1 right, -1 left
   head: boolean;
 }
-interface Spider { x: number; y: number; vx: number; vy: number }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Spider {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -115,27 +127,46 @@ export default function createGame(ctx: GameContext): Game {
       for (let c = 0; c < cols; c++) {
         const hp = mushrooms[mIdx(c, r)]!;
         if (hp > 0)
-          g.roundRect(c * cell + 2, r * cell + 2, cell - 4, cell - 4, 4).fill({ color: 0x8bc34a, alpha: 0.4 + hp * 0.15 });
+          g.roundRect(c * cell + 2, r * cell + 2, cell - 4, cell - 4, 4).fill({
+            color: 0x8bc34a,
+            alpha: 0.4 + hp * 0.15,
+          });
       }
     // particles
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
     // power drop
     if (powerDrop) {
       g.roundRect(powerDrop.x - 8, powerDrop.y - 6, 16, 12, 3).fill({ color: 0xffd200 });
-      g.roundRect(powerDrop.x - 8, powerDrop.y - 6, 16, 12, 3).stroke({ width: 1, color: 0xffffff, alpha: 0.6 });
+      g.roundRect(powerDrop.x - 8, powerDrop.y - 6, 16, 12, 3).stroke({
+        width: 1,
+        color: 0xffffff,
+        alpha: 0.6,
+      });
     }
     segments.forEach((s) => {
-      g.circle(s.col * cell + cell / 2, s.row * cell + cell / 2, cell * 0.4).fill({ color: s.head ? 0xff2e97 : 0xffd200 });
+      g.circle(s.col * cell + cell / 2, s.row * cell + cell / 2, cell * 0.4).fill({
+        color: s.head ? 0xff2e97 : 0xffd200,
+      });
     });
     // spider
     if (spider) {
       g.circle(spider.x, spider.y, cell * 0.36).fill({ color: 0xb14cff });
       for (let k = -1; k <= 1; k += 2) {
-        g.moveTo(spider.x, spider.y).lineTo(spider.x + k * cell * 0.5, spider.y - cell * 0.3).stroke({ width: 2, color: 0xb14cff });
-        g.moveTo(spider.x, spider.y).lineTo(spider.x + k * cell * 0.5, spider.y + cell * 0.3).stroke({ width: 2, color: 0xb14cff });
+        g.moveTo(spider.x, spider.y)
+          .lineTo(spider.x + k * cell * 0.5, spider.y - cell * 0.3)
+          .stroke({ width: 2, color: 0xb14cff });
+        g.moveTo(spider.x, spider.y)
+          .lineTo(spider.x + k * cell * 0.5, spider.y + cell * 0.3)
+          .stroke({ width: 2, color: 0xb14cff });
       }
     }
-    g.roundRect(player.col * cell + 3, player.row * cell + 3, cell - 6, cell - 6, 4).fill({ color: 0x00f7ff });
+    g.roundRect(player.col * cell + 3, player.row * cell + 3, cell - 6, cell - 6, 4).fill({
+      color: 0x00f7ff,
+    });
     bullets.forEach((b) => g.rect(b.x - 2, b.y, 4, 10).fill({ color: 0xffffff }));
   };
 
@@ -152,14 +183,21 @@ export default function createGame(ctx: GameContext): Game {
       // particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
 
       // Feature: spider — roams the lower band, eats mushrooms, lethal on contact
       spiderTimer -= dt;
       if (!spider && spiderTimer <= 0) {
-        spider = { x: ctx.rng.next() < 0.5 ? 0 : W - ox * 2, y: (rows - playerBandRows) * cell, vx: (ctx.rng.next() < 0.5 ? 1 : -1) * 90, vy: 90 };
+        spider = {
+          x: ctx.rng.next() < 0.5 ? 0 : W - ox * 2,
+          y: (rows - playerBandRows) * cell,
+          vx: (ctx.rng.next() < 0.5 ? 1 : -1) * 90,
+          vy: 90,
+        };
         spiderTimer = 12 + ctx.rng.next() * 8;
       }
       if (spider) {
@@ -170,9 +208,20 @@ export default function createGame(ctx: GameContext): Game {
         if (spider.x < 0 || spider.x > cols * cell) spider.vx *= -1;
         const sc = Math.floor(spider.x / cell);
         const sr = Math.floor(spider.y / cell);
-        if (sc >= 0 && sc < cols && sr >= 0 && sr < rows && mushrooms[mIdx(sc, sr)]! > 0 && ctx.rng.next() < 0.1) mushrooms[mIdx(sc, sr)] = 0;
+        if (
+          sc >= 0 &&
+          sc < cols &&
+          sr >= 0 &&
+          sr < rows &&
+          mushrooms[mIdx(sc, sr)]! > 0 &&
+          ctx.rng.next() < 0.1
+        )
+          mushrooms[mIdx(sc, sr)] = 0;
         // contact with player
-        if (Math.abs(spider.x - (player.col * cell + cell / 2)) < cell * 0.7 && Math.abs(spider.y - (player.row * cell + cell / 2)) < cell * 0.7) {
+        if (
+          Math.abs(spider.x - (player.col * cell + cell / 2)) < cell * 0.7 &&
+          Math.abs(spider.y - (player.row * cell + cell / 2)) < cell * 0.7
+        ) {
           spider = null;
           loseLife();
           if (over) return;
@@ -183,7 +232,10 @@ export default function createGame(ctx: GameContext): Game {
       if (powerDrop) {
         powerDrop.y += 110 * dt;
         if (powerDrop.y > rows * cell) powerDrop = null;
-        else if (Math.abs(powerDrop.x - (player.col * cell + cell / 2)) < cell && Math.abs(powerDrop.y - (player.row * cell + cell / 2)) < cell) {
+        else if (
+          Math.abs(powerDrop.x - (player.col * cell + cell / 2)) < cell &&
+          Math.abs(powerDrop.y - (player.row * cell + cell / 2)) < cell
+        ) {
           doubleT = 12;
           powerDrop = null;
           ctx.audio.sfx('powerup');
@@ -246,7 +298,10 @@ export default function createGame(ctx: GameContext): Game {
         spawnCentipede(10 + level);
       }
       const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0), rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0);
+      layer.position.set(
+        ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0),
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0,
+      );
       draw();
     },
     destroy() {

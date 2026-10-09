@@ -22,7 +22,11 @@ function cssVar(name: string, fallback: string): string {
  * Render a themed score-card to an offscreen canvas and share it via the Web Share API,
  * falling back to a PNG download. Entirely client-side (no upload). See docs/06 §5.
  */
-export async function shareScoreCard(meta: GameMeta, score: number, isBest: boolean): Promise<void> {
+export async function shareScoreCard(
+  meta: GameMeta,
+  score: number,
+  isBest: boolean,
+): Promise<void> {
   const W = 1080;
   const H = 1080;
   const canvas = document.createElement('canvas');
@@ -123,7 +127,14 @@ export async function shareScoreCard(meta: GameMeta, score: number, isBest: bool
   URL.revokeObjectURL(url);
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);

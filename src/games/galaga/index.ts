@@ -14,8 +14,19 @@ interface Enemy {
 }
 
 type PowerKind = 'dual' | 'rapid' | 'shield';
-interface Drop { x: number; y: number; kind: PowerKind }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Drop {
+  x: number;
+  y: number;
+  kind: PowerKind;
+}
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 const POWER: Record<PowerKind, { color: number; label: string }> = {
   dual: { color: 0xffd200, label: 'DUAL FIGHTER' },
   rapid: { color: 0x00f7ff, label: 'RAPID FIRE' },
@@ -32,7 +43,8 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(bgG, g);
 
   const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 45; i++) stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
+  for (let i = 0; i < 45; i++)
+    stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
 
   const player = { x: W / 2, w: 30, y: H - 40 };
   let bullets: { x: number; y: number }[] = [];
@@ -76,7 +88,16 @@ export default function createGame(ctx: GameContext): Game {
       for (let c = 0; c < cols; c++) {
         const hx = 40 + c * gapX;
         const hy = 60 + r * 30;
-        enemies.push({ x: hx, y: -40 - r * 20, hx, hy, alive: true, diving: false, t: 0, boss: r === 0 });
+        enemies.push({
+          x: hx,
+          y: -40 - r * 20,
+          hx,
+          hy,
+          alive: true,
+          diving: false,
+          t: 0,
+          boss: r === 0,
+        });
       }
   };
   buildWave();
@@ -115,14 +136,19 @@ export default function createGame(ctx: GameContext): Game {
   const drawBg = (): void => {
     bgG.clear();
     bgG.rect(0, 0, W, H).fill({ color: 0x05060f });
-    for (const s of stars) bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.1 + s.s * 0.2 });
+    for (const s of stars)
+      bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.1 + s.s * 0.2 });
   };
   drawBg();
 
   const draw = (): void => {
     g.clear();
     // particles
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
     // drops
     drops.forEach((d) => {
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).fill({ color: POWER[d.kind].color });
@@ -135,9 +161,17 @@ export default function createGame(ctx: GameContext): Game {
       g.rect(e.x - 7, e.y - 13, 4, 5).fill({ color: col });
       g.rect(e.x + 3, e.y - 13, 4, 5).fill({ color: col });
     });
-    if (shield) g.circle(player.x, player.y - 2, 22).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
+    if (shield)
+      g.circle(player.x, player.y - 2, 22).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
     const drawShip = (sx: number): void => {
-      g.poly([sx, player.y - 12, sx - player.w / 2, player.y + 8, sx + player.w / 2, player.y + 8]).fill({ color: 0x00f7ff });
+      g.poly([
+        sx,
+        player.y - 12,
+        sx - player.w / 2,
+        player.y + 8,
+        sx + player.w / 2,
+        player.y + 8,
+      ]).fill({ color: 0x00f7ff });
     };
     drawShip(player.x);
     if (dualT > 0) {
@@ -156,24 +190,44 @@ export default function createGame(ctx: GameContext): Game {
 
       if (dualT > 0 && (dualT -= dt) <= 0) setLabel();
       if (rapidT > 0 && (rapidT -= dt) <= 0) setLabel();
-      if (rapidT > 0) { pFireAcc += dt; if (pFireAcc > 0.12) { pFireAcc = 0; fire(); } }
+      if (rapidT > 0) {
+        pFireAcc += dt;
+        if (pFireAcc > 0.12) {
+          pFireAcc = 0;
+          fire();
+        }
+      }
       if (shake > 0) shake = Math.max(0, shake - dt * 2);
       if (streakTimer > 0 && (streakTimer -= dt) <= 0) streak = 0;
 
       // starfield drift
-      for (const s of stars) { s.y += s.s * 12 * dt; if (s.y > H) { s.y = 0; s.x = ctx.rng.next() * W; } }
+      for (const s of stars) {
+        s.y += s.s * 12 * dt;
+        if (s.y > H) {
+          s.y = 0;
+          s.x = ctx.rng.next() * W;
+        }
+      }
       // particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
       // drops fall + pickup
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i]!;
         d.y += 110 * dt;
-        if (d.y > H) { drops.splice(i, 1); continue; }
-        if (Math.abs(d.x - player.x) < player.w / 2 + 6 && d.y > player.y - 10) { collect(d.kind); drops.splice(i, 1); }
+        if (d.y > H) {
+          drops.splice(i, 1);
+          continue;
+        }
+        if (Math.abs(d.x - player.x) < player.w / 2 + 6 && d.y > player.y - 10) {
+          collect(d.kind);
+          drops.splice(i, 1);
+        }
       }
 
       swayT += dt;
@@ -281,7 +335,12 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
       for (const e of enemies) {
-        if (e.alive && e.diving && Math.abs(e.x - player.x) < player.w / 2 && Math.abs(e.y - player.y) < 16) {
+        if (
+          e.alive &&
+          e.diving &&
+          Math.abs(e.x - player.x) < player.w / 2 &&
+          Math.abs(e.y - player.y) < 16
+        ) {
           e.alive = false;
           burst(e.x, e.y, 0x42a5f5, 10);
           if (shield) {
@@ -312,7 +371,10 @@ export default function createGame(ctx: GameContext): Game {
         buildWave();
       }
       const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0, rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0);
+      layer.position.set(
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
+        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
+      );
       draw();
     },
     destroy() {

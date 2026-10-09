@@ -134,8 +134,10 @@ export const en: Dict = {
   'go.commentPractice': 'Good rehearsal. Switch to Challenge when the rhythm feels locked in.',
   'go.commentBest': 'Clean execution and a new record. That one belongs on the shelf.',
   'go.commentElite': 'Great run. You beat the target pace and left room for a leaderboard push.',
-  'go.commentSolid': 'Nice middle stretch. One fewer risky mistake and this turns into a record chase.',
-  'go.commentRough': 'Rough start, useful data. Reset fast and focus on the first safe scoring pattern.',
+  'go.commentSolid':
+    'Nice middle stretch. One fewer risky mistake and this turns into a record chase.',
+  'go.commentRough':
+    'Rough start, useful data. Reset fast and focus on the first safe scoring pattern.',
   'go.cellTarget': 'Target',
   'go.cellDelta': 'Best delta',
   'go.cellMastery': 'Mastery',
@@ -283,13 +285,17 @@ export const en: Dict = {
   'onboard.s1t': 'Welcome to Retro Pocket',
   'onboard.s1b': '85 arcade classics in your pocket — one installable app, all offline.',
   'onboard.s2t': 'Tap a cabinet to play',
-  'onboard.s2b': 'Pick any glowing tile. Swipe, tap or use the on-screen pad — keyboard & gamepad work too.',
+  'onboard.s2b':
+    'Pick any glowing tile. Swipe, tap or use the on-screen pad — keyboard & gamepad work too.',
   'onboard.s3t': 'Earn XP, level up',
-  'onboard.s3b': 'Every run grants Pixel XP. Climb levels and master each game across bronze, silver and gold.',
+  'onboard.s3b':
+    'Every run grants Pixel XP. Climb levels and master each game across bronze, silver and gold.',
   'onboard.s4t': 'Tokens & Daily Challenge',
-  'onboard.s4b': 'Spend Pocket Chips on cosmetics only — never pay-to-win. A fresh daily challenge keeps the streak alive.',
+  'onboard.s4b':
+    'Spend Pocket Chips on cosmetics only — never pay-to-win. A fresh daily challenge keeps the streak alive.',
   'onboard.s5t': 'Install as an app',
-  'onboard.s5b': 'Add Retro Pocket to your home screen for fullscreen, offline play. Your progress stays on your device.',
+  'onboard.s5b':
+    'Add Retro Pocket to your home screen for fullscreen, offline play. Your progress stays on your device.',
   'home.search': 'Search games…',
   'home.favorites': 'FAVORITES',
   'home.library': 'LIBRARY',

@@ -19,7 +19,10 @@ export default function createGame(ctx: GameContext): Game {
   const tiles = Array.from({ length: N * N }, (_, i) => (i + 1) % (N * N));
   const labels: Text[] = [];
   for (let i = 0; i < N * N; i++) {
-    const t = new Text({ text: '', style: { fontFamily: 'Inter', fontWeight: '800', fontSize: cell * 0.4, fill: 0x101018 } });
+    const t = new Text({
+      text: '',
+      style: { fontFamily: 'Inter', fontWeight: '800', fontSize: cell * 0.4, fill: 0x101018 },
+    });
     t.anchor.set(0.5);
     labels.push(t);
     layer.addChild(t);
@@ -117,7 +120,9 @@ export default function createGame(ctx: GameContext): Game {
         return;
       }
       const correct = v === (i + 1) % (N * N); // Feature: highlight tiles in their final spot
-      g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).fill({ color: correct ? 0x9bffce : 0x90caf9 });
+      g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).fill({
+        color: correct ? 0x9bffce : 0x90caf9,
+      });
       lbl.text = String(v);
       lbl.position.set(c * cell + cell / 2, r * cell + cell / 2);
       lbl.visible = true;

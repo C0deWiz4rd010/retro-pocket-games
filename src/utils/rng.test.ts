@@ -11,14 +11,20 @@ describe('RNG', () => {
   });
 
   it('produces different streams for different seeds', () => {
-    const a = Array.from({ length: 10 }, (() => {
-      const r = new RNG(1);
-      return () => r.next();
-    })());
-    const b = Array.from({ length: 10 }, (() => {
-      const r = new RNG(2);
-      return () => r.next();
-    })());
+    const a = Array.from(
+      { length: 10 },
+      (() => {
+        const r = new RNG(1);
+        return () => r.next();
+      })(),
+    );
+    const b = Array.from(
+      { length: 10 },
+      (() => {
+        const r = new RNG(2);
+        return () => r.next();
+      })(),
+    );
     expect(a).not.toEqual(b);
   });
 

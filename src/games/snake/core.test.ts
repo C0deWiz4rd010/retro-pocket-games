@@ -71,9 +71,12 @@ describe('snake core', () => {
   it('keeps food off obstacle cells', () => {
     const s = createSnake(6, 6, new RNG(3));
     s.obstacles = [];
-    for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) if (!(x === 1 && y === 1)) s.obstacles.push({ x, y });
+    for (let y = 0; y < 6; y++)
+      for (let x = 0; x < 6; x++) if (!(x === 1 && y === 1)) s.obstacles.push({ x, y });
     // only free non-body cell is (1,1); body occupies center row though, so re-pick
-    s.obstacles = s.obstacles.filter((o) => !s.body.some((b) => b.x === o.x && b.y === o.y) && !(o.x === 1 && o.y === 1));
+    s.obstacles = s.obstacles.filter(
+      (o) => !s.body.some((b) => b.x === o.x && b.y === o.y) && !(o.x === 1 && o.y === 1),
+    );
     const f = spawnFood(s, new RNG(3));
     expect(s.obstacles.some((o) => o.x === f.x && o.y === f.y)).toBe(false);
   });

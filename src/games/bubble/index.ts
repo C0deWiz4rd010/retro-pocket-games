@@ -9,7 +9,7 @@ const MIN_MATCH = 3;
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
   const H = ctx.height;
-  const R = Math.floor((Math.min(W / COLS, H / (ROWS + 4))) * 0.48);
+  const R = Math.floor(Math.min(W / COLS, H / (ROWS + 4)) * 0.48);
   const diam = R * 2;
   const rowH = R * Math.sqrt(3);
   const startX = (W - COLS * diam) / 2 + R;
@@ -57,8 +57,10 @@ export default function createGame(ctx: GameContext): Game {
   let nextBomb = ctx.rng.next() < 0.1;
 
   interface Shot {
-    x: number; y: number;
-    vx: number; vy: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
     color: number;
     bomb: boolean;
   }
@@ -89,18 +91,31 @@ export default function createGame(ctx: GameContext): Game {
 
     // Feature: aim line that predicts wall bounces
     if (!shot) {
-      let ax = shooterX, ay = shooterY;
+      let ax = shooterX,
+        ay = shooterY;
       let dvx = Math.cos(aimAngle);
       const dvy = Math.sin(aimAngle);
       for (let i = 0; i < 140; i++) {
-        ax += dvx * 8; ay += dvy * 8;
-        if (ax < R) { ax = R; dvx = Math.abs(dvx); }
-        else if (ax > W - R) { ax = W - R; dvx = -Math.abs(dvx); }
+        ax += dvx * 8;
+        ay += dvy * 8;
+        if (ax < R) {
+          ax = R;
+          dvx = Math.abs(dvx);
+        } else if (ax > W - R) {
+          ax = W - R;
+          dvx = -Math.abs(dvx);
+        }
         if (ay < startY) break;
         let hit = false;
         for (let r = 0; r < ROWS && !hit; r++) {
           const cols = colForRow(r);
-          for (let c = 0; c < cols; c++) { if (grid[r]![c] === null) continue; if (Math.hypot(ax - bubbleX(r, c), ay - bubbleY(r)) < diam - 2) { hit = true; break; } }
+          for (let c = 0; c < cols; c++) {
+            if (grid[r]![c] === null) continue;
+            if (Math.hypot(ax - bubbleX(r, c), ay - bubbleY(r)) < diam - 2) {
+              hit = true;
+              break;
+            }
+          }
         }
         if (hit) break;
         if (i % 3 === 0) g.circle(ax, ay, 2.5).fill({ color: 0xffffff, alpha: 0.45 });
@@ -115,11 +130,23 @@ export default function createGame(ctx: GameContext): Game {
     };
     g.circle(shooterX, shooterY, R + 4).fill({ color: 0x2b2b40 });
     if (currentBomb) drawBomb(shooterX, shooterY, R - 2);
-    else { g.circle(shooterX, shooterY, R - 2).fill({ color: COLORS[currentColor]! }); g.circle(shooterX - R * 0.3, shooterY - R * 0.3, R * 0.22).fill({ color: 0xffffff, alpha: 0.4 }); }
+    else {
+      g.circle(shooterX, shooterY, R - 2).fill({ color: COLORS[currentColor]! });
+      g.circle(shooterX - R * 0.3, shooterY - R * 0.3, R * 0.22).fill({
+        color: 0xffffff,
+        alpha: 0.4,
+      });
+    }
 
     // next bubble preview
     if (nextBomb) drawBomb(shooterX + R * 3, shooterY, R * 0.7);
-    else { g.circle(shooterX + R * 3, shooterY, R * 0.7).fill({ color: COLORS[nextColor]! }); g.circle(shooterX + R * 3 - R * 0.25, shooterY - R * 0.25, R * 0.16).fill({ color: 0xffffff, alpha: 0.35 }); }
+    else {
+      g.circle(shooterX + R * 3, shooterY, R * 0.7).fill({ color: COLORS[nextColor]! });
+      g.circle(shooterX + R * 3 - R * 0.25, shooterY - R * 0.25, R * 0.16).fill({
+        color: 0xffffff,
+        alpha: 0.35,
+      });
+    }
 
     // flying shot
     if (shot) {
@@ -144,9 +171,12 @@ export default function createGame(ctx: GameContext): Game {
       // hex neighbors
       const even = r % 2 === 0;
       const neighbors = [
-        { r: r, c: c - 1 }, { r: r, c: c + 1 },
-        { r: r - 1, c: even ? c - 1 : c }, { r: r - 1, c: even ? c : c + 1 },
-        { r: r + 1, c: even ? c - 1 : c }, { r: r + 1, c: even ? c : c + 1 },
+        { r: r, c: c - 1 },
+        { r: r, c: c + 1 },
+        { r: r - 1, c: even ? c - 1 : c },
+        { r: r - 1, c: even ? c : c + 1 },
+        { r: r + 1, c: even ? c - 1 : c },
+        { r: r + 1, c: even ? c : c + 1 },
       ];
       queue.push(...neighbors);
     }
@@ -169,23 +199,27 @@ export default function createGame(ctx: GameContext): Game {
       connected.add(key);
       const even = r % 2 === 0;
       const neighbors = [
-        { r: r, c: c - 1 }, { r: r, c: c + 1 },
-        { r: r - 1, c: even ? c - 1 : c }, { r: r - 1, c: even ? c : c + 1 },
-        { r: r + 1, c: even ? c - 1 : c }, { r: r + 1, c: even ? c : c + 1 },
+        { r: r, c: c - 1 },
+        { r: r, c: c + 1 },
+        { r: r - 1, c: even ? c - 1 : c },
+        { r: r - 1, c: even ? c : c + 1 },
+        { r: r + 1, c: even ? c - 1 : c },
+        { r: r + 1, c: even ? c : c + 1 },
       ];
       queue.push(...neighbors);
     }
     const floating: { r: number; c: number }[] = [];
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < colForRow(r); c++)
-        if (grid[r]![c] !== null && !connected.has(`${r},${c}`))
-          floating.push({ r, c });
+        if (grid[r]![c] !== null && !connected.has(`${r},${c}`)) floating.push({ r, c });
     return floating;
   };
 
   const snapBubble = (bx: number, by: number, color: number, bomb = false): void => {
     // find nearest empty grid cell
-    let bestR = -1, bestC = -1, bestDist = Infinity;
+    let bestR = -1,
+      bestC = -1,
+      bestDist = Infinity;
     for (let r = 0; r < ROWS; r++) {
       const cols = colForRow(r);
       for (let c = 0; c < cols; c++) {
@@ -197,26 +231,39 @@ export default function createGame(ctx: GameContext): Game {
         if (!hasNeighbor) {
           const even = r % 2 === 0;
           const neighbors = [
-            { r, c: c - 1 }, { r, c: c + 1 },
-            { r: r - 1, c: even ? c - 1 : c }, { r: r - 1, c: even ? c : c + 1 },
+            { r, c: c - 1 },
+            { r, c: c + 1 },
+            { r: r - 1, c: even ? c - 1 : c },
+            { r: r - 1, c: even ? c : c + 1 },
           ];
-          hasNeighbor = neighbors.some((n) => n.r >= 0 && n.c >= 0 && n.c < colForRow(n.r) && grid[n.r]?.[n.c] !== null);
+          hasNeighbor = neighbors.some(
+            (n) => n.r >= 0 && n.c >= 0 && n.c < colForRow(n.r) && grid[n.r]?.[n.c] !== null,
+          );
         }
         if (!hasNeighbor) continue;
         const dist = Math.hypot(bx - gx, by - gy);
-        if (dist < bestDist) { bestDist = dist; bestR = r; bestC = c; }
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestR = r;
+          bestC = c;
+        }
       }
     }
     if (bestR === -1) return;
 
     if (bomb) {
       // Feature: bomb clears every bubble within a blast radius
-      const cx = bubbleX(bestR, bestC), cy = bubbleY(bestR);
+      const cx = bubbleX(bestR, bestC),
+        cy = bubbleY(bestR);
       let cleared = 0;
-      for (let r = 0; r < ROWS; r++) for (let c = 0; c < colForRow(r); c++) {
-        if (grid[r]![c] === null) continue;
-        if (Math.hypot(bubbleX(r, c) - cx, bubbleY(r) - cy) < diam * 1.9) { grid[r]![c] = null; cleared++; }
-      }
+      for (let r = 0; r < ROWS; r++)
+        for (let c = 0; c < colForRow(r); c++) {
+          if (grid[r]![c] === null) continue;
+          if (Math.hypot(bubbleX(r, c) - cx, bubbleY(r) - cy) < diam * 1.9) {
+            grid[r]![c] = null;
+            cleared++;
+          }
+        }
       score += cleared * 15;
       combo = 0;
       ctx.hud.setScore(score);
@@ -224,7 +271,9 @@ export default function createGame(ctx: GameContext): Game {
       ctx.audio.sfx('explosion');
       ctx.fx.screenShake(7, 0.18);
       const floating0 = findFloating();
-      floating0.forEach(({ r, c }) => { grid[r]![c] = null; });
+      floating0.forEach(({ r, c }) => {
+        grid[r]![c] = null;
+      });
       if (floating0.length) score += floating0.length * 20;
       ctx.hud.setScore(score);
     } else {
@@ -233,18 +282,23 @@ export default function createGame(ctx: GameContext): Game {
       // check match
       const group = findGroup(bestR, bestC, color);
       if (group.length >= MIN_MATCH) {
-        group.forEach(({ r, c }) => { grid[r]![c] = null; });
+        group.forEach(({ r, c }) => {
+          grid[r]![c] = null;
+        });
         combo++; // Feature: pop combo
         const mult = 1 + Math.floor(combo / 3);
         ctx.audio.sfx('powerup');
         score += group.length * 10 * mult;
         ctx.hud.setScore(score);
-        if (group.length >= 5 || combo >= 3) ctx.hud.toast(`CHAIN x${group.length}${mult > 1 ? ` · x${mult}` : ''}`);
+        if (group.length >= 5 || combo >= 3)
+          ctx.hud.toast(`CHAIN x${group.length}${mult > 1 ? ` · x${mult}` : ''}`);
 
         // drop floating
         const floating = findFloating();
         if (floating.length) {
-          floating.forEach(({ r, c }) => { grid[r]![c] = null; });
+          floating.forEach(({ r, c }) => {
+            grid[r]![c] = null;
+          });
           score += floating.length * 20 * mult;
           ctx.hud.setScore(score);
           ctx.audio.sfx('coin');
@@ -268,7 +322,10 @@ export default function createGame(ctx: GameContext): Game {
     let anyLeft = false;
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < colForRow(r); c++)
-        if (grid[r]![c] !== null) { anyLeft = true; break; }
+        if (grid[r]![c] !== null) {
+          anyLeft = true;
+          break;
+        }
     if (!anyLeft) {
       over = true;
       ctx.audio.sfx('powerup');
@@ -292,7 +349,8 @@ export default function createGame(ctx: GameContext): Game {
   const fire = (angle: number): void => {
     if (shot || over) return;
     shot = {
-      x: shooterX, y: shooterY,
+      x: shooterX,
+      y: shooterY,
       vx: Math.cos(angle) * 480,
       vy: Math.sin(angle) * 480,
       color: currentColor,
@@ -332,8 +390,14 @@ export default function createGame(ctx: GameContext): Game {
       s.y += s.vy * dt;
 
       // wall bounce
-      if (s.x < R) { s.x = R; s.vx = Math.abs(s.vx); }
-      if (s.x > W - R) { s.x = W - R; s.vx = -Math.abs(s.vx); }
+      if (s.x < R) {
+        s.x = R;
+        s.vx = Math.abs(s.vx);
+      }
+      if (s.x > W - R) {
+        s.x = W - R;
+        s.vx = -Math.abs(s.vx);
+      }
 
       // hit ceiling
       if (s.y < startY) {

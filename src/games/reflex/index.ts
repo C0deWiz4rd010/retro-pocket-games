@@ -42,7 +42,10 @@ export default function createGame(ctx: GameContext): Game {
   };
   schedule();
 
-  const randPos = (): { x: number; y: number } => ({ x: R + ctx.rng.next() * (W - 2 * R), y: H * 0.32 + ctx.rng.next() * (H * 0.55 - R) });
+  const randPos = (): { x: number; y: number } => ({
+    x: R + ctx.rng.next() * (W - 2 * R),
+    y: H * 0.32 + ctx.rng.next() * (H * 0.55 - R),
+  });
   const spawn = (): void => {
     target = randPos();
     decoys = [];
@@ -88,10 +91,16 @@ export default function createGame(ctx: GameContext): Game {
       totalMs += ms;
       best = Math.min(best, ms);
       // Feature: fast taps build a streak bonus
-      if (ms < 420) { streak++; bonus += streak * 50; } else streak = 0;
+      if (ms < 420) {
+        streak++;
+        bonus += streak * 50;
+      } else streak = 0;
       const avg = totalMs / rounds;
       ctx.hud.setScore(Math.round(avg));
-      info.text = streak >= 2 ? `${Math.round(ms)}ms · STREAK x${streak}` : `${Math.round(ms)}ms  (best ${Math.round(best)})`;
+      info.text =
+        streak >= 2
+          ? `${Math.round(ms)}ms · STREAK x${streak}`
+          : `${Math.round(ms)}ms  (best ${Math.round(best)})`;
       ctx.audio.sfx('coin');
       schedule();
     }
@@ -108,7 +117,10 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     if (target) {
-      for (const d of decoys) { g.circle(d.x, d.y, R).fill({ color: 0xff4d4d }); g.circle(d.x, d.y, R * 0.55).fill({ color: 0x7a1a1a }); }
+      for (const d of decoys) {
+        g.circle(d.x, d.y, R).fill({ color: 0xff4d4d });
+        g.circle(d.x, d.y, R * 0.55).fill({ color: 0x7a1a1a });
+      }
       g.circle(target.x, target.y, R).fill({ color: 0x26a69a });
       g.circle(target.x, target.y, R * 0.6).fill({ color: 0xffd200 });
       g.circle(target.x, target.y, R * 0.25).fill({ color: 0xffffff });

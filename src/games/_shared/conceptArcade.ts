@@ -30,7 +30,9 @@ function backdrop(g: Graphics, w: number, h: number, t: number, horizon = h * 0.
     g.rect(x, y, 2, 2).fill({ color: i % 3 === 0 ? PINK : CYAN, alpha: 0.25 + (i % 5) * 0.08 });
   }
   for (let x = 0; x <= w; x += 28) {
-    g.moveTo(x, horizon).lineTo(w / 2 + (x - w / 2) * 2.8, h).stroke({ width: 1, color: CYAN, alpha: 0.12 });
+    g.moveTo(x, horizon)
+      .lineTo(w / 2 + (x - w / 2) * 2.8, h)
+      .stroke({ width: 1, color: CYAN, alpha: 0.12 });
   }
   for (let y = horizon; y < h; y += 24) {
     g.moveTo(0, y).lineTo(w, y).stroke({ width: 1, color: PINK, alpha: 0.1 });
@@ -46,13 +48,23 @@ function city(g: Graphics, w: number, h: number, t: number): void {
     g.rect(x, base - bh, bw, bh).fill({ color: 0x0b1530, alpha: 0.95 });
     for (let yy = base - bh + 8; yy < base - 6; yy += 14) {
       for (let xx = x + 5; xx < x + bw - 3; xx += 10) {
-        if (((xx + yy + i) | 0) % 3 === 0) g.rect(xx, yy, 3, 4).fill({ color: i % 2 ? CYAN : PINK, alpha: 0.55 });
+        if (((xx + yy + i) | 0) % 3 === 0)
+          g.rect(xx, yy, 3, 4).fill({ color: i % 2 ? CYAN : PINK, alpha: 0.55 });
       }
     }
   }
 }
 
-function boxHit(ax: number, ay: number, aw: number, ah: number, bx: number, by: number, bw: number, bh: number): boolean {
+function boxHit(
+  ax: number,
+  ay: number,
+  aw: number,
+  ah: number,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number,
+): boolean {
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
@@ -62,7 +74,13 @@ export function createPixelDash(ctx: GameContext): Game {
   const ground = H - 74;
   const { layer, g, sparks } = makeLayer(ctx);
   const runner = { x: W * 0.22, y: ground, vy: 0, duck: false };
-  const obstacles: { x: number; y: number; w: number; h: number; kind: 'spike' | 'block' | 'drone' }[] = [];
+  const obstacles: {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    kind: 'spike' | 'block' | 'drone';
+  }[] = [];
   const coins: { x: number; y: number; hit: boolean }[] = [];
   // Feature: floating shield / magnet pickups
   const pickups: { x: number; y: number; kind: 'shield' | 'magnet' }[] = [];
@@ -114,8 +132,14 @@ export function createPixelDash(ctx: GameContext): Game {
     const y = kind === 'drone' ? ground - 78 : ground - h + 8;
     obstacles.push({ x: W + 20, y, w: kind === 'spike' ? 26 : 30, h, kind });
     const arcY = kind === 'drone' ? ground - 118 : ground - 52;
-    for (let i = 0; i < 3; i++) coins.push({ x: W + 86 + i * 24, y: arcY - Math.sin(i / 2) * 22, hit: false });
-    if (ctx.rng.next() < 0.2) pickups.push({ x: W + 140, y: ground - 70 - ctx.rng.next() * 50, kind: ctx.rng.next() < 0.5 ? 'shield' : 'magnet' });
+    for (let i = 0; i < 3; i++)
+      coins.push({ x: W + 86 + i * 24, y: arcY - Math.sin(i / 2) * 22, hit: false });
+    if (ctx.rng.next() < 0.2)
+      pickups.push({
+        x: W + 140,
+        y: ground - 70 - ctx.rng.next() * 50,
+        kind: ctx.rng.next() < 0.5 ? 'shield' : 'magnet',
+      });
   };
   spawnSet();
 
@@ -133,7 +157,10 @@ export function createPixelDash(ctx: GameContext): Game {
     }
     for (const o of obstacles) {
       if (o.kind === 'spike') {
-        g.moveTo(o.x, o.y + o.h).lineTo(o.x + o.w / 2, o.y).lineTo(o.x + o.w, o.y + o.h).closePath()
+        g.moveTo(o.x, o.y + o.h)
+          .lineTo(o.x + o.w / 2, o.y)
+          .lineTo(o.x + o.w, o.y + o.h)
+          .closePath()
           .fill({ color: PINK })
           .stroke({ width: 2, color: WHITE, alpha: 0.28 });
       } else if (o.kind === 'drone') {
@@ -157,8 +184,15 @@ export function createPixelDash(ctx: GameContext): Game {
     const rh = runner.duck && runner.y >= ground - 1 ? 26 : 42;
     const rx = runner.x - 13;
     const ry = runner.y - rh;
-    if (shieldHits > 0 || magnet > 0) g.circle(runner.x, runner.y - rh / 2, rh * 0.7).stroke({ width: 2, color: shieldHits > 0 ? CYAN : VIOLET, alpha: 0.5 + Math.sin(t * 8) * 0.2 });
-    g.roundRect(rx, ry, 26, rh, 5).fill({ color: invuln > 0 && Math.floor(t * 18) % 2 === 0 ? GOLD : 0xff7043 });
+    if (shieldHits > 0 || magnet > 0)
+      g.circle(runner.x, runner.y - rh / 2, rh * 0.7).stroke({
+        width: 2,
+        color: shieldHits > 0 ? CYAN : VIOLET,
+        alpha: 0.5 + Math.sin(t * 8) * 0.2,
+      });
+    g.roundRect(rx, ry, 26, rh, 5).fill({
+      color: invuln > 0 && Math.floor(t * 18) % 2 === 0 ? GOLD : 0xff7043,
+    });
     g.roundRect(rx + 6, ry + 6, 18, 12, 4).fill({ color: 0xffd1a8 });
     g.rect(rx + 18, ry + 10, 4, 4).fill({ color: 0x101018 });
     const leg = Math.sin(t * 16) * 5;
@@ -229,10 +263,23 @@ export function createPixelDash(ctx: GameContext): Game {
         const pk = pickups[i]!;
         if (Math.hypot(pk.x - runner.x, pk.y - (runner.y - rh / 2)) < 24) {
           pickups.splice(i, 1);
-          if (pk.kind === 'shield') { shieldHits = 1; ctx.hud.toast('SHIELD'); }
-          else { magnet = 6; ctx.hud.toast('MAGNET'); }
+          if (pk.kind === 'shield') {
+            shieldHits = 1;
+            ctx.hud.toast('SHIELD');
+          } else {
+            magnet = 6;
+            ctx.hud.toast('MAGNET');
+          }
           ctx.audio.sfx('powerup');
-          burst(sparks, ctx.rng, runner.x, runner.y - rh / 2, pk.kind === 'shield' ? CYAN : VIOLET, 14, 120);
+          burst(
+            sparks,
+            ctx.rng,
+            runner.x,
+            runner.y - rh / 2,
+            pk.kind === 'shield' ? CYAN : VIOLET,
+            14,
+            120,
+          );
         } else if (pk.x < -40) pickups.splice(i, 1);
       }
       for (const o of obstacles) {
@@ -260,11 +307,21 @@ export function createPixelDash(ctx: GameContext): Game {
         }
       }
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(magnet > 0 ? `MAGNET ${Math.ceil(magnet)}` : shieldHits > 0 ? 'SHIELD READY' : dash > 0 ? 'DASH RUN' : `ZONE ${zone}`);
+      ctx.hud.setLabel(
+        magnet > 0
+          ? `MAGNET ${Math.ceil(magnet)}`
+          : shieldHits > 0
+            ? 'SHIELD READY'
+            : dash > 0
+              ? 'DASH RUN'
+              : `ZONE ${zone}`,
+      );
       draw();
     },
     destroy() {
-      offDown(); offUp(); offTap();
+      offDown();
+      offUp();
+      offTap();
       layer.destroy({ children: true });
     },
   };
@@ -275,7 +332,13 @@ export function createNeonRider(ctx: GameContext): Game {
   const H = ctx.height;
   const { layer, g, sparks } = makeLayer(ctx);
   const lanes = [W * 0.28, W * 0.5, W * 0.72];
-  const items: { x: number; lane: number; kind: 'car' | 'coin' | 'boost' | 'shield'; phase: number; scored?: boolean }[] = [];
+  const items: {
+    x: number;
+    lane: number;
+    kind: 'car' | 'coin' | 'boost' | 'shield';
+    phase: number;
+    scored?: boolean;
+  }[] = [];
   let target = 1;
   let px = lanes[1]!;
   let speed = 235;
@@ -316,7 +379,11 @@ export function createNeonRider(ctx: GameContext): Game {
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.42);
-    g.moveTo(W * 0.32, H * 0.32).lineTo(W * 0.68, H * 0.32).lineTo(W - 24, H - 60).lineTo(24, H - 60).closePath()
+    g.moveTo(W * 0.32, H * 0.32)
+      .lineTo(W * 0.68, H * 0.32)
+      .lineTo(W - 24, H - 60)
+      .lineTo(24, H - 60)
+      .closePath()
       .fill({ color: 0x090a18, alpha: 0.94 })
       .stroke({ width: 2, color: CYAN, alpha: 0.35 });
     for (let i = 0; i < 22; i++) {
@@ -342,7 +409,8 @@ export function createNeonRider(ctx: GameContext): Game {
       }
     }
     const y = lanes[target]!;
-    if (shieldHits > 0) g.circle(px, y, 34 + Math.sin(t * 8) * 2).stroke({ width: 2, color: CYAN, alpha: 0.6 });
+    if (shieldHits > 0)
+      g.circle(px, y, 34 + Math.sin(t * 8) * 2).stroke({ width: 2, color: CYAN, alpha: 0.6 });
     g.roundRect(px - 16, y - 26, 32, 52, 8).fill({ color: boost > 0 ? GOLD : CYAN });
     g.roundRect(px - 9, y - 15, 18, 22, 6).fill({ color: 0x060817, alpha: 0.7 });
     g.circle(px - 10, y + 25, 4).fill({ color: PINK });
@@ -363,7 +431,11 @@ export function createNeonRider(ctx: GameContext): Game {
       if (comboTimer <= 0) combo = 0;
       // Feature: gear multiplier rises with distance
       const newGear = 1 + Math.floor(score / 6000);
-      if (newGear > gear) { gear = newGear; ctx.hud.toast(`GEAR ${gear} · x${gear}`); ctx.audio.sfx('powerup'); }
+      if (newGear > gear) {
+        gear = newGear;
+        ctx.hud.toast(`GEAR ${gear} · x${gear}`);
+        ctx.audio.sfx('powerup');
+      }
       px += (lanes[target]! - px) * Math.min(1, dt * 14);
       spawn -= dt;
       if (spawn <= 0) {
@@ -405,16 +477,27 @@ export function createNeonRider(ctx: GameContext): Game {
             const pts = ((item.kind === 'coin' ? 95 : 180) + combo * 12) * gear;
             score += pts;
             if (item.kind === 'boost') boost = 4;
-            if (item.kind === 'shield') { shieldHits = 1; ctx.hud.toast('SHIELD'); }
+            if (item.kind === 'shield') {
+              shieldHits = 1;
+              ctx.hud.toast('SHIELD');
+            }
             if (combo >= 4) ctx.fx.floatingText(`COMBO x${combo}`, px, lanes[target]! - 36, GOLD);
             ctx.audio.sfx(item.kind === 'coin' ? 'coin' : 'powerup');
-            burst(sparks, ctx.rng, px, lanes[target]!, item.kind === 'coin' ? GOLD : item.kind === 'shield' ? CYAN : GREEN, 14, 140);
+            burst(
+              sparks,
+              ctx.rng,
+              px,
+              lanes[target]!,
+              item.kind === 'coin' ? GOLD : item.kind === 'shield' ? CYAN : GREEN,
+              14,
+              140,
+            );
           }
         } else if (
-          item.kind === 'car'
-          && !item.scored
-          && Math.abs(item.x - px) < 18
-          && Math.abs(item.lane - target) === 1
+          item.kind === 'car' &&
+          !item.scored &&
+          Math.abs(item.x - px) < 18 &&
+          Math.abs(item.lane - target) === 1
         ) {
           item.scored = true;
           combo++;
@@ -427,11 +510,20 @@ export function createNeonRider(ctx: GameContext): Game {
       }
       score += Math.floor(dt * 24 * mult * gear);
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(slowmo > 0 ? 'NEAR MISS!' : boost > 0 ? `BOOST ${Math.ceil(boost)}` : shieldHits > 0 ? `SHIELD · GEAR ${gear}` : `GEAR ${gear}`);
+      ctx.hud.setLabel(
+        slowmo > 0
+          ? 'NEAR MISS!'
+          : boost > 0
+            ? `BOOST ${Math.ceil(boost)}`
+            : shieldHits > 0
+              ? `SHIELD · GEAR ${gear}`
+              : `GEAR ${gear}`,
+      );
       draw();
     },
     destroy() {
-      offDown(); offSwipe();
+      offDown();
+      offSwipe();
       layer.destroy({ children: true });
     },
   };
@@ -455,7 +547,9 @@ export function createBlockCollapse(ctx: GameContext): Game {
   let t = 0;
   let over = false;
   const at = (c: number, r: number): number => grid[r * N + c]!;
-  const set = (c: number, r: number, v: number): void => { grid[r * N + c] = v; };
+  const set = (c: number, r: number, v: number): void => {
+    grid[r * N + c] = v;
+  };
   ctx.hud.setScore(0);
   ctx.hud.setLabel(`MOVES ${moves} · L1`);
 
@@ -482,7 +576,8 @@ export function createBlockCollapse(ctx: GameContext): Game {
     for (let c = 0; c < N; c++) {
       const col: number[] = [];
       for (let r = N - 1; r >= 0; r--) if (at(c, r) >= 0) col.push(at(c, r));
-      for (let r = N - 1; r >= 0; r--) set(c, r, col[N - 1 - r] ?? ctx.rng.int(0, COLORS.length - 1));
+      for (let r = N - 1; r >= 0; r--)
+        set(c, r, col[N - 1 - r] ?? ctx.rng.int(0, COLORS.length - 1));
     }
   };
 
@@ -518,14 +613,28 @@ export function createBlockCollapse(ctx: GameContext): Game {
       moves += 2;
       ctx.fx.floatingText('+2 MOVES', ox + c * cell + cell / 2, oy + r * cell - 26, GREEN);
     }
-    const pts = cleared.size * cleared.size * (group.length >= 9 ? 22 : group.length >= 6 ? 16 : 12);
+    const pts =
+      cleared.size * cleared.size * (group.length >= 9 ? 22 : group.length >= 6 ? 16 : 12);
     score += pts;
-    ctx.fx.floatingText(`+${pts}`, ox + c * cell + cell / 2, oy + r * cell - 10, group.length >= 6 ? GOLD : WHITE);
+    ctx.fx.floatingText(
+      `+${pts}`,
+      ox + c * cell + cell / 2,
+      oy + r * cell - 10,
+      group.length >= 6 ? GOLD : WHITE,
+    );
     for (const i of cleared) {
       const cc = i % N;
       const rr = Math.floor(i / N);
       set(cc, rr, -1);
-      burst(sparks, ctx.rng, ox + cc * cell + cell / 2, oy + rr * cell + cell / 2, COLORS[group.length % COLORS.length]!, 4, 60);
+      burst(
+        sparks,
+        ctx.rng,
+        ox + cc * cell + cell / 2,
+        oy + rr * cell + cell / 2,
+        COLORS[group.length % COLORS.length]!,
+        4,
+        60,
+      );
     }
     collapse();
     ctx.audio.sfx(group.length > 5 ? 'powerup' : 'coin');
@@ -549,7 +658,9 @@ export function createBlockCollapse(ctx: GameContext): Game {
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.76);
-    g.roundRect(ox - 8, oy - 8, size + 16, size + 16, 12).fill({ color: 0x090a18, alpha: 0.92 }).stroke({ width: 2, color: CYAN, alpha: 0.25 });
+    g.roundRect(ox - 8, oy - 8, size + 16, size + 16, 12)
+      .fill({ color: 0x090a18, alpha: 0.92 })
+      .stroke({ width: 2, color: CYAN, alpha: 0.25 });
     for (let r = 0; r < N; r++) {
       for (let c = 0; c < N; c++) {
         const color = COLORS[at(c, r)] ?? WHITE;
@@ -582,7 +693,13 @@ export function createSpaceBlaster(ctx: GameContext): Game {
   const { layer, g, sparks } = makeLayer(ctx);
   const player = { x: W / 2, y: H - 64, cd: 0 };
   const bullets: { x: number; y: number; vx: number; vy: number; color: number }[] = [];
-  const enemies: { x: number; y: number; hp: number; kind: 'bug' | 'rock' | 'saucer'; phase: number }[] = [];
+  const enemies: {
+    x: number;
+    y: number;
+    hp: number;
+    kind: 'bug' | 'rock' | 'saucer';
+    phase: number;
+  }[] = [];
   const eBullets: { x: number; y: number; vx: number; vy: number }[] = []; // Feature: enemy fire
   const drops: { x: number; y: number; kind: 'rapid' | 'bomb' }[] = []; // Feature: power-up drops
   let score = 0;
@@ -615,7 +732,13 @@ export function createSpaceBlaster(ctx: GameContext): Game {
 
   const spawnEnemy = (): void => {
     const kind = ctx.rng.pick(['bug', 'rock', 'saucer'] as const);
-    enemies.push({ x: 28 + ctx.rng.next() * (W - 56), y: -30, hp: kind === 'rock' ? 3 : kind === 'saucer' ? 2 : 1, kind, phase: ctx.rng.next() * 9 });
+    enemies.push({
+      x: 28 + ctx.rng.next() * (W - 56),
+      y: -30,
+      hp: kind === 'rock' ? 3 : kind === 'saucer' ? 2 : 1,
+      kind,
+      phase: ctx.rng.next() * 9,
+    });
   };
 
   function draw(): void {
@@ -623,7 +746,12 @@ export function createSpaceBlaster(ctx: GameContext): Game {
     backdrop(g, W, H, t, H * 0.7);
     for (const e of enemies) {
       if (e.kind === 'rock') {
-        g.moveTo(e.x - 16, e.y).lineTo(e.x - 4, e.y - 15).lineTo(e.x + 16, e.y - 7).lineTo(e.x + 12, e.y + 15).lineTo(e.x - 14, e.y + 13).closePath()
+        g.moveTo(e.x - 16, e.y)
+          .lineTo(e.x - 4, e.y - 15)
+          .lineTo(e.x + 16, e.y - 7)
+          .lineTo(e.x + 12, e.y + 15)
+          .lineTo(e.x - 14, e.y + 13)
+          .closePath()
           .fill({ color: 0x8fa3b8 })
           .stroke({ width: 2, color: WHITE, alpha: 0.25 });
       } else if (e.kind === 'saucer') {
@@ -640,8 +768,18 @@ export function createSpaceBlaster(ctx: GameContext): Game {
       g.roundRect(d.x - 8, d.y - 8, 16, 16, 4).fill({ color: d.kind === 'rapid' ? GOLD : PINK });
       g.rect(d.x - 8, d.y - 2, 16, 4).fill({ color: 0x160716, alpha: 0.6 });
     }
-    if (shield > 0) g.circle(player.x, player.y, 30 + Math.sin(t * 10) * 2).stroke({ width: 3, color: CYAN, alpha: 0.75 });
-    g.moveTo(player.x, player.y - 28).lineTo(player.x + 20, player.y + 18).lineTo(player.x, player.y + 8).lineTo(player.x - 20, player.y + 18).closePath().fill({ color: CYAN });
+    if (shield > 0)
+      g.circle(player.x, player.y, 30 + Math.sin(t * 10) * 2).stroke({
+        width: 3,
+        color: CYAN,
+        alpha: 0.75,
+      });
+    g.moveTo(player.x, player.y - 28)
+      .lineTo(player.x + 20, player.y + 18)
+      .lineTo(player.x, player.y + 8)
+      .lineTo(player.x - 20, player.y + 18)
+      .closePath()
+      .fill({ color: CYAN });
     g.circle(player.x, player.y, 6).fill({ color: WHITE, alpha: 0.7 });
     drawSparks(g, sparks);
   }
@@ -670,33 +808,61 @@ export function createSpaceBlaster(ctx: GameContext): Game {
         const shooter = enemies[ctx.rng.int(0, enemies.length - 1)]!;
         if (shooter.y > 0 && shooter.y < H * 0.7) {
           const ang = Math.atan2(player.y - shooter.y, player.x - shooter.x);
-          eBullets.push({ x: shooter.x, y: shooter.y, vx: Math.cos(ang) * 200, vy: Math.sin(ang) * 200 + 80 });
+          eBullets.push({
+            x: shooter.x,
+            y: shooter.y,
+            vx: Math.cos(ang) * 200,
+            vy: Math.sin(ang) * 200 + 80,
+          });
           ctx.audio.sfx('blip');
         }
       }
       for (let i = eBullets.length - 1; i >= 0; i--) {
         const b = eBullets[i]!;
-        b.x += b.vx * dt; b.y += b.vy * dt;
-        if (b.y > H + 20 || b.x < -20 || b.x > W + 20) { eBullets.splice(i, 1); continue; }
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+        if (b.y > H + 20 || b.x < -20 || b.x > W + 20) {
+          eBullets.splice(i, 1);
+          continue;
+        }
         if (boxHit(b.x - 3, b.y - 6, 6, 12, player.x - 16, player.y - 24, 32, 40)) {
           eBullets.splice(i, 1);
           ctx.fx.screenShake(7, 0.14);
-          if (shield > 0) { shield = 0; ctx.audio.sfx('hit'); }
-          else { lives--; streak = 0; ctx.hud.setLives(lives); ctx.audio.sfx('hit'); if (lives <= 0) { over = true; ctx.gameOver(score); } }
+          if (shield > 0) {
+            shield = 0;
+            ctx.audio.sfx('hit');
+          } else {
+            lives--;
+            streak = 0;
+            ctx.hud.setLives(lives);
+            ctx.audio.sfx('hit');
+            if (lives <= 0) {
+              over = true;
+              ctx.gameOver(score);
+            }
+          }
         }
       }
       // Feature: power-up drops fall and are collected
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i]!;
         d.y += 120 * dt;
-        if (d.y > H + 20) { drops.splice(i, 1); continue; }
+        if (d.y > H + 20) {
+          drops.splice(i, 1);
+          continue;
+        }
         if (Math.abs(d.x - player.x) < 24 && Math.abs(d.y - player.y) < 28) {
           drops.splice(i, 1);
-          if (d.kind === 'rapid') { rapid = 7; ctx.hud.toast('RAPID FIRE'); }
-          else {
+          if (d.kind === 'rapid') {
+            rapid = 7;
+            ctx.hud.toast('RAPID FIRE');
+          } else {
             ctx.hud.toast('SMART BOMB!');
             ctx.fx.screenShake(10, 0.25);
-            for (const e of enemies) { score += 50; burst(sparks, ctx.rng, e.x, e.y, GOLD, 8, 110); }
+            for (const e of enemies) {
+              score += 50;
+              burst(sparks, ctx.rng, e.x, e.y, GOLD, 8, 110);
+            }
             enemies.length = 0;
             eBullets.length = 0;
           }
@@ -758,13 +924,15 @@ export function createSpaceBlaster(ctx: GameContext): Game {
               streak++;
               const mult = 1 + Math.floor(streak / 5);
               score += (e.kind === 'rock' ? 80 : e.kind === 'saucer' ? 160 : 60) * mult;
-              if (streak > 0 && streak % 5 === 0) ctx.fx.floatingText(`STREAK x${streak} (${mult}x)`, e.x, e.y - 16, GOLD);
+              if (streak > 0 && streak % 5 === 0)
+                ctx.fx.floatingText(`STREAK x${streak} (${mult}x)`, e.x, e.y - 16, GOLD);
               if (e.kind === 'saucer') {
                 shield = 5;
                 ctx.hud.toast('SHIELD READY');
               }
               // Feature: drop a power-up
-              if (ctx.rng.next() < 0.16) drops.push({ x: e.x, y: e.y, kind: ctx.rng.next() < 0.6 ? 'rapid' : 'bomb' });
+              if (ctx.rng.next() < 0.16)
+                drops.push({ x: e.x, y: e.y, kind: ctx.rng.next() < 0.6 ? 'rapid' : 'bomb' });
               ctx.audio.sfx('explosion');
             } else ctx.audio.sfx('hit');
             break;
@@ -772,11 +940,20 @@ export function createSpaceBlaster(ctx: GameContext): Game {
         }
       }
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(rapid > 0 ? `RAPID ${Math.ceil(rapid)}` : streak >= 5 ? `STREAK x${streak}` : shield > 0 ? `SHIELD ${Math.ceil(shield)}` : 'A LASER / B SPREAD');
+      ctx.hud.setLabel(
+        rapid > 0
+          ? `RAPID ${Math.ceil(rapid)}`
+          : streak >= 5
+            ? `STREAK x${streak}`
+            : shield > 0
+              ? `SHIELD ${Math.ceil(shield)}`
+              : 'A LASER / B SPREAD',
+      );
       draw();
     },
     destroy() {
-      offDown(); offTap();
+      offDown();
+      offTap();
       layer.destroy({ children: true });
     },
   };
@@ -787,7 +964,16 @@ export function createJumpQuest(ctx: GameContext): Game {
   const H = ctx.height;
   const { layer, g, sparks } = makeLayer(ctx);
   const player = { x: W * 0.2, y: H - 120, vx: 0, vy: 0, grounded: false };
-  const plats: { x: number; y: number; w: number; moving: boolean; vx: number; spring: boolean; breakable: boolean; broken: number }[] = [];
+  const plats: {
+    x: number;
+    y: number;
+    w: number;
+    moving: boolean;
+    vx: number;
+    spring: boolean;
+    breakable: boolean;
+    broken: number;
+  }[] = [];
   const gems: { x: number; y: number; hit: boolean }[] = [];
   const enemies: { x: number; y: number; dir: number }[] = [];
   // Feature: jetpack / shield pickups
@@ -805,10 +991,21 @@ export function createJumpQuest(ctx: GameContext): Game {
     const x = 28 + ctx.rng.next() * (W - 96);
     const moving = ctx.rng.next() < 0.26;
     const breakable = !moving && ctx.rng.next() < 0.18; // Feature: crumbling platforms
-    plats.push({ x, y, w: 62 + ctx.rng.next() * 34, moving, vx: moving ? ctx.rng.pick([-55, 55]) : 0, spring: !breakable && ctx.rng.next() < 0.16, breakable, broken: 0 });
-    if (ctx.rng.next() < 0.56) gems.push({ x: x + 20 + ctx.rng.next() * 34, y: y - 22, hit: false });
+    plats.push({
+      x,
+      y,
+      w: 62 + ctx.rng.next() * 34,
+      moving,
+      vx: moving ? ctx.rng.pick([-55, 55]) : 0,
+      spring: !breakable && ctx.rng.next() < 0.16,
+      breakable,
+      broken: 0,
+    });
+    if (ctx.rng.next() < 0.56)
+      gems.push({ x: x + 20 + ctx.rng.next() * 34, y: y - 22, hit: false });
     if (ctx.rng.next() < 0.18) enemies.push({ x: x + 16, y: y - 20, dir: ctx.rng.pick([-1, 1]) });
-    if (ctx.rng.next() < 0.1) pickups.push({ x: x + 30, y: y - 30, kind: ctx.rng.next() < 0.5 ? 'jet' : 'shield' });
+    if (ctx.rng.next() < 0.1)
+      pickups.push({ x: x + 30, y: y - 30, kind: ctx.rng.next() < 0.5 ? 'jet' : 'shield' });
   }
   const jump = (): void => {
     if (player.grounded) {
@@ -847,7 +1044,12 @@ export function createJumpQuest(ctx: GameContext): Game {
     for (const gem of gems) {
       if (gem.hit) continue;
       const y = gem.y - cam;
-      g.moveTo(gem.x, y - 9).lineTo(gem.x + 9, y).lineTo(gem.x, y + 9).lineTo(gem.x - 9, y).closePath().fill({ color: GOLD });
+      g.moveTo(gem.x, y - 9)
+        .lineTo(gem.x + 9, y)
+        .lineTo(gem.x, y + 9)
+        .lineTo(gem.x - 9, y)
+        .closePath()
+        .fill({ color: GOLD });
     }
     for (const e of enemies) {
       g.roundRect(e.x - 12, e.y - cam - 10, 24, 20, 5).fill({ color: PINK });
@@ -856,7 +1058,15 @@ export function createJumpQuest(ctx: GameContext): Game {
     }
     const py = player.y - cam;
     if (shield > 0) g.circle(player.x, py - 12, 26).stroke({ width: 2, color: CYAN, alpha: 0.6 });
-    if (jet > 0) g.poly([player.x - 6, py + 4, player.x + 6, py + 4, player.x, py + 14 + Math.sin(t * 30) * 4]).fill({ color: GOLD });
+    if (jet > 0)
+      g.poly([
+        player.x - 6,
+        py + 4,
+        player.x + 6,
+        py + 4,
+        player.x,
+        py + 14 + Math.sin(t * 30) * 4,
+      ]).fill({ color: GOLD });
     g.roundRect(player.x - 12, py - 28, 24, 32, 6).fill({ color: jet > 0 ? GOLD : 0x7dd3fc });
     g.roundRect(player.x - 8, py - 22, 16, 12, 4).fill({ color: 0xffd1a8 });
     drawSparks(g, sparks);
@@ -868,7 +1078,8 @@ export function createJumpQuest(ctx: GameContext): Game {
       updateSparks(sparks, dt);
       player.vx = ctx.input.axis().x * 235;
       jet = Math.max(0, jet - dt);
-      if (jet > 0) player.vy = -640; // Feature: jetpack thrust
+      if (jet > 0)
+        player.vy = -640; // Feature: jetpack thrust
       else player.vy += 1700 * dt;
       player.x += player.vx * dt;
       if (player.x < -12) player.x = W + 12;
@@ -883,9 +1094,19 @@ export function createJumpQuest(ctx: GameContext): Game {
         // Feature: crumbling platforms collapse after being stood on
         if (p.breakable && p.broken > 0) {
           p.broken -= dt * 1.5;
-          if (p.broken <= 0) { p.y = 99999; continue; }
+          if (p.broken <= 0) {
+            p.y = 99999;
+            continue;
+          }
         }
-        if (jet <= 0 && player.vy > 0 && player.x > p.x && player.x < p.x + p.w && player.y > p.y - 4 && player.y < p.y + 18) {
+        if (
+          jet <= 0 &&
+          player.vy > 0 &&
+          player.x > p.x &&
+          player.x < p.x + p.w &&
+          player.y > p.y - 4 &&
+          player.y < p.y + 18
+        ) {
           player.y = p.y - 2;
           if (p.spring) {
             player.vy = -860;
@@ -895,7 +1116,10 @@ export function createJumpQuest(ctx: GameContext): Game {
             burst(sparks, ctx.rng, player.x, player.y - cam, GOLD, 10, 110);
           } else {
             player.vy = 0;
-            if (p.breakable && p.broken <= 0) { p.broken = 1; ctx.audio.sfx('blip'); }
+            if (p.breakable && p.broken <= 0) {
+              p.broken = 1;
+              ctx.audio.sfx('blip');
+            }
           }
           player.grounded = true;
         }
@@ -905,10 +1129,23 @@ export function createJumpQuest(ctx: GameContext): Game {
         const pk = pickups[i]!;
         if (Math.hypot(pk.x - player.x, pk.y - (player.y - 12)) < 22) {
           pickups.splice(i, 1);
-          if (pk.kind === 'jet') { jet = 1.4; ctx.hud.toast('JETPACK!'); }
-          else { shield = 1; ctx.hud.toast('SHIELD'); }
+          if (pk.kind === 'jet') {
+            jet = 1.4;
+            ctx.hud.toast('JETPACK!');
+          } else {
+            shield = 1;
+            ctx.hud.toast('SHIELD');
+          }
           ctx.audio.sfx('powerup');
-          burst(sparks, ctx.rng, player.x, player.y - cam, pk.kind === 'jet' ? GOLD : CYAN, 12, 120);
+          burst(
+            sparks,
+            ctx.rng,
+            player.x,
+            player.y - cam,
+            pk.kind === 'jet' ? GOLD : CYAN,
+            12,
+            120,
+          );
         }
       }
       for (const gem of gems) {
@@ -959,7 +1196,8 @@ export function createJumpQuest(ctx: GameContext): Game {
       draw();
     },
     destroy() {
-      offDown(); offTap();
+      offDown();
+      offTap();
       layer.destroy({ children: true });
     },
   };
@@ -974,7 +1212,11 @@ export function createRetroSnake(ctx: GameContext): Game {
   const cell = Math.floor(Math.min(W / cols, (H - 20) / rows));
   const ox = (W - cols * cell) / 2;
   const oy = (H - rows * cell) / 2;
-  const snake = [{ x: 8, y: 13 }, { x: 7, y: 13 }, { x: 6, y: 13 }];
+  const snake = [
+    { x: 8, y: 13 },
+    { x: 7, y: 13 },
+    { x: 6, y: 13 },
+  ];
   let dir = { x: 1, y: 0 };
   let next = dir;
   let food = { x: 13, y: 13 };
@@ -993,8 +1235,9 @@ export function createRetroSnake(ctx: GameContext): Game {
   let comboTimer = 0;
   const freeCell = (): { x: number; y: number } => {
     let c: { x: number; y: number };
-    do { c = { x: ctx.rng.int(0, cols - 1), y: ctx.rng.int(0, rows - 1) }; }
-    while (snake.some((s) => s.x === c.x && s.y === c.y) || (food.x === c.x && food.y === c.y));
+    do {
+      c = { x: ctx.rng.int(0, cols - 1), y: ctx.rng.int(0, rows - 1) };
+    } while (snake.some((s) => s.x === c.x && s.y === c.y) || (food.x === c.x && food.y === c.y));
     return c;
   };
   const placePortals = (): void => {
@@ -1014,8 +1257,8 @@ export function createRetroSnake(ctx: GameContext): Game {
     do {
       bonusFood = { x: ctx.rng.int(0, cols - 1), y: ctx.rng.int(0, rows - 1), t: 6 };
     } while (
-      snake.some((s) => s.x === bonusFood!.x && s.y === bonusFood!.y)
-      || (food.x === bonusFood!.x && food.y === bonusFood!.y)
+      snake.some((s) => s.x === bonusFood!.x && s.y === bonusFood!.y) ||
+      (food.x === bonusFood!.x && food.y === bonusFood!.y)
     );
     ctx.hud.toast('BONUS FRUIT');
   };
@@ -1034,26 +1277,56 @@ export function createRetroSnake(ctx: GameContext): Game {
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.76);
-    g.roundRect(ox - 6, oy - 6, cols * cell + 12, rows * cell + 12, 10).fill({ color: 0x07190f, alpha: 0.94 }).stroke({ width: wrapPulse > 0 ? 4 : 2, color: wrapPulse > 0 ? CYAN : GREEN, alpha: wrapPulse > 0 ? 0.8 : 0.4 });
-    for (let x = 0; x <= cols; x++) g.rect(ox + x * cell, oy, 1, rows * cell).fill({ color: GREEN, alpha: 0.07 });
-    for (let y = 0; y <= rows; y++) g.rect(ox, oy + y * cell, cols * cell, 1).fill({ color: GREEN, alpha: 0.07 });
-    g.circle(ox + food.x * cell + cell / 2, oy + food.y * cell + cell / 2, cell * 0.38).fill({ color: PINK });
+    g.roundRect(ox - 6, oy - 6, cols * cell + 12, rows * cell + 12, 10)
+      .fill({ color: 0x07190f, alpha: 0.94 })
+      .stroke({
+        width: wrapPulse > 0 ? 4 : 2,
+        color: wrapPulse > 0 ? CYAN : GREEN,
+        alpha: wrapPulse > 0 ? 0.8 : 0.4,
+      });
+    for (let x = 0; x <= cols; x++)
+      g.rect(ox + x * cell, oy, 1, rows * cell).fill({ color: GREEN, alpha: 0.07 });
+    for (let y = 0; y <= rows; y++)
+      g.rect(ox, oy + y * cell, cols * cell, 1).fill({ color: GREEN, alpha: 0.07 });
+    g.circle(ox + food.x * cell + cell / 2, oy + food.y * cell + cell / 2, cell * 0.38).fill({
+      color: PINK,
+    });
     if (bonusFood) {
       const p = 0.75 + Math.sin(t * 10) * 0.12;
-      g.roundRect(ox + bonusFood.x * cell + cell * (0.5 - p / 2), oy + bonusFood.y * cell + cell * (0.5 - p / 2), cell * p, cell * p, 5).fill({ color: GOLD });
+      g.roundRect(
+        ox + bonusFood.x * cell + cell * (0.5 - p / 2),
+        oy + bonusFood.y * cell + cell * (0.5 - p / 2),
+        cell * p,
+        cell * p,
+        5,
+      ).fill({ color: GOLD });
     }
     if (portals) {
-      for (const [cx, cy] of [[portals.ax, portals.ay], [portals.bx, portals.by]] as [number, number][]) {
+      for (const [cx, cy] of [
+        [portals.ax, portals.ay],
+        [portals.bx, portals.by],
+      ] as [number, number][]) {
         const r = cell * (0.36 + 0.08 * Math.sin(t * 6));
-        g.circle(ox + cx * cell + cell / 2, oy + cy * cell + cell / 2, r).stroke({ width: 3, color: VIOLET, alpha: 0.85 });
+        g.circle(ox + cx * cell + cell / 2, oy + cy * cell + cell / 2, r).stroke({
+          width: 3,
+          color: VIOLET,
+          alpha: 0.85,
+        });
       }
     }
     if (shieldOrb) {
-      g.circle(ox + shieldOrb.x * cell + cell / 2, oy + shieldOrb.y * cell + cell / 2, cell * 0.32).fill({ color: CYAN, alpha: 0.85 });
+      g.circle(
+        ox + shieldOrb.x * cell + cell / 2,
+        oy + shieldOrb.y * cell + cell / 2,
+        cell * 0.32,
+      ).fill({ color: CYAN, alpha: 0.85 });
     }
     snake.forEach((s, i) => {
       const head = i === 0;
-      g.roundRect(ox + s.x * cell + 1, oy + s.y * cell + 1, cell - 2, cell - 2, 4).fill({ color: head ? (shield > 0 ? CYAN : GOLD) : (shield > 0 ? 0x66d9ff : GREEN), alpha: 0.92 });
+      g.roundRect(ox + s.x * cell + 1, oy + s.y * cell + 1, cell - 2, cell - 2, 4).fill({
+        color: head ? (shield > 0 ? CYAN : GOLD) : shield > 0 ? 0x66d9ff : GREEN,
+        alpha: 0.92,
+      });
     });
     drawSparks(g, sparks);
   }
@@ -1087,8 +1360,15 @@ export function createRetroSnake(ctx: GameContext): Game {
         }
         // Feature: portal teleport
         if (portals) {
-          if (head.x === portals.ax && head.y === portals.ay) { head.x = portals.bx; head.y = portals.by; ctx.audio.sfx('blip'); }
-          else if (head.x === portals.bx && head.y === portals.by) { head.x = portals.ax; head.y = portals.ay; ctx.audio.sfx('blip'); }
+          if (head.x === portals.ax && head.y === portals.ay) {
+            head.x = portals.bx;
+            head.y = portals.by;
+            ctx.audio.sfx('blip');
+          } else if (head.x === portals.bx && head.y === portals.by) {
+            head.x = portals.ax;
+            head.y = portals.ay;
+            ctx.audio.sfx('blip');
+          }
         }
         // Feature: shield lets the head pass through the body
         if (shield <= 0 && snake.some((s) => s.x === head.x && s.y === head.y)) {
@@ -1111,9 +1391,23 @@ export function createRetroSnake(ctx: GameContext): Game {
           comboTimer = 3;
           const mult = 1 + Math.floor(combo / 3);
           score += (100 + snake.length * 2) * mult;
-          if (combo >= 3 && combo % 3 === 0) ctx.fx.floatingText(`COMBO x${mult}`, ox + head.x * cell + cell / 2, oy + head.y * cell, GOLD);
+          if (combo >= 3 && combo % 3 === 0)
+            ctx.fx.floatingText(
+              `COMBO x${mult}`,
+              ox + head.x * cell + cell / 2,
+              oy + head.y * cell,
+              GOLD,
+            );
           ctx.audio.sfx('coin');
-          burst(sparks, ctx.rng, ox + food.x * cell + cell / 2, oy + food.y * cell + cell / 2, PINK, 12, 90);
+          burst(
+            sparks,
+            ctx.rng,
+            ox + food.x * cell + cell / 2,
+            oy + food.y * cell + cell / 2,
+            PINK,
+            12,
+            90,
+          );
           placeFood();
           if (eaten % 4 === 0) placeBonus();
           if (eaten % 5 === 0) placePortals();
@@ -1126,12 +1420,21 @@ export function createRetroSnake(ctx: GameContext): Game {
           snake.pop();
         } else snake.pop();
         ctx.hud.setScore(score);
-        ctx.hud.setLabel(shield > 0 ? `SHIELD ${Math.ceil(shield)}` : combo >= 3 ? `COMBO x${1 + Math.floor(combo / 3)}` : bonusFood ? `BONUS ${Math.ceil(bonusFood.t)}` : 'WRAP + BONUS');
+        ctx.hud.setLabel(
+          shield > 0
+            ? `SHIELD ${Math.ceil(shield)}`
+            : combo >= 3
+              ? `COMBO x${1 + Math.floor(combo / 3)}`
+              : bonusFood
+                ? `BONUS ${Math.ceil(bonusFood.t)}`
+                : 'WRAP + BONUS',
+        );
         draw();
       }
     },
     destroy() {
-      offDown(); offSwipe();
+      offDown();
+      offSwipe();
       layer.destroy({ children: true });
     },
   };
@@ -1151,13 +1454,22 @@ export function createDotCollector(ctx: GameContext): Game {
   const powers = new Set<string>();
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
-      const wall = x === 0 || y === 0 || x === cols - 1 || y === rows - 1 || (x % 4 === 0 && y % 4 !== 2) || (y % 5 === 0 && x % 5 !== 2);
+      const wall =
+        x === 0 ||
+        y === 0 ||
+        x === cols - 1 ||
+        y === rows - 1 ||
+        (x % 4 === 0 && y % 4 !== 2) ||
+        (y % 5 === 0 && x % 5 !== 2);
       if (wall) walls.add(`${x},${y}`);
       else dots.add(`${x},${y}`);
     }
   }
   let player = { x: 1, y: 1 };
-  const foes = [{ x: cols - 2, y: rows - 2, phase: 0 }, { x: cols - 2, y: 1, phase: 2.1 }];
+  const foes = [
+    { x: cols - 2, y: rows - 2, phase: 0 },
+    { x: cols - 2, y: 1, phase: 2.1 },
+  ];
   dots.delete('1,1');
   for (const key of [`1,${rows - 2}`, `${cols - 2},1`, `${cols - 2},${rows - 2}`]) {
     powers.add(key);
@@ -1182,16 +1494,22 @@ export function createDotCollector(ctx: GameContext): Game {
   const can = (x: number, y: number): boolean => !walls.has(`${x},${y}`);
   const freeFloor = (): { x: number; y: number } => {
     let c: { x: number; y: number };
-    do { c = { x: ctx.rng.int(1, cols - 2), y: ctx.rng.int(1, rows - 2) }; } while (walls.has(`${c.x},${c.y}`));
+    do {
+      c = { x: ctx.rng.int(1, cols - 2), y: ctx.rng.int(1, rows - 2) };
+    } while (walls.has(`${c.x},${c.y}`));
     return c;
   };
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.78);
-    g.roundRect(ox - 5, oy - 5, cols * cell + 10, rows * cell + 10, 9).fill({ color: 0x05070f, alpha: 0.94 }).stroke({ width: 2, color: CYAN, alpha: 0.35 });
+    g.roundRect(ox - 5, oy - 5, cols * cell + 10, rows * cell + 10, 9)
+      .fill({ color: 0x05070f, alpha: 0.94 })
+      .stroke({ width: 2, color: CYAN, alpha: 0.35 });
     for (const key of walls) {
       const [x, y] = key.split(',').map(Number);
-      g.roundRect(ox + x! * cell + 1, oy + y! * cell + 1, cell - 2, cell - 2, 3).fill({ color: 0x123b6d });
+      g.roundRect(ox + x! * cell + 1, oy + y! * cell + 1, cell - 2, cell - 2, 3).fill({
+        color: 0x123b6d,
+      });
     }
     for (const key of dots) {
       const [x, y] = key.split(',').map(Number);
@@ -1200,19 +1518,38 @@ export function createDotCollector(ctx: GameContext): Game {
     for (const key of powers) {
       const [x, y] = key.split(',').map(Number);
       const pulse = 1 + Math.sin(t * 8 + x!) * 0.18;
-      g.circle(ox + x! * cell + cell / 2, oy + y! * cell + cell / 2, cell * 0.24 * pulse).fill({ color: power > 0 ? CYAN : VIOLET });
+      g.circle(ox + x! * cell + cell / 2, oy + y! * cell + cell / 2, cell * 0.24 * pulse).fill({
+        color: power > 0 ? CYAN : VIOLET,
+      });
     }
     if (fruit) {
-      g.circle(ox + fruit.x * cell + cell / 2, oy + fruit.y * cell + cell / 2, cell * 0.3).fill({ color: 0xff2e44 });
-      g.rect(ox + fruit.x * cell + cell / 2 - 1, oy + fruit.y * cell + cell * 0.18, 2, cell * 0.2).fill({ color: GREEN });
+      g.circle(ox + fruit.x * cell + cell / 2, oy + fruit.y * cell + cell / 2, cell * 0.3).fill({
+        color: 0xff2e44,
+      });
+      g.rect(
+        ox + fruit.x * cell + cell / 2 - 1,
+        oy + fruit.y * cell + cell * 0.18,
+        2,
+        cell * 0.2,
+      ).fill({ color: GREEN });
     }
     if (speedPellet) {
       const pul = 1 + Math.sin(t * 9) * 0.2;
-      g.star(ox + speedPellet.x * cell + cell / 2, oy + speedPellet.y * cell + cell / 2, 4, cell * 0.26 * pul, cell * 0.12).fill({ color: GREEN });
+      g.star(
+        ox + speedPellet.x * cell + cell / 2,
+        oy + speedPellet.y * cell + cell / 2,
+        4,
+        cell * 0.26 * pul,
+        cell * 0.12,
+      ).fill({ color: GREEN });
     }
-    g.circle(ox + player.x * cell + cell / 2, oy + player.y * cell + cell / 2, cell * 0.38).fill({ color: speedT > 0 ? GREEN : 0xffeb3b });
+    g.circle(ox + player.x * cell + cell / 2, oy + player.y * cell + cell / 2, cell * 0.38).fill({
+      color: speedT > 0 ? GREEN : 0xffeb3b,
+    });
     for (const f of foes) {
-      g.roundRect(ox + f.x * cell + 2, oy + f.y * cell + 2, cell - 4, cell - 4, 6).fill({ color: power > 0 ? CYAN : PINK });
+      g.roundRect(ox + f.x * cell + 2, oy + f.y * cell + 2, cell - 4, cell - 4, 6).fill({
+        color: power > 0 ? CYAN : PINK,
+      });
     }
     drawSparks(g, sparks);
   }
@@ -1227,10 +1564,19 @@ export function createDotCollector(ctx: GameContext): Game {
       speedT = Math.max(0, speedT - dt);
       // Feature: spawn bonus fruit + speed pellet on timers
       fruitTimer -= dt;
-      if (!fruit && fruitTimer <= 0) { fruit = { ...freeFloor(), t: 8 }; fruitTimer = 12 + ctx.rng.next() * 6; }
-      if (fruit) { fruit.t -= dt; if (fruit.t <= 0) fruit = null; }
+      if (!fruit && fruitTimer <= 0) {
+        fruit = { ...freeFloor(), t: 8 };
+        fruitTimer = 12 + ctx.rng.next() * 6;
+      }
+      if (fruit) {
+        fruit.t -= dt;
+        if (fruit.t <= 0) fruit = null;
+      }
       speedTimer -= dt;
-      if (!speedPellet && speedTimer <= 0) { speedPellet = freeFloor(); speedTimer = 16 + ctx.rng.next() * 8; }
+      if (!speedPellet && speedTimer <= 0) {
+        speedPellet = freeFloor();
+        speedTimer = 16 + ctx.rng.next() * 8;
+      }
       tick += dt;
       if (tick > (speedT > 0 ? 0.09 : 0.14)) {
         tick = 0;
@@ -1261,12 +1607,32 @@ export function createDotCollector(ctx: GameContext): Game {
           score += 120;
           ctx.audio.sfx('powerup');
           ctx.hud.toast('POWER MODE');
-          burst(sparks, ctx.rng, ox + player.x * cell + cell / 2, oy + player.y * cell + cell / 2, VIOLET, 16, 120);
+          burst(
+            sparks,
+            ctx.rng,
+            ox + player.x * cell + cell / 2,
+            oy + player.y * cell + cell / 2,
+            VIOLET,
+            16,
+            120,
+          );
         }
         for (const f of foes) {
-          const opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => can(f.x + dx!, f.y + dy!));
-          opts.sort((aa, bb) => Math.hypot(player.x - (f.x + aa[0]!), player.y - (f.y + aa[1]!)) - Math.hypot(player.x - (f.x + bb[0]!), player.y - (f.y + bb[1]!)));
-          const pick = opts[Math.min(opts.length - 1, ctx.rng.next() < 0.7 ? 0 : ctx.rng.int(0, opts.length - 1))]!;
+          const opts = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1],
+          ].filter(([dx, dy]) => can(f.x + dx!, f.y + dy!));
+          opts.sort(
+            (aa, bb) =>
+              Math.hypot(player.x - (f.x + aa[0]!), player.y - (f.y + aa[1]!)) -
+              Math.hypot(player.x - (f.x + bb[0]!), player.y - (f.y + bb[1]!)),
+          );
+          const pick =
+            opts[
+              Math.min(opts.length - 1, ctx.rng.next() < 0.7 ? 0 : ctx.rng.int(0, opts.length - 1))
+            ]!;
           f.x += pick[0]!;
           f.y += pick[1]!;
           if (f.x === player.x && f.y === player.y) {
@@ -1295,7 +1661,13 @@ export function createDotCollector(ctx: GameContext): Game {
           ctx.gameOver(score + 1000);
         }
         ctx.hud.setScore(score);
-        ctx.hud.setLabel(power > 0 ? `POWER ${Math.ceil(power)}${chain > 1 ? ` x${chain}` : ''}` : speedT > 0 ? `SPEED ${Math.ceil(speedT)}` : `DOTS ${dots.size}`);
+        ctx.hud.setLabel(
+          power > 0
+            ? `POWER ${Math.ceil(power)}${chain > 1 ? ` x${chain}` : ''}`
+            : speedT > 0
+              ? `SPEED ${Math.ceil(speedT)}`
+              : `DOTS ${dots.size}`,
+        );
         draw();
       }
     },
@@ -1361,7 +1733,12 @@ export function createMemoryMatch(ctx: GameContext): Game {
         score += 180 + streak * 45;
         timeLeft = Math.min(maxTime, timeLeft + 3); // matches add time
         ctx.audio.sfx('coin');
-        ctx.fx.floatingText(`x${streak} +3s`, ox + (i % cols) * card + card / 2, oy + Math.floor(i / cols) * card, GOLD);
+        ctx.fx.floatingText(
+          `x${streak} +3s`,
+          ox + (i % cols) * card + card / 2,
+          oy + Math.floor(i / cols) * card,
+          GOLD,
+        );
       } else {
         streak = 0;
         lock = 0.72;
@@ -1382,12 +1759,21 @@ export function createMemoryMatch(ctx: GameContext): Game {
       const x = ox + c * card;
       const y = oy + r * card;
       const face = open.has(i) || found.has(i) || peek > 0;
-      g.roundRect(x + 5, y + 5, card - 10, card - 10, 9).fill({ color: face ? colors[vals[i]!]! : 0x14141f }).stroke({ width: 2, color: face ? WHITE : CYAN, alpha: 0.34 });
+      g.roundRect(x + 5, y + 5, card - 10, card - 10, 9)
+        .fill({ color: face ? colors[vals[i]!]! : 0x14141f })
+        .stroke({ width: 2, color: face ? WHITE : CYAN, alpha: 0.34 });
       if (face) {
         g.circle(x + card / 2, y + card / 2, card * 0.18).fill({ color: WHITE, alpha: 0.35 });
-        g.rect(x + card * 0.34, y + card * 0.34, card * 0.32, card * 0.32).fill({ color: 0x050511, alpha: 0.18 });
+        g.rect(x + card * 0.34, y + card * 0.34, card * 0.32, card * 0.32).fill({
+          color: 0x050511,
+          alpha: 0.18,
+        });
       } else {
-        g.rect(x + card * 0.36, y + card * 0.36, card * 0.28, card * 0.28).stroke({ width: 2, color: PINK, alpha: 0.6 });
+        g.rect(x + card * 0.36, y + card * 0.36, card * 0.28, card * 0.28).stroke({
+          width: 2,
+          color: PINK,
+          alpha: 0.6,
+        });
       }
     }
     // timer bar
@@ -1403,7 +1789,11 @@ export function createMemoryMatch(ctx: GameContext): Game {
       updateSparks(sparks, dt);
       if (peek > 0) {
         peek -= dt;
-        if (peek <= 0) { started = true; ctx.hud.setLabel(`${Math.ceil(timeLeft)}s`); draw(); }
+        if (peek <= 0) {
+          started = true;
+          ctx.hud.setLabel(`${Math.ceil(timeLeft)}s`);
+          draw();
+        }
       } else if (!complete) {
         // Feature: countdown runs once the preview ends
         started = true;
@@ -1415,7 +1805,8 @@ export function createMemoryMatch(ctx: GameContext): Game {
           ctx.gameOver(score, { moves, streak });
         }
       }
-      if (started && Math.floor(t * 2) % 2 === 0) ctx.hud.setLabel(streak > 1 ? `STREAK x${streak}` : `${Math.ceil(timeLeft)}s`);
+      if (started && Math.floor(t * 2) % 2 === 0)
+        ctx.hud.setLabel(streak > 1 ? `STREAK x${streak}` : `${Math.ceil(timeLeft)}s`);
       if (lock > 0) {
         lock -= dt;
         if (lock <= 0) {
@@ -1447,7 +1838,13 @@ export function createBrickBreaker(ctx: GameContext): Game {
   const H = ctx.height;
   const { layer, g, sparks } = makeLayer(ctx);
   const paddle = { x: W / 2, y: H - 54, w: 76 };
-  interface Ball { x: number; y: number; vx: number; vy: number; r: number }
+  interface Ball {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    r: number;
+  }
   let balls: Ball[] = [{ x: W / 2, y: H - 82, vx: 180, vy: -285, r: 6 }];
   const bricks: { x: number; y: number; w: number; h: number; hp: number; color: number }[] = [];
   const drops: { x: number; y: number; kind: 'multi' | 'slow' | 'grow' }[] = []; // Feature: power-up capsules
@@ -1465,26 +1862,41 @@ export function createBrickBreaker(ctx: GameContext): Game {
     bricks.length = 0;
     const rowsN = Math.min(5 + lvl, 8);
     for (let r = 0; r < rowsN; r++) {
-      for (let c = 0; c < 8; c++) bricks.push({ x: 18 + c * 40, y: 62 + r * 24, w: 34, h: 15, hp: r < lvl ? 2 : 1, color: colors[r % colors.length]! });
+      for (let c = 0; c < 8; c++)
+        bricks.push({
+          x: 18 + c * 40,
+          y: 62 + r * 24,
+          w: 34,
+          h: 15,
+          hp: r < lvl ? 2 : 1,
+          color: colors[r % colors.length]!,
+        });
     }
   };
   buildBricks(level);
   ctx.hud.setScore(0);
   ctx.hud.setLives(lives);
   ctx.hud.setLabel('BREAK · L1');
-  const offPtr = ctx.input.on('pointermove', ({ x }) => { paddle.x = clamp(x, paddle.w / 2, W - paddle.w / 2); });
+  const offPtr = ctx.input.on('pointermove', ({ x }) => {
+    paddle.x = clamp(x, paddle.w / 2, W - paddle.w / 2);
+  });
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.72);
     for (const b of bricks) {
-      g.roundRect(b.x, b.y, b.w, b.h, 4).fill({ color: b.color, alpha: b.hp === 2 ? 0.92 : 0.75 }).stroke({ width: 1, color: WHITE, alpha: 0.22 });
+      g.roundRect(b.x, b.y, b.w, b.h, 4)
+        .fill({ color: b.color, alpha: b.hp === 2 ? 0.92 : 0.75 })
+        .stroke({ width: 1, color: WHITE, alpha: 0.22 });
     }
     for (const d of drops) {
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).fill({ color: DROP[d.kind]! });
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).stroke({ width: 1, color: WHITE, alpha: 0.6 });
     }
-    g.roundRect(paddle.x - paddle.w / 2, paddle.y, paddle.w, 12, 6).fill({ color: slow > 0 ? GOLD : CYAN });
-    for (const ball of balls) g.circle(ball.x, ball.y, ball.r + (hot > 0 ? 2 : 0)).fill({ color: hot > 0 ? GOLD : WHITE });
+    g.roundRect(paddle.x - paddle.w / 2, paddle.y, paddle.w, 12, 6).fill({
+      color: slow > 0 ? GOLD : CYAN,
+    });
+    for (const ball of balls)
+      g.circle(ball.x, ball.y, ball.r + (hot > 0 ? 2 : 0)).fill({ color: hot > 0 ? GOLD : WHITE });
     drawSparks(g, sparks);
   }
   return {
@@ -1501,7 +1913,19 @@ export function createBrickBreaker(ctx: GameContext): Game {
         ball.y += ball.vy * dt * sp;
         if (ball.x < ball.r || ball.x > W - ball.r) ball.vx *= -1;
         if (ball.y < ball.r) ball.vy = Math.abs(ball.vy);
-        if (boxHit(ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2, paddle.x - paddle.w / 2, paddle.y, paddle.w, 14) && ball.vy > 0) {
+        if (
+          boxHit(
+            ball.x - ball.r,
+            ball.y - ball.r,
+            ball.r * 2,
+            ball.r * 2,
+            paddle.x - paddle.w / 2,
+            paddle.y,
+            paddle.w,
+            14,
+          ) &&
+          ball.vy > 0
+        ) {
           ball.vy = -Math.abs(ball.vy) * 1.02;
           ball.vx += (ball.x - paddle.x) * 4;
           combo = 0; // paddle touch breaks the combo
@@ -1509,7 +1933,9 @@ export function createBrickBreaker(ctx: GameContext): Game {
         }
         for (let i = bricks.length - 1; i >= 0; i--) {
           const b = bricks[i]!;
-          if (boxHit(ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2, b.x, b.y, b.w, b.h)) {
+          if (
+            boxHit(ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2, b.x, b.y, b.w, b.h)
+          ) {
             ball.vy *= -1;
             b.hp -= hot > 0 ? 2 : 1;
             if (b.hp <= 0) {
@@ -1518,11 +1944,20 @@ export function createBrickBreaker(ctx: GameContext): Game {
               combo++;
               const mult = 1 + Math.floor(combo / 5);
               score += (hot > 0 ? 120 : 80) * mult;
-              if (combo > 0 && combo % 5 === 0) ctx.fx.floatingText(`COMBO x${mult}`, b.x + b.w / 2, b.y, GOLD);
+              if (combo > 0 && combo % 5 === 0)
+                ctx.fx.floatingText(`COMBO x${mult}`, b.x + b.w / 2, b.y, GOLD);
               burst(sparks, ctx.rng, b.x + b.w / 2, b.y + b.h / 2, b.color, 9, 90);
               ctx.audio.sfx('coin');
-              if (ctx.rng.next() < 0.12) drops.push({ x: b.x + b.w / 2, y: b.y, kind: ctx.rng.pick(['multi', 'slow', 'grow'] as const) });
-              if (cleared % 10 === 0) { hot = 5; ctx.hud.toast('HOT BALL'); }
+              if (ctx.rng.next() < 0.12)
+                drops.push({
+                  x: b.x + b.w / 2,
+                  y: b.y,
+                  kind: ctx.rng.pick(['multi', 'slow', 'grow'] as const),
+                });
+              if (cleared % 10 === 0) {
+                hot = 5;
+                ctx.hud.toast('HOT BALL');
+              }
             } else ctx.audio.sfx('hit');
             break;
           }
@@ -1532,16 +1967,30 @@ export function createBrickBreaker(ctx: GameContext): Game {
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i]!;
         d.y += 130 * dt;
-        if (d.y > H + 10) { drops.splice(i, 1); continue; }
+        if (d.y > H + 10) {
+          drops.splice(i, 1);
+          continue;
+        }
         if (Math.abs(d.x - paddle.x) < paddle.w / 2 + 6 && d.y > paddle.y - 6) {
           drops.splice(i, 1);
           if (d.kind === 'multi') {
             const extra: Ball[] = [];
-            for (const b of balls) { const s = Math.hypot(b.vx, b.vy) || 320; extra.push({ x: b.x, y: b.y, vx: s * 0.5, vy: -Math.abs(s * 0.86), r: 6 }, { x: b.x, y: b.y, vx: -s * 0.5, vy: -Math.abs(s * 0.86), r: 6 }); }
+            for (const b of balls) {
+              const s = Math.hypot(b.vx, b.vy) || 320;
+              extra.push(
+                { x: b.x, y: b.y, vx: s * 0.5, vy: -Math.abs(s * 0.86), r: 6 },
+                { x: b.x, y: b.y, vx: -s * 0.5, vy: -Math.abs(s * 0.86), r: 6 },
+              );
+            }
             balls.push(...extra.slice(0, 4));
             ctx.hud.toast('MULTIBALL');
-          } else if (d.kind === 'slow') { slow = 7; ctx.hud.toast('SLOW'); }
-          else { paddle.w = Math.min(132, paddle.w + 18); ctx.hud.toast('WIDE PADDLE'); }
+          } else if (d.kind === 'slow') {
+            slow = 7;
+            ctx.hud.toast('SLOW');
+          } else {
+            paddle.w = Math.min(132, paddle.w + 18);
+            ctx.hud.toast('WIDE PADDLE');
+          }
           ctx.audio.sfx('powerup');
         }
       }
@@ -1551,7 +2000,10 @@ export function createBrickBreaker(ctx: GameContext): Game {
         lives--;
         ctx.hud.setLives(lives);
         balls = [{ x: paddle.x, y: H - 82, vx: ctx.rng.pick([-190, 190]), vy: -285, r: 6 }];
-        if (lives <= 0) { ctx.gameOver(score, { level }); return; }
+        if (lives <= 0) {
+          ctx.gameOver(score, { level });
+          return;
+        }
       }
       // Feature: clear the board → next level
       if (!bricks.length) {
@@ -1565,7 +2017,15 @@ export function createBrickBreaker(ctx: GameContext): Game {
         ctx.hud.toast(`LEVEL ${level}`);
       }
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(hot > 0 ? `HOT ${Math.ceil(hot)}` : slow > 0 ? `SLOW ${Math.ceil(slow)}` : combo >= 5 ? `COMBO x${1 + Math.floor(combo / 5)}` : `BREAK · L${level}`);
+      ctx.hud.setLabel(
+        hot > 0
+          ? `HOT ${Math.ceil(hot)}`
+          : slow > 0
+            ? `SLOW ${Math.ceil(slow)}`
+            : combo >= 5
+              ? `COMBO x${1 + Math.floor(combo / 5)}`
+              : `BREAK · L${level}`,
+      );
       draw();
     },
     destroy() {
@@ -1593,23 +2053,42 @@ export function createTurboDrift(ctx: GameContext): Game {
   ctx.hud.setLives(lives);
   ctx.hud.setLabel('HOLD A NITRO');
   const spawnGate = (): void => {
-    gates.push({ x: 54 + ctx.rng.next() * (W - 108), y: -30, w: 82 - Math.min(34, score / 600), hit: false });
+    gates.push({
+      x: 54 + ctx.rng.next() * (W - 108),
+      y: -30,
+      w: 82 - Math.min(34, score / 600),
+      hit: false,
+    });
     if (ctx.rng.next() < 0.4) coins.push({ x: 40 + ctx.rng.next() * (W - 80), y: -70, hit: false });
-    if (score > 1500 && ctx.rng.next() < 0.3) cones.push({ x: 40 + ctx.rng.next() * (W - 80), y: -110 });
+    if (score > 1500 && ctx.rng.next() < 0.3)
+      cones.push({ x: 40 + ctx.rng.next() * (W - 80), y: -110 });
   };
   const scroll = (): number => 175 + score * 0.018;
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.38);
-    g.moveTo(W * 0.38, H * 0.28).lineTo(W * 0.62, H * 0.28).lineTo(W - 24, H - 48).lineTo(24, H - 48).closePath().fill({ color: 0x090a18, alpha: 0.92 });
+    g.moveTo(W * 0.38, H * 0.28)
+      .lineTo(W * 0.62, H * 0.28)
+      .lineTo(W - 24, H - 48)
+      .lineTo(24, H - 48)
+      .closePath()
+      .fill({ color: 0x090a18, alpha: 0.92 });
     for (const gate of gates) {
-      g.roundRect(gate.x - gate.w / 2, gate.y, gate.w, 12, 6).fill({ color: gate.hit ? GREEN : GOLD });
+      g.roundRect(gate.x - gate.w / 2, gate.y, gate.w, 12, 6).fill({
+        color: gate.hit ? GREEN : GOLD,
+      });
       g.circle(gate.x - gate.w / 2, gate.y + 6, 7).fill({ color: CYAN });
       g.circle(gate.x + gate.w / 2, gate.y + 6, 7).fill({ color: CYAN });
     }
-    for (const c of coins) { if (!c.hit) g.circle(c.x, c.y, 9).fill({ color: GOLD }); }
+    for (const c of coins) {
+      if (!c.hit) g.circle(c.x, c.y, 9).fill({ color: GOLD });
+    }
     for (const c of cones) {
-      g.moveTo(c.x, c.y - 12).lineTo(c.x + 11, c.y + 10).lineTo(c.x - 11, c.y + 10).closePath().fill({ color: 0xff7b00 });
+      g.moveTo(c.x, c.y - 12)
+        .lineTo(c.x + 11, c.y + 10)
+        .lineTo(c.x - 11, c.y + 10)
+        .closePath()
+        .fill({ color: 0xff7b00 });
       g.rect(c.x - 11, c.y + 4, 22, 3).fill({ color: WHITE, alpha: 0.6 });
     }
     g.roundRect(car.x - 16, car.y - 24, 32, 48, 8).fill({ color: nitro > 0 ? GOLD : GREEN });
@@ -1622,7 +2101,10 @@ export function createTurboDrift(ctx: GameContext): Game {
       t += dt;
       updateSparks(sparks, dt);
       const ax = ctx.input.axis().x;
-      nitro = (ctx.input.isDown('a') || ctx.input.isDown('up')) ? Math.min(1.4, nitro + dt * 3) : Math.max(0, nitro - dt * 1.8);
+      nitro =
+        ctx.input.isDown('a') || ctx.input.isDown('up')
+          ? Math.min(1.4, nitro + dt * 3)
+          : Math.max(0, nitro - dt * 1.8);
       car.vx += ax * (680 + nitro * 260) * dt;
       car.vx *= nitro > 0 ? 0.9 : 0.92;
       car.x = clamp(car.x + car.vx * dt, 34, W - 34);
@@ -1640,9 +2122,19 @@ export function createTurboDrift(ctx: GameContext): Game {
             const perfect = Math.abs(car.x - gate.x) < Math.max(8, gate.w * 0.12);
             streak++;
             const mult = 1 + Math.floor(streak / 4);
-            const pts = (120 + Math.round(Math.abs(car.vx) * 0.25) + (nitro > 0.5 ? 80 : 0) + (perfect ? 140 : 0)) * mult;
+            const pts =
+              (120 +
+                Math.round(Math.abs(car.vx) * 0.25) +
+                (nitro > 0.5 ? 80 : 0) +
+                (perfect ? 140 : 0)) *
+              mult;
             score += pts;
-            ctx.fx.floatingText(perfect ? `PERFECT +${pts}` : nitro > 0.5 ? `NITRO +${pts}` : `+${pts}`, car.x, car.y - 32, perfect ? CYAN : GOLD);
+            ctx.fx.floatingText(
+              perfect ? `PERFECT +${pts}` : nitro > 0.5 ? `NITRO +${pts}` : `+${pts}`,
+              car.x,
+              car.y - 32,
+              perfect ? CYAN : GOLD,
+            );
             if (perfect && streak % 4 === 0) ctx.hud.toast(`STREAK x${mult}`);
             else if (perfect) ctx.hud.toast('PERFECT GATE');
             ctx.audio.sfx('coin');
@@ -1652,7 +2144,10 @@ export function createTurboDrift(ctx: GameContext): Game {
             lives--;
             ctx.hud.setLives(lives);
             ctx.fx.screenShake(5, 0.12);
-            if (lives <= 0) { ctx.gameOver(score); return; }
+            if (lives <= 0) {
+              ctx.gameOver(score);
+              return;
+            }
           }
         }
         if (gate.y > H + 30) gates.splice(i, 1);
@@ -1661,7 +2156,10 @@ export function createTurboDrift(ctx: GameContext): Game {
       for (let i = coins.length - 1; i >= 0; i--) {
         const c = coins[i]!;
         c.y += scroll() * dt;
-        if (c.y > H + 20) { coins.splice(i, 1); continue; }
+        if (c.y > H + 20) {
+          coins.splice(i, 1);
+          continue;
+        }
         if (!c.hit && Math.hypot(c.x - car.x, c.y - car.y) < 26) {
           c.hit = true;
           score += 60;
@@ -1675,7 +2173,10 @@ export function createTurboDrift(ctx: GameContext): Game {
       for (let i = cones.length - 1; i >= 0; i--) {
         const c = cones[i]!;
         c.y += scroll() * dt;
-        if (c.y > H + 20) { cones.splice(i, 1); continue; }
+        if (c.y > H + 20) {
+          cones.splice(i, 1);
+          continue;
+        }
         if (Math.abs(c.x - car.x) < 22 && Math.abs(c.y - car.y) < 28) {
           cones.splice(i, 1);
           streak = 0;
@@ -1683,11 +2184,20 @@ export function createTurboDrift(ctx: GameContext): Game {
           ctx.hud.setLives(lives);
           ctx.fx.screenShake(7, 0.16);
           burst(sparks, ctx.rng, car.x, car.y, 0xff7b00, 14, 130);
-          if (lives <= 0) { ctx.gameOver(score); return; }
+          if (lives <= 0) {
+            ctx.gameOver(score);
+            return;
+          }
         }
       }
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(streak >= 4 ? `STREAK x${1 + Math.floor(streak / 4)}` : nitro > 0.5 ? 'NITRO DRIFT' : 'HOLD A NITRO');
+      ctx.hud.setLabel(
+        streak >= 4
+          ? `STREAK x${1 + Math.floor(streak / 4)}`
+          : nitro > 0.5
+            ? 'NITRO DRIFT'
+            : 'HOLD A NITRO',
+      );
       draw();
     },
     destroy() {
@@ -1708,7 +2218,14 @@ export function createColorSwitch(ctx: GameContext): Game {
   let combo = 0;
   let zone = 1; // Feature: zone multiplier
   let t = 0;
-  interface Ring { y: number; rot: number; speed: number; passed: boolean; star: boolean; bomb: boolean }
+  interface Ring {
+    y: number;
+    rot: number;
+    speed: number;
+    passed: boolean;
+    star: boolean;
+    bomb: boolean;
+  }
   const rings: Ring[] = [{ y: 160, rot: 0, speed: 1.1, passed: false, star: false, bomb: false }];
   ctx.hud.setScore(0);
   ctx.hud.setLives(lives);
@@ -1728,9 +2245,13 @@ export function createColorSwitch(ctx: GameContext): Game {
     for (const ring of rings) {
       const r = 58;
       for (let i = 0; i < 4; i++) {
-        const a0 = ring.rot + i * Math.PI / 2;
+        const a0 = ring.rot + (i * Math.PI) / 2;
         const a1 = a0 + Math.PI / 2 - 0.12;
-        g.arc(W / 2, ring.y, r, a0, a1).stroke({ width: 13, color: ring.bomb ? colors[(i + Math.floor(t * 6)) % 4]! : colors[i]!, alpha: 0.9 });
+        g.arc(W / 2, ring.y, r, a0, a1).stroke({
+          width: 13,
+          color: ring.bomb ? colors[(i + Math.floor(t * 6)) % 4]! : colors[i]!,
+          alpha: 0.9,
+        });
       }
       if (ring.star) g.star(W / 2, ring.y, 5, 12, 6).fill({ color: GOLD });
       else g.circle(W / 2, ring.y, 5).fill({ color: WHITE, alpha: 0.22 });
@@ -1751,11 +2272,18 @@ export function createColorSwitch(ctx: GameContext): Game {
         ring.rot += ring.speed * dt;
         if (!ring.passed && ring.y > H - 88) {
           ring.passed = true;
-          const seg = (((Math.floor((((Math.PI / 2 - ring.rot) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 2)))) % 4);
+          const seg =
+            Math.floor(
+              ((((Math.PI / 2 - ring.rot) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) /
+                (Math.PI / 2),
+            ) % 4;
           if (ring.bomb || seg === color) {
             combo++;
             let pts = (160 + combo * 35) * zone;
-            if (ring.star) { pts += 120 * zone; ctx.fx.floatingText('★ +BONUS', W / 2, H - 150, GOLD); } // Feature: star bonus
+            if (ring.star) {
+              pts += 120 * zone;
+              ctx.fx.floatingText('★ +BONUS', W / 2, H - 150, GOLD);
+            } // Feature: star bonus
             if (ring.bomb) ctx.hud.toast('FREE PASS!');
             score += pts;
             ctx.audio.sfx(ring.bomb ? 'powerup' : 'coin');
@@ -1763,18 +2291,31 @@ export function createColorSwitch(ctx: GameContext): Game {
             burst(sparks, ctx.rng, W / 2, H - 86, ring.bomb ? WHITE : colors[color]!, 15, 120);
             // Feature: zone multiplier rises with score
             const nz = 1 + Math.floor(score / 5000);
-            if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); }
+            if (nz > zone) {
+              zone = nz;
+              ctx.hud.toast(`ZONE ${zone} · x${zone}`);
+            }
           } else {
             combo = 0;
             lives--;
             ctx.hud.setLives(lives);
             ctx.fx.screenShake(7, 0.15);
-            if (lives <= 0) { ctx.gameOver(score, { zone }); return; }
+            if (lives <= 0) {
+              ctx.gameOver(score, { zone });
+              return;
+            }
           }
         }
       }
       if (rings[rings.length - 1]!.y > 250) {
-        rings.push({ y: -30, rot: ctx.rng.next() * Math.PI * 2, speed: ctx.rng.pick([-1.4, -1, 1, 1.4]), passed: false, star: ctx.rng.next() < 0.3, bomb: ctx.rng.next() < 0.1 });
+        rings.push({
+          y: -30,
+          rot: ctx.rng.next() * Math.PI * 2,
+          speed: ctx.rng.pick([-1.4, -1, 1, 1.4]),
+          passed: false,
+          star: ctx.rng.next() < 0.3,
+          bomb: ctx.rng.next() < 0.1,
+        });
       }
       while (rings[0] && rings[0].y > H + 90) rings.shift();
       ctx.hud.setScore(score);
@@ -1782,7 +2323,8 @@ export function createColorSwitch(ctx: GameContext): Game {
       draw();
     },
     destroy() {
-      offDown(); offTap();
+      offDown();
+      offTap();
       layer.destroy({ children: true });
     },
   };
@@ -1817,9 +2359,12 @@ export function createGalacticInvaders(ctx: GameContext): Game {
   ctx.hud.setLabel('WAVE 1');
   const build = (): void => {
     invaders.length = 0;
-    for (let r = 0; r < 5; r++) for (let c = 0; c < 8; c++) invaders.push({ x: 32 + c * 38, y: 70 + r * 30, row: r, alive: true });
+    for (let r = 0; r < 5; r++)
+      for (let c = 0; c < 8; c++)
+        invaders.push({ x: 32 + c * 38, y: 70 + r * 30, row: r, alive: true });
     barriers.length = 0;
-    for (let i = 0; i < 3; i++) barriers.push({ x: W * (0.25 + i * 0.25), y: H - 118, hp: 5 + wave });
+    for (let i = 0; i < 3; i++)
+      barriers.push({ x: W * (0.25 + i * 0.25), y: H - 118, hp: 5 + wave });
   };
   build();
   const shoot = (): void => {
@@ -1839,7 +2384,9 @@ export function createGalacticInvaders(ctx: GameContext): Game {
     ctx.audio.sfx('powerup');
     ctx.hud.toast(kind === 'rapid' ? 'RAPID FIRE' : kind === 'spread' ? 'SPREAD SHOT' : 'SHIELD');
   };
-  const offDown = ctx.input.on('down', (a) => { if (a === 'a') shoot(); });
+  const offDown = ctx.input.on('down', (a) => {
+    if (a === 'a') shoot();
+  });
   const offTap = ctx.input.on('tap', shoot);
   function draw(): void {
     g.clear();
@@ -1868,7 +2415,9 @@ export function createGalacticInvaders(ctx: GameContext): Game {
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).stroke({ width: 1, color: WHITE, alpha: 0.6 });
     }
     if (shield) g.circle(player.x, player.y + 4, 26).stroke({ width: 2, color: GREEN, alpha: 0.6 });
-    g.roundRect(player.x - 20, player.y, 40, 14, 4).fill({ color: spreadT > 0 ? CYAN : rapidT > 0 ? GOLD : CYAN });
+    g.roundRect(player.x - 20, player.y, 40, 14, 4).fill({
+      color: spreadT > 0 ? CYAN : rapidT > 0 ? GOLD : CYAN,
+    });
     g.rect(player.x - 3, player.y - 8, 6, 8).fill({ color: CYAN });
     drawSparks(g, sparks);
   }
@@ -1884,13 +2433,24 @@ export function createGalacticInvaders(ctx: GameContext): Game {
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i]!;
         d.y += 120 * dt;
-        if (d.y > H + 10) { drops.splice(i, 1); continue; }
-        if (Math.abs(d.x - player.x) < 26 && d.y > player.y - 8) { collect(d.kind); drops.splice(i, 1); }
+        if (d.y > H + 10) {
+          drops.splice(i, 1);
+          continue;
+        }
+        if (Math.abs(d.x - player.x) < 26 && d.y > player.y - 8) {
+          collect(d.kind);
+          drops.splice(i, 1);
+        }
       }
       ufoCd -= dt;
       if (!ufo && ufoCd <= 0) {
         const dirPick = ctx.rng.pick([-1, 1]);
-        ufo = { x: dirPick > 0 ? -32 : W + 32, y: 44, dir: dirPick, worth: ctx.rng.pick([200, 300, 500]) };
+        ufo = {
+          x: dirPick > 0 ? -32 : W + 32,
+          y: 44,
+          dir: dirPick,
+          worth: ctx.rng.pick([200, 300, 500]),
+        };
         ufoCd = 9 + ctx.rng.next() * 5;
         ctx.audio.sfx('blip');
       }
@@ -1902,17 +2462,19 @@ export function createGalacticInvaders(ctx: GameContext): Game {
       if (ctx.input.isDown('a')) shoot();
       step += dt;
       const alive = invaders.filter((i) => i.alive);
-      if (step > Math.max(0.08, 0.52 * alive.length / invaders.length)) {
+      if (step > Math.max(0.08, (0.52 * alive.length) / invaders.length)) {
         step = 0;
         let edge = false;
-        for (const inv of alive) if ((dir > 0 && inv.x > W - 28) || (dir < 0 && inv.x < 28)) edge = true;
+        for (const inv of alive)
+          if ((dir > 0 && inv.x > W - 28) || (dir < 0 && inv.x < 28)) edge = true;
         if (edge) {
           dir *= -1;
           for (const inv of alive) inv.y += 18;
         } else for (const inv of alive) inv.x += dir * 14;
         if (alive.some((inv) => inv.y > H - 78)) ctx.gameOver(score, { wave });
         const shooter = ctx.rng.pick(alive);
-        if (shooter && ctx.rng.next() < 0.45) shots.push({ x: shooter.x, y: shooter.y + 12, enemy: true });
+        if (shooter && ctx.rng.next() < 0.45)
+          shots.push({ x: shooter.x, y: shooter.y + 12, enemy: true });
       }
       for (let i = shots.length - 1; i >= 0; i--) {
         const s = shots[i]!;
@@ -1947,7 +2509,10 @@ export function createGalacticInvaders(ctx: GameContext): Game {
             lives--;
             ctx.hud.setLives(lives);
             ctx.fx.screenShake(6, 0.12);
-            if (lives <= 0) { ctx.gameOver(score, { wave }); return; }
+            if (lives <= 0) {
+              ctx.gameOver(score, { wave });
+              return;
+            }
           }
         } else if (!s.enemy) {
           if (ufo && Math.abs(s.x - ufo.x) < 27 && Math.abs(s.y - ufo.y) < 18) {
@@ -1967,8 +2532,14 @@ export function createGalacticInvaders(ctx: GameContext): Game {
               streakT = 2.5;
               const mult = 1 + Math.floor(streak / 6);
               score += (5 - inv.row) * 20 * mult;
-              if (streak >= 6 && streak % 6 === 0) ctx.fx.floatingText(`STREAK x${mult}`, inv.x, inv.y - 14, GOLD);
-              if (ctx.rng.next() < 0.1) drops.push({ x: inv.x, y: inv.y, kind: ctx.rng.pick(['rapid', 'spread', 'shield'] as const) });
+              if (streak >= 6 && streak % 6 === 0)
+                ctx.fx.floatingText(`STREAK x${mult}`, inv.x, inv.y - 14, GOLD);
+              if (ctx.rng.next() < 0.1)
+                drops.push({
+                  x: inv.x,
+                  y: inv.y,
+                  kind: ctx.rng.pick(['rapid', 'spread', 'shield'] as const),
+                });
               ctx.audio.sfx('explosion');
               burst(sparks, ctx.rng, inv.x, inv.y, inv.row < 2 ? PINK : CYAN, 10, 90);
               break;
@@ -1983,11 +2554,20 @@ export function createGalacticInvaders(ctx: GameContext): Game {
       }
       ctx.hud.setScore(score);
       const buffs = [rapidT > 0 ? '⚡' : '', spreadT > 0 ? '⋔' : '', shield ? '🛡' : ''].join('');
-      ctx.hud.setLabel(ufo ? 'BONUS UFO' : buffs ? `WAVE ${wave} ${buffs}` : streak >= 6 ? `STREAK x${1 + Math.floor(streak / 6)}` : `WAVE ${wave}`);
+      ctx.hud.setLabel(
+        ufo
+          ? 'BONUS UFO'
+          : buffs
+            ? `WAVE ${wave} ${buffs}`
+            : streak >= 6
+              ? `STREAK x${1 + Math.floor(streak / 6)}`
+              : `WAVE ${wave}`,
+      );
       draw();
     },
     destroy() {
-      offDown(); offTap();
+      offDown();
+      offTap();
       layer.destroy({ children: true });
     },
   };

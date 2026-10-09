@@ -37,7 +37,8 @@ export class ChiptuneSynth {
     const gain = this.ctx.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t0);
-    if (slideTo !== undefined) osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t0 + duration);
+    if (slideTo !== undefined)
+      osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t0 + duration);
 
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.exponentialRampToValueAtTime(volume, t0 + attack);
@@ -68,7 +69,10 @@ export class ChiptuneSynth {
   sequence(notes: Note[], gap = 0): void {
     let when = 0;
     for (const n of notes) {
-      window.setTimeout(() => this.tone({ freq: n.freq, duration: n.dur, type: n.type ?? 'square' }), when * 1000);
+      window.setTimeout(
+        () => this.tone({ freq: n.freq, duration: n.dur, type: n.type ?? 'square' }),
+        when * 1000,
+      );
       when += n.dur + gap;
     }
   }

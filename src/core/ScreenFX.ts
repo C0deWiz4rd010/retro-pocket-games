@@ -1,6 +1,7 @@
 import { Filter, GlProgram } from 'pixi.js';
 import { pixi } from './PixiManager';
 import { settings } from '@store/settings';
+import { fxState } from './fxState';
 
 /**
  * Optional CRT post-processing applied to the whole Pixi stage when ScreenFX = "full".
@@ -36,7 +37,6 @@ out vec4 finalColor;
 uniform sampler2D uTexture;
 uniform vec4 uInputSize;
 uniform float uIntensity;
-uniform float uTime;
 
 void main(void) {
   vec2 uv = vTextureCoord;
@@ -72,7 +72,6 @@ void main(void) {
 class ScreenFX {
   private filter: Filter | null = null;
   private active = false;
-  private time = 0;
 
   private build(): Filter {
     if (this.filter) return this.filter;
@@ -81,7 +80,6 @@ class ScreenFX {
       resources: {
         crtUniforms: {
           uIntensity: { value: 0.6, type: 'f32' },
-          uTime: { value: 0, type: 'f32' },
         },
       },
     });
@@ -91,7 +89,9 @@ class ScreenFX {
   /** Reconcile the stage filter with the current ScreenFX setting. Fails safe to CSS. */
   apply(): void {
     const s = settings();
-    const wantShader = s.screenFx.mode === 'full';
+    // The shader only runs while a game is on screen (menus render nothing) and unless the FPS
+    // monitor already downgraded it this session.
+    const wantShader = s.screenFx.mode === 'full' && pixi.isActive && !fxState.forcedCss;
     try {
       if (wantShader && !this.active) {
         const f = this.build();
@@ -117,21 +117,15 @@ class ScreenFX {
 
   /** Drop from the shader to the CSS-only layer (used by the FPS auto-downgrade). */
   downgrade(): void {
+    fxState.forcedCss = true; // sticky: later settings changes must not re-enable the shader
+    document.documentElement.dataset.fx = 'css';
     if (!this.active) return;
     pixi.app.stage.filters = [];
     this.active = false;
-    document.documentElement.dataset.fx = 'css';
   }
 
   isActive(): boolean {
     return this.active;
-  }
-
-  tick(dt: number): void {
-    if (!this.active || !this.filter) return;
-    this.time += dt;
-    const res = this.filter.resources.crtUniforms.uniforms as { uTime: number };
-    res.uTime = this.time;
   }
 
   private setIntensity(v: number): void {

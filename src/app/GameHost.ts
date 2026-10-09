@@ -134,7 +134,8 @@ export class GameHost {
     if (this.destroyed) return;
     this.game = await mod.default(ctx);
 
-    // CRT shader (if enabled) + dev FPS meter / auto-downgrade.
+    // Start the render loop (idle in menus), then CRT shader (if enabled) + FPS meter.
+    pixi.setActive(true);
     screenFX.apply();
     perf.attach(this.screenView);
 
@@ -150,7 +151,6 @@ export class GameHost {
     this.tickFn = (tk: Ticker) => {
       this.input.pollGamepad();
       const dt = Math.min(tk.deltaMS / 1000, 0.05);
-      screenFX.tick(dt);
       perf.tick(dt);
       this.fx.update(dt);
       if (!this.running || !this.game) return;
@@ -1017,6 +1017,9 @@ export class GameHost {
     this.fx.clear();
     this.input.detach(pixi.canvas);
     pixi.clearWorld();
+    // Back to menus: stop the render loop and drop the stage filter.
+    pixi.setActive(false);
+    screenFX.apply();
   }
 
   /** Called by the router when navigating away from a game. */

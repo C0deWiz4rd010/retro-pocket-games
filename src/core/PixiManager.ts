@@ -47,6 +47,14 @@ export class PixiManager {
   private host!: HTMLElement;
   private vw = 360;
   private vh = 640;
+  private resizeObserver: ResizeObserver | null = null;
+  private rect: DOMRect | null = null;
+  /** True while a game is running and the ticker is rendering (menus render nothing at all). */
+  private running = false;
+
+  /** Render-resolution tiers, best first. PerfMonitor steps down when frames stay too slow. */
+  private tiers: number[] = [2];
+  private tier = 0;
 
   scale = 1;
   offsetX = 0;
@@ -57,20 +65,67 @@ export class PixiManager {
   async init(host: HTMLElement): Promise<void> {
     this.host = host;
     this.app = new Application();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.tiers = [...new Set([dpr, 1.5, 1].filter((r) => r <= dpr))].sort((a, b) => b - a);
     await this.app.init({
       backgroundAlpha: 0, // let the themed CSS shell / CRT layer show through
       antialias: false, // crisp pixels + faster on mobile
-      resolution: Math.min(window.devicePixelRatio || 1, 2),
+      resolution: this.tiers[0],
       autoDensity: true,
       resizeTo: host,
-      powerPreference: 'high-performance',
+      preference: 'webgl', // the WebGPU renderer is never needed for 2D retro games
     });
     host.appendChild(this.app.canvas);
     this.app.canvas.style.touchAction = 'none';
     this.app.stage.addChild(this.world);
-    window.addEventListener('resize', this.layout);
-    window.addEventListener('orientationchange', this.layout);
+    // Menus draw nothing, so don't burn a frame loop (and battery) there.
+    this.setActive(false);
+    // Observe the host itself: catches rail/HUD toggles, URL-bar collapse and rotation, not just
+    // window resizes. Pixi's resizeTo only listens to the window, so resize explicitly.
+    this.resizeObserver = new ResizeObserver(() => {
+      this.app.resize();
+      this.layout();
+    });
+    this.resizeObserver.observe(host);
+    window.addEventListener('scroll', this.invalidateRect, true);
   }
+
+  /** Start/stop the render loop. Stopping first draws once so a cleared stage isn't left stale. */
+  setActive(on: boolean): void {
+    if (!this.app) return;
+    this.running = on;
+    if (on) {
+      this.app.ticker.start();
+    } else {
+      try {
+        this.app.render();
+      } catch {
+        /* renderer may already be gone */
+      }
+      this.app.ticker.stop();
+    }
+  }
+
+  get isActive(): boolean {
+    return this.running;
+  }
+
+  /**
+   * Step the render resolution down one tier (2 → 1.5 → 1). Returns false when already at the
+   * lowest tier. Used by PerfMonitor on devices that can't hold frame rate.
+   */
+  lowerQuality(): boolean {
+    if (this.tier >= this.tiers.length - 1) return false;
+    this.tier++;
+    this.app.renderer.resolution = this.tiers[this.tier]!;
+    this.app.resize();
+    this.layout();
+    return true;
+  }
+
+  private invalidateRect = (): void => {
+    this.rect = null;
+  };
 
   setVirtual(w: number, h: number): void {
     this.vw = w;
@@ -80,6 +135,7 @@ export class PixiManager {
 
   layout = (): void => {
     if (!this.host) return;
+    this.rect = null;
     const sw = this.host.clientWidth || window.innerWidth;
     const sh = this.host.clientHeight || window.innerHeight;
     const l = computeLayout(this.vw, this.vh, sw, sh);
@@ -94,7 +150,8 @@ export class PixiManager {
 
   /** Map client (CSS px) coordinates to virtual game coordinates. */
   screenToVirtual = (clientX: number, clientY: number): { x: number; y: number } => {
-    const rect = this.app.canvas.getBoundingClientRect();
+    // Cached: reading the rect on every pointermove would force a layout each time.
+    const rect = (this.rect ??= this.app.canvas.getBoundingClientRect());
     return mapToVirtual(clientX - rect.left, clientY - rect.top, {
       rotated: this.rotated,
       scale: this.scale,

@@ -32,3 +32,13 @@ test.describe('GameHost pause behaviour', () => {
     await expect(page.locator('[data-overlay] .quick-toggles')).toBeVisible();
   });
 });
+
+test('the canvas renders while a game runs (ticker is started by the host)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await bootApp(page);
+  await launchGame(page, 'snake');
+  await page.waitForTimeout(800);
+  const shot = await page.locator('canvas').screenshot();
+  // A blank/transparent canvas encodes to a tiny PNG; real game art is far larger.
+  expect(shot.length).toBeGreaterThan(3000);
+});

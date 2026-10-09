@@ -155,7 +155,10 @@ export default function createGame(ctx: GameContext): Game {
 
   const setDir = (a: Action | Dir): void => {
     const d = DIRS[a];
-    if (d) pac.next = d;
+    if (!d) return;
+    pac.next = d;
+    // Reversing is allowed anywhere, not just at junctions.
+    if (d.x === -pac.dir.x && d.y === -pac.dir.y && (d.x !== 0 || d.y !== 0)) pac.dir = d;
   };
   const offDown = ctx.input.on('down', setDir);
   const offSwipe = ctx.input.on('swipe', setDir);
@@ -192,39 +195,72 @@ export default function createGame(ctx: GameContext): Game {
     });
   };
 
-  const moveGhost = (gh: Ghost, dt: number): void => {
-    if (Math.abs(gh.x - Math.round(gh.x)) < 0.06 && Math.abs(gh.y - Math.round(gh.y)) < 0.06) {
-      gh.x = Math.round(gh.x);
-      gh.y = Math.round(gh.y);
-      let choices = Object.values(DIRS).filter(
-        (d) => !(d.x === -gh.dir.x && d.y === -gh.dir.y) && !isWall(gh.x + d.x, gh.y + d.y),
-      );
-      if (!choices.length)
-        choices = Object.values(DIRS).filter((d) => !isWall(gh.x + d.x, gh.y + d.y));
-      if (choices.length) {
-        if (gh.frightened > 0) {
-          gh.dir = ctx.rng.pick(choices);
-        } else {
-          const target = mode === 'chase' ? { x: pac.x, y: pac.y } : gh.scatter;
-          let best = choices[0]!;
-          let bestD = Infinity;
-          for (const d of choices) {
-            const dx = gh.x + d.x - target.x;
-            const dy = gh.y + d.y - target.y;
-            const dist = dx * dx + dy * dy;
-            if (dist < bestD) {
-              bestD = dist;
-              best = d;
-            }
-          }
-          gh.dir = best;
-        }
+  const atCentre = (m: { x: number; y: number }): boolean =>
+    Math.abs(m.x - Math.round(m.x)) < 1e-6 && Math.abs(m.y - Math.round(m.y)) < 1e-6;
+
+  /**
+   * Move `dist` cells along m.dir, stopping at EVERY cell centre to call `decide` (which may
+   * change m.dir, eat dots, ...). Because no centre is ever skipped, entities can never tunnel
+   * through walls regardless of speed or frame time. Stops early if decide() leaves dir at 0.
+   */
+  const travel = (
+    m: { x: number; y: number; dir: { x: number; y: number } },
+    dist: number,
+    decide: () => void,
+  ): void => {
+    let guard = 16;
+    while (dist > 1e-6 && guard-- > 0) {
+      if (atCentre(m)) {
+        m.x = Math.round(m.x);
+        m.y = Math.round(m.y);
+        decide();
+        if (m.dir.x === 0 && m.dir.y === 0) return;
+      }
+      // Distance to the next centre in the travel direction (a full cell when on a centre).
+      const frac = m.dir.x !== 0 ? m.x - Math.floor(m.x) : m.y - Math.floor(m.y);
+      const sign = m.dir.x !== 0 ? m.dir.x : m.dir.y;
+      const toCentre = frac < 1e-6 ? 1 : sign > 0 ? 1 - frac : frac;
+      const step = Math.min(dist, toCentre);
+      m.x += m.dir.x * step;
+      m.y += m.dir.y * step;
+      dist -= step;
+      if (step === toCentre) {
+        m.x = Math.round(m.x);
+        m.y = Math.round(m.y);
+      }
+      m.x = (m.x + COLS) % COLS;
+    }
+  };
+
+  const chooseGhostDir = (gh: Ghost): void => {
+    let choices = Object.values(DIRS).filter(
+      (d) => !(d.x === -gh.dir.x && d.y === -gh.dir.y) && !isWall(gh.x + d.x, gh.y + d.y),
+    );
+    if (!choices.length)
+      choices = Object.values(DIRS).filter((d) => !isWall(gh.x + d.x, gh.y + d.y));
+    if (!choices.length) return;
+    if (gh.frightened > 0) {
+      gh.dir = ctx.rng.pick(choices);
+      return;
+    }
+    const target = mode === 'chase' ? { x: pac.x, y: pac.y } : gh.scatter;
+    let best = choices[0]!;
+    let bestD = Infinity;
+    for (const d of choices) {
+      const dx = gh.x + d.x - target.x;
+      const dy = gh.y + d.y - target.y;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestD) {
+        bestD = dist;
+        best = d;
       }
     }
+    gh.dir = best;
+  };
+
+  const moveGhost = (gh: Ghost, dt: number): void => {
     const sp = (gh.frightened > 0 ? ghostSpeed * 0.6 : ghostSpeed) * dt;
-    gh.x += gh.dir.x * sp;
-    gh.y += gh.dir.y * sp;
-    gh.x = (gh.x + COLS) % COLS;
+    travel(gh, sp, () => chooseGhostDir(gh));
   };
 
   return {
@@ -246,14 +282,10 @@ export default function createGame(ctx: GameContext): Game {
         modeTimer = 0;
       }
 
-      if (
-        Math.abs(pac.x - Math.round(pac.x)) < 0.12 &&
-        Math.abs(pac.y - Math.round(pac.y)) < 0.12
-      ) {
-        const rx = Math.round(pac.x);
-        const ry = Math.round(pac.y);
-        pac.x = rx;
-        pac.y = ry;
+      let levelAdvanced = false;
+      travel(pac, pacSpeed * dt, () => {
+        const rx = pac.x;
+        const ry = pac.y;
         if (!isWall(rx + pac.next.x, ry + pac.next.y)) pac.dir = pac.next;
         if (isWall(rx + pac.dir.x, ry + pac.dir.y)) pac.dir = { x: 0, y: 0 };
 
@@ -304,12 +336,10 @@ export default function createGame(ctx: GameContext): Game {
             gh.dir = [DIRS.left!, DIRS.up!, DIRS.right!, DIRS.down!][i]!;
           });
           ctx.hud.setScore(score);
-          return;
+          levelAdvanced = true;
         }
-      }
-      pac.x += pac.dir.x * pacSpeed * dt;
-      pac.y += pac.dir.y * pacSpeed * dt;
-      pac.x = (pac.x + COLS) % COLS;
+      });
+      if (levelAdvanced) return;
 
       ghosts.forEach((gh) => {
         if (gh.frightened > 0) gh.frightened -= dt;

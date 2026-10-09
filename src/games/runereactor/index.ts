@@ -90,7 +90,7 @@ export default function createGame(ctx: GameContext): Game {
       add(c, r); // extra charge on the centre to spark the cascade
       ctx.fx.screenShake(6, 0.16);
       ctx.audio.sfx('explosion');
-      window.setTimeout(() => addBomb(), 0);
+      ctx.timers.after(0, () => addBomb());
     } else {
       add(c, r);
     }

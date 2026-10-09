@@ -75,7 +75,7 @@ export default function createGame(ctx: GameContext): Game {
     setLabel();
     draw();
     // Feature: alternate who starts; CPU opens every other game
-    if (gameNo % 2 === 0) window.setTimeout(cpu, 400);
+    if (gameNo % 2 === 0) ctx.timers.after(0.4, cpu);
   };
 
   const finish = (): boolean => {
@@ -105,12 +105,11 @@ export default function createGame(ctx: GameContext): Game {
         ctx.hud.toast(
           pWins > cWins ? 'SERIES WON!' : pWins < cWins ? 'SERIES LOST' : 'SERIES TIED',
         );
-        window.setTimeout(
-          () => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }),
-          900,
+        ctx.timers.after(0.9, () =>
+          ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }),
         );
       } else {
-        window.setTimeout(nextGame, 1100);
+        ctx.timers.after(1.1, nextGame);
       }
       return true;
     }
@@ -139,7 +138,7 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx('coin');
     draw();
     if (finish()) return;
-    window.setTimeout(cpu, 300);
+    ctx.timers.after(0.3, cpu);
   };
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {

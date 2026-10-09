@@ -56,7 +56,7 @@ export default function createGame(ctx: GameContext): Game {
       while (Math.hypot(p.x - target.x, p.y - target.y) < R * 2.4 && tries++ < 10) p = randPos();
       decoys.push(p);
     }
-    shownAt = performance.now();
+    shownAt = ctx.timers.now() * 1000;
     ctx.audio.sfx('blip');
   };
 
@@ -86,7 +86,7 @@ export default function createGame(ctx: GameContext): Game {
       }
     }
     if (Math.hypot(x - target.x, y - target.y) < R * 1.2) {
-      const ms = performance.now() - shownAt;
+      const ms = ctx.timers.now() * 1000 - shownAt;
       rounds++;
       totalMs += ms;
       best = Math.min(best, ms);
@@ -135,7 +135,7 @@ export default function createGame(ctx: GameContext): Game {
         if (waiting <= 0) spawn();
       } else {
         // shrinking window to react
-        if (performance.now() - shownAt > reactWindow()) {
+        if (ctx.timers.now() * 1000 - shownAt > reactWindow()) {
           lives--;
           streak = 0;
           ctx.hud.setLives(lives);

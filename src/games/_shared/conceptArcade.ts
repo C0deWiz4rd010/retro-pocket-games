@@ -839,6 +839,7 @@ export function createSpaceBlaster(ctx: GameContext): Game {
             if (lives <= 0) {
               over = true;
               ctx.gameOver(score);
+              return;
             }
           }
         }
@@ -877,7 +878,7 @@ export function createSpaceBlaster(ctx: GameContext): Game {
       }
       for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i]!;
-        e.y += (75 + score * 0.014) * dt;
+        e.y += Math.min(75 + score * 0.014, 230) * dt;
         e.x += Math.sin(t * 2 + e.phase) * (e.kind === 'saucer' ? 80 : 22) * dt;
         if (e.y > H + 30) {
           enemies.splice(i, 1);
@@ -893,6 +894,7 @@ export function createSpaceBlaster(ctx: GameContext): Game {
           if (lives <= 0) {
             over = true;
             ctx.gameOver(score);
+            return;
           }
           continue;
         }
@@ -911,7 +913,9 @@ export function createSpaceBlaster(ctx: GameContext): Game {
           if (lives <= 0) {
             over = true;
             ctx.gameOver(score);
+            return;
           }
+          continue;
         }
         for (let j = bullets.length - 1; j >= 0; j--) {
           const b = bullets[j]!;
@@ -2063,7 +2067,7 @@ export function createTurboDrift(ctx: GameContext): Game {
     if (score > 1500 && ctx.rng.next() < 0.3)
       cones.push({ x: 40 + ctx.rng.next() * (W - 80), y: -110 });
   };
-  const scroll = (): number => 175 + score * 0.018;
+  const scroll = (): number => Math.min(175 + score * 0.018, 400);
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.38);
@@ -2115,7 +2119,7 @@ export function createTurboDrift(ctx: GameContext): Game {
       }
       for (let i = gates.length - 1; i >= 0; i--) {
         const gate = gates[i]!;
-        gate.y += (175 + score * 0.018) * dt;
+        gate.y += scroll() * dt;
         if (!gate.hit && gate.y > car.y - 18) {
           gate.hit = true;
           if (Math.abs(car.x - gate.x) < gate.w / 2) {
@@ -2268,7 +2272,7 @@ export function createColorSwitch(ctx: GameContext): Game {
       updateSparks(sparks, dt);
       angle += dt * 2.2;
       for (const ring of rings) {
-        ring.y += (78 + score * 0.01) * dt;
+        ring.y += Math.min(78 + score * 0.01, 200) * dt;
         ring.rot += ring.speed * dt;
         if (!ring.passed && ring.y > H - 88) {
           ring.passed = true;

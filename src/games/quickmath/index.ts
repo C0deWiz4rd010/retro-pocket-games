@@ -38,7 +38,7 @@ export default function createGame(ctx: GameContext): Game {
   let lives = 3;
   let time = 45;
   let streak = 0;
-  let shownAt = performance.now(); // Feature: speed bonus
+  let shownAt = ctx.timers.now() * 1000; // Feature: speed bonus
   let problem = makeProblem();
   const labels: Text[] = [];
 
@@ -79,7 +79,7 @@ export default function createGame(ctx: GameContext): Game {
     if (picked === undefined) return;
     if (picked === problem.answer) {
       streak++;
-      const speed = Math.max(0, 70 - Math.round((performance.now() - shownAt) / 40)); // faster = more
+      const speed = Math.max(0, 70 - Math.round((ctx.timers.now() * 1000 - shownAt) / 40)); // faster = more
       score += 80 + streak * 20 + speed;
       time = Math.min(60, time + 1); // Feature: correct answers add a little time
       if (streak % 5 === 0 && lives < 5) {
@@ -101,7 +101,7 @@ export default function createGame(ctx: GameContext): Game {
       }
     }
     problem = makeProblem();
-    shownAt = performance.now();
+    shownAt = ctx.timers.now() * 1000;
     ctx.hud.setScore(score);
     draw();
   }

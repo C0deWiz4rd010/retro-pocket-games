@@ -193,7 +193,7 @@ export default function createGame(ctx: GameContext): Game {
     }
     updateLabels();
     draw();
-    if (!wasShip) setTimeout(() => aiTurn(), 600);
+    if (!wasShip) ctx.timers.after(0.6, () => aiTurn());
   };
 
   const aiTurn = (): void => {

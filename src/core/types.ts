@@ -3,6 +3,7 @@ import type { InputManager } from './InputManager';
 import type { AudioManager } from './AudioManager';
 import type { GameFX } from './GameFX';
 import type { RNG } from '@utils/rng';
+import type { Timers } from './Timers';
 
 /** Status display the host renders as a DOM overlay above the canvas. */
 export interface Hud {
@@ -23,6 +24,11 @@ export interface GameContext {
   rng: RNG;
   hud: Hud;
   fx: GameFX;
+  /**
+   * Game-time timers (freeze while paused, dropped on restart/exit). Use these instead of
+   * window.setTimeout and performance.now() inside games.
+   */
+  timers: Timers;
   /**
    * Simulation speed multiplier from daily modifiers (1 for normal play). The host already
    * folds this into the dt it passes to update(); exposed for games that tune their own timers.

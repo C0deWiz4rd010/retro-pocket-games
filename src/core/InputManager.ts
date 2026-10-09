@@ -44,7 +44,7 @@ const GAMEPAD_BUTTONS: Record<number, Action> = {
   0: 'a',
   1: 'b',
   8: 'select',
-  9: 'start',
+  9: 'pause', // Start button pauses; games keep Enter as their own 'start' action
   12: 'up',
   13: 'down',
   14: 'left',
@@ -68,12 +68,22 @@ export class InputManager extends Emitter<InputEvents> {
   // pointer/swipe tracking
   private pStart: { x: number; y: number; t: number } | null = null;
   private pDown = false;
+  /** While blocked (paused / overlay / countdown) only the 'pause' action reaches listeners. */
+  private blocked = false;
 
   private onKeyDown = (e: KeyboardEvent): void => {
     const a = this.keyMap[e.code];
     if (!a) return;
     e.preventDefault();
     if (!e.repeat) this.press(a);
+  };
+  private onBlur = (): void => this.releaseAll();
+  private onVisibility = (): void => {
+    if (document.visibilityState === 'hidden') this.releaseAll();
+  };
+  private onPointerCancel = (): void => {
+    this.pDown = false;
+    this.pStart = null;
   };
   private onKeyUp = (e: KeyboardEvent): void => {
     const a = this.keyMap[e.code];
@@ -90,6 +100,9 @@ export class InputManager extends Emitter<InputEvents> {
     canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointerMove);
     window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('pointercancel', this.onPointerCancel);
+    window.addEventListener('blur', this.onBlur);
+    document.addEventListener('visibilitychange', this.onVisibility);
   }
 
   configure(opts: { keyMap?: Record<string, Action>; gamepadDeadzone?: number }): void {
@@ -103,11 +116,33 @@ export class InputManager extends Emitter<InputEvents> {
     canvas.removeEventListener('pointerdown', this.onPointerDown);
     canvas.removeEventListener('pointermove', this.onPointerMove);
     window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('pointercancel', this.onPointerCancel);
+    window.removeEventListener('blur', this.onBlur);
+    document.removeEventListener('visibilitychange', this.onVisibility);
     this.pressed.clear();
+    this.blocked = false;
     this.clear();
   }
 
+  /** Gate game input (pause/overlays). Releases anything held so nothing sticks on resume. */
+  setBlocked(blocked: boolean): void {
+    if (this.blocked === blocked) return;
+    this.blocked = blocked;
+    if (blocked) {
+      this.releaseAll();
+      this.pDown = false;
+      this.pStart = null;
+    }
+  }
+
+  /** Release every held action (blur, visibility change, pause) so inputs never get stuck. */
+  releaseAll(): void {
+    for (const a of [...this.pressed]) this.release(a);
+    this.gpDirPrev.clear();
+  }
+
   press(a: Action): void {
+    if (this.blocked && a !== 'pause') return;
     if (this.pressed.has(a)) return;
     this.pressed.add(a);
     this.emit('down', a);
@@ -152,6 +187,7 @@ export class InputManager extends Emitter<InputEvents> {
   }
 
   private onPointerDown = (e: PointerEvent): void => {
+    if (this.blocked) return;
     this.pDown = true;
     this.pStart = { x: e.clientX, y: e.clientY, t: performance.now() };
     const v = this.toVirtual(e.clientX, e.clientY);
@@ -159,12 +195,14 @@ export class InputManager extends Emitter<InputEvents> {
   };
 
   private onPointerMove = (e: PointerEvent): void => {
+    if (this.blocked) return;
     const v = this.toVirtual(e.clientX, e.clientY);
     this.emit('pointermove', { ...v, down: this.pDown });
   };
 
   private onPointerUp = (e: PointerEvent): void => {
-    if (!this.pStart) {
+    if (this.blocked || !this.pStart) {
+      this.pStart = null;
       this.pDown = false;
       return;
     }

@@ -113,7 +113,8 @@ export default function createGame(ctx: GameContext): Game {
 
   function drawTerrain(): void {
     terrainG.clear();
-    terrainG.removeChildren();
+    // Destroy the previous pad label (removeChildren alone would leak its texture).
+    for (const child of terrainG.removeChildren()) child.destroy();
     const path: number[] = [];
     points.forEach((p) => path.push(p.x, p.y));
     path.push(W, H, 0, H);

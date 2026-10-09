@@ -49,7 +49,7 @@ export default function createGame(ctx: GameContext): Game {
   let time = 50;
   let streak = 0; // Feature: streak multiplier
   let hints = 3; // Feature: 50/50 eliminate hint
-  let shownAt = performance.now();
+  let shownAt = ctx.timers.now() * 1000;
   const eliminated = new Set<number>();
   const labels: Text[] = [];
 
@@ -75,7 +75,7 @@ export default function createGame(ctx: GameContext): Game {
     choices = [...set].sort(() => ctx.rng.next() - 0.5);
     scramble.text = shuffleWord(answer);
     eliminated.clear();
-    shownAt = performance.now();
+    shownAt = ctx.timers.now() * 1000;
     draw();
   }
 
@@ -97,7 +97,7 @@ export default function createGame(ctx: GameContext): Game {
     if (choices[i] === answer) {
       streak++;
       const mult = 1 + Math.floor(streak / 4);
-      const speed = Math.max(0, 60 - Math.round((performance.now() - shownAt) / 60));
+      const speed = Math.max(0, 60 - Math.round((ctx.timers.now() * 1000 - shownAt) / 60));
       score += (180 + speed) * mult;
       time += 1.5;
       ctx.audio.sfx('coin');

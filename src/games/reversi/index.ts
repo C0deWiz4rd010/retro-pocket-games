@@ -178,7 +178,7 @@ export default function createGame(ctx: GameContext): Game {
       ctx.hud.setScore(counts().p);
       setLabel();
       draw();
-      if (legal(2).length) window.setTimeout(cpuMove, 350);
+      if (legal(2).length) ctx.timers.after(0.35, cpuMove);
       else if (!legal(1).length) finish();
     }
   });

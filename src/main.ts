@@ -2,7 +2,6 @@ import './styles/index.css';
 import { registerSW } from 'virtual:pwa-register';
 import { loadSettings, settings, updateSettings, onSettingsChange } from '@store/settings';
 import { audio } from '@core/AudioManager';
-import { screenFX } from '@core/ScreenFX';
 import { loadProfile } from '@store/profile';
 import { loadAchievements } from '@store/achievements';
 import { loadDaily } from '@store/dailyStore';
@@ -46,11 +45,9 @@ async function boot(): Promise<void> {
   }
   localStorage.setItem('rp:seen', '1');
 
-  // React to live settings changes: re-sync music + CRT shader.
-  onSettingsChange(() => {
-    audio.syncMusic();
-    screenFX.apply();
-  });
+  // React to live settings changes: re-sync music. (GameHost subscribes for the CRT shader while a
+  // game runs, so the engine never has to load just to handle settings.)
+  onSettingsChange(() => audio.syncMusic());
 
   initPwaUx();
   const app = new App();

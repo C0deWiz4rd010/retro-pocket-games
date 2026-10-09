@@ -9,6 +9,7 @@ import { haptics } from '@core/Haptics';
 import { wakeLock } from '@core/WakeLock';
 import { screenFX } from '@core/ScreenFX';
 import { perf } from '@core/PerfMonitor';
+import { onSettingsChange } from '@store/settings';
 import { RNG } from '@utils/rng';
 import { el, clear } from '@utils/dom';
 import { submitScore, getBest, loadScores } from '@store/scores';
@@ -16,7 +17,7 @@ import { awardRun, addPlayTime } from '@store/profile';
 import { evaluateAchievements, buildContext, type Achievement } from '@store/achievements';
 import { recordDailyResult, currentStreak } from '@store/dailyStore';
 import { loadLeaderboard, qualifies, addEntry } from '@store/leaderboard';
-import { hasSeenTutorial, markTutorialSeen } from '@store/prefs';
+import { hasSeenTutorial, markTutorialSeen, playerName, setPlayerName } from '@store/prefs';
 import { settings, updateSettings } from '@store/settings';
 import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
@@ -72,6 +73,10 @@ export class GameHost {
   private overlayFocusCleanup: (() => void) | null = null;
   private lastHudScore = 0;
   private lastHudLives = 0;
+  private lastHudLabel = '';
+  /** Pending HUD/toast timers and the count-up frame; cancelled on teardown so none outlive the run. */
+  private uiTimers = new Set<number>();
+  private countRaf = 0;
   private cleanups: (() => void)[] = [];
 
   constructor(
@@ -134,8 +139,10 @@ export class GameHost {
     if (this.destroyed) return;
     this.game = await mod.default(ctx);
 
-    // CRT shader (if enabled) + dev FPS meter / auto-downgrade.
+    // Start the render loop (idle in menus), then CRT shader (if enabled) + FPS meter.
+    pixi.setActive(true);
     screenFX.apply();
+    this.cleanups.push(onSettingsChange(() => screenFX.apply()));
     perf.attach(this.screenView);
 
     // Pause on Esc/P (keyboard) or Start (gamepad). Enter stays a game action. Pressing it again
@@ -150,12 +157,15 @@ export class GameHost {
     this.tickFn = (tk: Ticker) => {
       this.input.pollGamepad();
       const dt = Math.min(tk.deltaMS / 1000, 0.05);
-      screenFX.tick(dt);
       perf.tick(dt);
       this.fx.update(dt);
       if (!this.running || !this.game) return;
-      // Fold the daily time-scale in, but keep the per-step dt clamped for stability.
-      const step = Math.min(dt * timeScale, 0.05);
+      // Fold the daily time-scale into the (already 50 ms-clamped) frame time. Allow a little
+      // headroom above 50 ms so turbo runs don't silently lose simulated time at low FPS.
+      // A fixed-step accumulator was considered and rejected: games draw inside update(), so
+      // sub-stepping would re-tessellate every frame several times on exactly the slow devices
+      // that can least afford it.
+      const step = Math.min(dt * timeScale, 0.075);
       this.timers.update(step);
       this.game.update(step);
     };
@@ -194,6 +204,7 @@ export class GameHost {
     this.hudLives = el('div', { class: 'hud__lives' });
     this.lastHudScore = 0;
     this.lastHudLives = 0;
+    this.lastHudLabel = labelText;
     // Show the current best to beat (if any) as a subtle HUD badge.
     const best = getBest(this.meta.id);
     this.hudBest = el('div', { class: 'hud__best' }, [best > 0 ? `★ ${best}` : '']);
@@ -375,41 +386,60 @@ export class GameHost {
 
   private makeHud(): Hud {
     return {
+      // Games call these every frame; touching the DOM only on a real change keeps style/layout
+      // work off the hot path.
       setScore: (n) => {
+        if (n === this.lastHudScore) return;
         const delta = n - this.lastHudScore;
         this.hudScore.textContent = String(n);
         if (delta > 0) this.pulseHud(this.hudScore, 'is-up', delta >= 100 ? `+${delta}` : '');
         this.lastHudScore = n;
       },
       setLives: (n) => {
+        if (n === this.lastHudLives) return;
         this.hudLives.textContent = '♥'.repeat(Math.max(0, n));
         if (this.lastHudLives > 0 && n < this.lastHudLives) this.pulseHud(this.hudLives, 'is-hit');
         else if (n > this.lastHudLives) this.pulseHud(this.hudLives, 'is-up');
         this.lastHudLives = n;
       },
       setLabel: (txt) => {
-        if (this.hudLabel.textContent !== txt) this.pulseHud(this.hudLabel, 'is-change');
+        if (txt === this.lastHudLabel) return;
+        this.lastHudLabel = txt;
+        this.pulseHud(this.hudLabel, 'is-change');
         this.hudLabel.textContent = txt;
       },
       toast: (txt) => this.toast(txt),
     };
   }
 
+  /** setTimeout that is cancelled on teardown. */
+  private later(fn: () => void, ms: number): void {
+    const id = window.setTimeout(() => {
+      this.uiTimers.delete(id);
+      fn();
+    }, ms);
+    this.uiTimers.add(id);
+  }
+
+  /**
+   * Flash a HUD value. No forced reflow: if the previous pulse is still playing it simply keeps
+   * playing (rapid score ticks coalesce into one pulse) and at most two +N badges are alive.
+   */
   private pulseHud(node: HTMLElement, cls: string, delta = ''): void {
-    node.classList.remove(cls);
-    void node.offsetWidth;
-    node.classList.add(cls);
-    window.setTimeout(() => node.classList.remove(cls), 360);
-    if (!delta) return;
+    if (!node.classList.contains(cls)) {
+      node.classList.add(cls);
+      this.later(() => node.classList.remove(cls), 360);
+    }
+    if (!delta || node.querySelectorAll('.hud-delta').length >= 2) return;
     const badge = el('span', { class: 'hud-delta' }, [delta]);
     node.append(badge);
-    window.setTimeout(() => badge.remove(), 720);
+    this.later(() => badge.remove(), 720);
   }
 
   private toast(text: string): void {
     const node = el('div', { class: 'toast' }, [text]);
     this.screenView.append(node);
-    window.setTimeout(() => node.remove(), 1900);
+    this.later(() => node.remove(), 1900);
   }
 
   /** Queue achievement-unlock toasts so they don't overlap. */
@@ -837,10 +867,10 @@ export class GameHost {
       const p = Math.min(1, (now - start) / dur);
       const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
       node.textContent = String(Math.round(target * eased));
-      if (p < 1) requestAnimationFrame(step);
+      if (p < 1) this.countRaf = requestAnimationFrame(step);
       else node.textContent = String(target);
     };
-    requestAnimationFrame(step);
+    this.countRaf = requestAnimationFrame(step);
   }
 
   private scoreRatio(score: number): number {
@@ -929,7 +959,7 @@ export class GameHost {
       class: 'name-input',
       maxlength: '8',
       placeholder: t('game.enterName'),
-      value: localStorage.getItem('rp:name') ?? '',
+      value: playerName(),
     }) as HTMLInputElement;
     const wrap = el('div', { class: 'name-entry' }, [
       el('div', { style: 'color:var(--accent);font-size:13px;font-weight:700' }, [
@@ -943,7 +973,7 @@ export class GameHost {
             class: 'btn btn--primary',
             onClick: () => {
               const name = input.value.trim() || 'YOU';
-              localStorage.setItem('rp:name', name);
+              setPlayerName(name);
               void addEntry(this.meta.id, name, score);
               audio.sfx('coin');
               wrap.replaceChildren(el('div', { style: 'color:var(--ok);font-size:13px' }, ['✓']));
@@ -1000,6 +1030,9 @@ export class GameHost {
 
   private teardown(): void {
     this.runId++;
+    for (const id of this.uiTimers) window.clearTimeout(id);
+    this.uiTimers.clear();
+    cancelAnimationFrame(this.countRaf);
     this.setRunning(false);
     this.cleanups.forEach((fn) => fn());
     this.cleanups = [];
@@ -1017,6 +1050,9 @@ export class GameHost {
     this.fx.clear();
     this.input.detach(pixi.canvas);
     pixi.clearWorld();
+    // Back to menus: stop the render loop and drop the stage filter.
+    pixi.setActive(false);
+    screenFX.apply();
   }
 
   /** Called by the router when navigating away from a game. */

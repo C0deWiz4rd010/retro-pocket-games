@@ -13,10 +13,17 @@ interface Flash {
   ttl: number;
 }
 
+/** Pool + live caps: popups are spammed in busy moments and Text creation re-rasterises a texture. */
+const MAX_LIVE_TEXTS = 24;
+const MAX_LIVE_FLASHES = 24;
+const MAX_POOLED = 16;
+
 export class GameFX {
   private root: Container | null = null;
   private texts: FloatingText[] = [];
   private flashes: Flash[] = [];
+  private textPool: Text[] = [];
+  private flashPool: Graphics[] = [];
   private shakeTime = 0;
   private shakeAmp = 0;
 
@@ -26,16 +33,24 @@ export class GameFX {
 
   floatingText(text: string, x: number, y: number, color = 0xffffff): void {
     if (!this.root) return;
-    const node = new Text({
-      text,
-      style: {
-        fill: color,
-        fontFamily: 'VT323, monospace',
-        fontSize: 24,
-        stroke: { color: 0x000000, width: 3 },
-      },
-    });
-    node.anchor.set(0.5);
+    if (this.texts.length >= MAX_LIVE_TEXTS) this.releaseText(this.texts.shift()!);
+    let node = this.textPool.pop();
+    if (node) {
+      node.text = text;
+      node.style.fill = color;
+    } else {
+      node = new Text({
+        text,
+        style: {
+          fill: color,
+          fontFamily: 'VT323, monospace',
+          fontSize: 24,
+          stroke: { color: 0x000000, width: 3 },
+        },
+      });
+      node.anchor.set(0.5);
+    }
+    node.alpha = 1;
     node.position.set(x, y);
     this.root.addChild(node);
     this.texts.push({ node, life: 0.55, ttl: 0.55, vy: -34 });
@@ -43,10 +58,25 @@ export class GameFX {
 
   flashRect(x: number, y: number, w: number, h: number, color = 0xffffff): void {
     if (!this.root) return;
-    const node = new Graphics();
-    node.rect(x, y, w, h).fill({ color, alpha: 0.4 });
+    if (this.flashes.length >= MAX_LIVE_FLASHES) this.releaseFlash(this.flashes.shift()!);
+    const node = this.flashPool.pop() ?? new Graphics();
+    node.clear().rect(x, y, w, h).fill({ color, alpha: 0.4 });
+    node.alpha = 1;
     this.root.addChild(node);
     this.flashes.push({ node, life: 0.16, ttl: 0.16 });
+  }
+
+  /** Detach a finished popup and keep it for reuse (or destroy it if the pool is full). */
+  private releaseText(item: FloatingText): void {
+    item.node.removeFromParent();
+    if (this.textPool.length < MAX_POOLED) this.textPool.push(item.node);
+    else item.node.destroy();
+  }
+
+  private releaseFlash(item: Flash): void {
+    item.node.removeFromParent();
+    if (this.flashPool.length < MAX_POOLED) this.flashPool.push(item.node);
+    else item.node.destroy();
   }
 
   screenShake(amp = 6, seconds = 0.16): void {
@@ -63,7 +93,7 @@ export class GameFX {
       item.node.y += item.vy * dt;
       item.node.alpha = Math.max(0, item.life / item.ttl);
       if (item.life <= 0) {
-        item.node.destroy();
+        this.releaseText(item);
         this.texts.splice(i, 1);
       }
     }
@@ -72,7 +102,7 @@ export class GameFX {
       item.life -= dt;
       item.node.alpha = Math.max(0, item.life / item.ttl);
       if (item.life <= 0) {
-        item.node.destroy();
+        this.releaseFlash(item);
         this.flashes.splice(i, 1);
       }
     }
@@ -90,8 +120,12 @@ export class GameFX {
   clear(): void {
     for (const item of this.texts) item.node.destroy();
     for (const item of this.flashes) item.node.destroy();
+    for (const node of this.textPool) node.destroy();
+    for (const node of this.flashPool) node.destroy();
     this.texts = [];
     this.flashes = [];
+    this.textPool = [];
+    this.flashPool = [];
     this.root = null;
     this.shakeTime = 0;
     this.shakeAmp = 0;

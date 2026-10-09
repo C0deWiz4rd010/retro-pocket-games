@@ -38,8 +38,12 @@ export default function createGame(ctx: GameContext): Game {
   layer.position.set(ox, oy);
   ctx.stage.addChild(layer);
   const mazeG = new Graphics();
+  // ~300 dots change only when one is eaten, so they get their own layer redrawn on demand
+  // instead of being re-tessellated every frame.
+  const dotsG = new Graphics();
   const g = new Graphics();
-  layer.addChild(mazeG, g);
+  layer.addChild(mazeG, dotsG, g);
+  let dotsDirty = true;
 
   const homeC = Math.floor(COLS / 2);
   const homeR = Math.floor(ROWS / 2);
@@ -68,6 +72,7 @@ export default function createGame(ctx: GameContext): Game {
   }
 
   const resetDots = (): void => {
+    dotsDirty = true;
     dotCount = 0;
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++) {
@@ -291,6 +296,7 @@ export default function createGame(ctx: GameContext): Game {
 
         if (dot[ry]![rx]) {
           dot[ry]![rx] = false;
+          dotsDirty = true;
           dotCount--;
           score += 10;
           ctx.hud.setScore(score);
@@ -362,14 +368,20 @@ export default function createGame(ctx: GameContext): Game {
       });
       if (over) return;
 
+      if (dotsDirty) {
+        dotsDirty = false;
+        dotsG.clear();
+        for (let r = 0; r < ROWS; r++)
+          for (let c = 0; c < COLS; c++)
+            if (dot[r]![c])
+              dotsG.circle(c * cell + cell / 2, r * cell + cell / 2, cell * 0.1).fill({
+                color: 0xffd27f,
+              });
+      }
       g.clear();
       for (let r = 0; r < ROWS; r++)
         for (let c = 0; c < COLS; c++) {
-          if (dot[r]![c])
-            g.circle(c * cell + cell / 2, r * cell + cell / 2, cell * 0.1).fill({
-              color: 0xffd27f,
-            });
-          else if (pellet[r]![c])
+          if (pellet[r]![c])
             g.circle(
               c * cell + cell / 2,
               r * cell + cell / 2,

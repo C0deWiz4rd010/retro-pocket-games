@@ -6,7 +6,28 @@ const defaults = (): Prefs => PrefsSchema.parse({});
 export const prefs = signal<Prefs>(defaults());
 
 export async function loadPrefs(): Promise<void> {
-  prefs.set(await read('prefs', '_', PrefsSchema, defaults()));
+  const loaded = await read('prefs', '_', PrefsSchema, defaults());
+  // One-time migration: the name used to live in localStorage (outside backups/wipes).
+  try {
+    const legacy = localStorage.getItem('rp:name');
+    if (legacy !== null) {
+      if (!loaded.playerName) loaded.playerName = legacy.slice(0, 8);
+      localStorage.removeItem('rp:name');
+      prefs.set(loaded);
+      persist();
+      return;
+    }
+  } catch {
+    /* storage blocked: nothing to migrate */
+  }
+  prefs.set(loaded);
+}
+
+export const playerName = (): string => prefs().playerName;
+
+export function setPlayerName(name: string): void {
+  prefs.set({ ...prefs(), playerName: name.slice(0, 8) });
+  persist();
 }
 
 function persist(): void {

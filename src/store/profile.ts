@@ -14,8 +14,18 @@ export async function loadProfile(): Promise<void> {
   profile.set(await read('profile', '_', ProfileSchema, defaults));
 }
 
-async function persist(): Promise<void> {
-  await write('profile', '_', profile());
+let persistQueued = false;
+/**
+ * Coalesced write: a run end triggers several profile updates in the same tick (XP, play time,
+ * unlocks); queue one write of the final state instead of one IndexedDB transaction each.
+ */
+function persist(): Promise<void> {
+  if (persistQueued) return Promise.resolve();
+  persistQueued = true;
+  return Promise.resolve().then(() => {
+    persistQueued = false;
+    return write('profile', '_', profile());
+  });
 }
 
 export interface RunReward {

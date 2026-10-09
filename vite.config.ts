@@ -31,14 +31,9 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
-    // Keep PixiJS in its own chunk; games are dynamically imported and split automatically.
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          pixi: ['pixi.js'],
-        },
-      },
-    },
+    // No manualChunks for pixi.js: the engine is reached only through dynamic imports (see
+    // App.loadEngine), so Rollup splits it out of the entry chunk and keeps it off the home path.
+    chunkSizeWarningLimit: 800,
   },
   plugins: [
     VitePWA({
@@ -76,17 +71,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: 'index.html',
-        runtimeCaching: [
-          {
-            // Lazy-loaded game chunks and atlases: cache on first play -> offline thereafter.
-            urlPattern: ({ url }) => url.pathname.includes('/assets/'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'rp-assets',
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-        ],
+        // Every chunk (engine + all 85 games) is precached above, so a separate runtime cache
+        // for /assets/ would only duplicate storage.
       },
       devOptions: { enabled: false },
     }),

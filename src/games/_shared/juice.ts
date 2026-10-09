@@ -1,5 +1,5 @@
 import { Graphics } from 'pixi.js';
-import type { RNG } from '@utils/rng';
+import { fxRandom, type RNG } from '@utils/rng';
 
 export interface Spark {
   x: number;
@@ -17,9 +17,15 @@ export const clamp = (n: number, min: number, max: number): number =>
 export const dist = (ax: number, ay: number, bx: number, by: number): number =>
   Math.hypot(ax - bx, ay - by);
 
+/**
+ * Emit a burst of cosmetic sparks. They draw from fxRandom(), NOT the game RNG: sparks fire in
+ * response to player actions, so consuming the seeded RNG here would make later gameplay rolls
+ * (enemy spawns, drops) depend on how you played and break identical daily-challenge runs.
+ * The `_rng` parameter is kept so existing call sites don't change.
+ */
 export function burst(
   sparks: Spark[],
-  rng: RNG,
+  _rng: RNG,
   x: number,
   y: number,
   color: number,
@@ -27,9 +33,9 @@ export function burst(
   power = 120,
 ): void {
   for (let i = 0; i < count; i++) {
-    const a = rng.next() * Math.PI * 2;
-    const speed = power * (0.35 + rng.next() * 0.75);
-    const ttl = 0.35 + rng.next() * 0.35;
+    const a = fxRandom() * Math.PI * 2;
+    const speed = power * (0.35 + fxRandom() * 0.75);
+    const ttl = 0.35 + fxRandom() * 0.35;
     sparks.push({
       x,
       y,
@@ -38,7 +44,7 @@ export function burst(
       life: ttl,
       ttl,
       color,
-      size: 2 + rng.next() * 3,
+      size: 2 + fxRandom() * 3,
     });
   }
 }

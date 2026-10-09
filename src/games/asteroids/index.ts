@@ -24,8 +24,22 @@ function makeRoid(x: number, y: number, size: number, rng: RNG): Roid {
 }
 
 type PowerKind = 'shield' | 'triple' | 'life';
-interface Power { x: number; y: number; vx: number; vy: number; kind: PowerKind; life: number }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Power {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  kind: PowerKind;
+  life: number;
+}
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 const POWER: Record<PowerKind, { color: number; label: string }> = {
   shield: { color: 0x00f7ff, label: 'SHIELD' },
   triple: { color: 0xffd200, label: 'TRIPLE SHOT' },
@@ -42,9 +56,11 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(bgG, g);
 
   const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 50; i++) stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
+  for (let i = 0; i < 50; i++)
+    stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
   bgG.rect(0, 0, W, H).fill({ color: 0x05060f });
-  for (const s of stars) bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.1 + s.s * 0.2 });
+  for (const s of stars)
+    bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.1 + s.s * 0.2 });
 
   const ship = { x: W / 2, y: H / 2, a: -Math.PI / 2, vx: 0, vy: 0, thrust: false, inv: 0 };
   let bullets: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
@@ -66,7 +82,14 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * TAU;
       const sp = 40 + ctx.rng.next() * 140;
-      particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.6 + ctx.rng.next() * 0.4, color });
+      particles.push({
+        x,
+        y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        life: 0.6 + ctx.rng.next() * 0.4,
+        color,
+      });
     }
   };
   const setLabel = (): void => {
@@ -77,7 +100,14 @@ export default function createGame(ctx: GameContext): Game {
     if (ctx.rng.next() > chance) return;
     const kinds: PowerKind[] = ['shield', 'triple', 'life'];
     const a = ctx.rng.next() * TAU;
-    powers.push({ x, y, vx: Math.cos(a) * 30, vy: Math.sin(a) * 30, kind: ctx.rng.pick(kinds), life: 9 });
+    powers.push({
+      x,
+      y,
+      vx: Math.cos(a) * 30,
+      vy: Math.sin(a) * 30,
+      kind: ctx.rng.pick(kinds),
+      life: 9,
+    });
   };
 
   const spawnWave = (): void => {
@@ -160,7 +190,11 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     // particles
-    for (const p of particles) g.circle(p.x, p.y, 2.5 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 2.5 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
     // power-ups
     for (const pw of powers) {
       const flash = pw.life < 3 && Math.floor(pw.life * 6) % 2 === 0;
@@ -170,7 +204,12 @@ export default function createGame(ctx: GameContext): Game {
       }
     }
     // shield aura
-    if (shieldT > 0) g.circle(ship.x, ship.y, 18).stroke({ width: 2, color: 0x00f7ff, alpha: 0.4 + 0.3 * Math.sin(performance.now() / 100) });
+    if (shieldT > 0)
+      g.circle(ship.x, ship.y, 18).stroke({
+        width: 2,
+        color: 0x00f7ff,
+        alpha: 0.4 + 0.3 * Math.sin(performance.now() / 100),
+      });
     // ship
     if (!(ship.inv > 0 && Math.floor(ship.inv * 10) % 2 === 0)) {
       const tx = (lx: number, ly: number): [number, number] => [
@@ -215,7 +254,14 @@ export default function createGame(ctx: GameContext): Game {
         // thruster particles
         const bx = ship.x - Math.cos(ship.a) * 12;
         const by = ship.y - Math.sin(ship.a) * 12;
-        particles.push({ x: bx, y: by, vx: -Math.cos(ship.a) * 80 + (ctx.rng.next() - 0.5) * 40, vy: -Math.sin(ship.a) * 80 + (ctx.rng.next() - 0.5) * 40, life: 0.3, color: 0xff7b00 });
+        particles.push({
+          x: bx,
+          y: by,
+          vx: -Math.cos(ship.a) * 80 + (ctx.rng.next() - 0.5) * 40,
+          vy: -Math.sin(ship.a) * 80 + (ctx.rng.next() - 0.5) * 40,
+          life: 0.3,
+          color: 0xff7b00,
+        });
       }
       ship.vx *= 0.99;
       ship.vy *= 0.99;
@@ -240,7 +286,10 @@ export default function createGame(ctx: GameContext): Game {
         pw.x = wrap(pw.x + pw.vx * dt, W);
         pw.y = wrap(pw.y + pw.vy * dt, H);
         pw.life -= dt;
-        if (pw.life <= 0) { powers.splice(i, 1); continue; }
+        if (pw.life <= 0) {
+          powers.splice(i, 1);
+          continue;
+        }
         if (Math.hypot(pw.x - ship.x, pw.y - ship.y) < 16) {
           collect(pw.kind);
           powers.splice(i, 1);
@@ -275,8 +324,15 @@ export default function createGame(ctx: GameContext): Game {
         saucer.fire -= dt;
         if (saucer.fire <= 0) {
           saucer.fire = 1.4;
-          const ang = Math.atan2(ship.y - saucer.y, ship.x - saucer.x) + (ctx.rng.next() - 0.5) * 0.4;
-          eBullets.push({ x: saucer.x, y: saucer.y, vx: Math.cos(ang) * 220, vy: Math.sin(ang) * 220, life: 2.4 });
+          const ang =
+            Math.atan2(ship.y - saucer.y, ship.x - saucer.x) + (ctx.rng.next() - 0.5) * 0.4;
+          eBullets.push({
+            x: saucer.x,
+            y: saucer.y,
+            vx: Math.cos(ang) * 220,
+            vy: Math.sin(ang) * 220,
+            life: 2.4,
+          });
           ctx.audio.sfx('shoot');
         }
       }
@@ -336,7 +392,10 @@ export default function createGame(ctx: GameContext): Game {
             burst(r.x, r.y, 0xcad0ff, r.size * 5);
             maybeDrop(r.x, r.y, r.size === 1 ? 0.08 : 0.04);
             if (r.size > 1) {
-              roids.push(makeRoid(r.x, r.y, r.size - 1, ctx.rng), makeRoid(r.x, r.y, r.size - 1, ctx.rng));
+              roids.push(
+                makeRoid(r.x, r.y, r.size - 1, ctx.rng),
+                makeRoid(r.x, r.y, r.size - 1, ctx.rng),
+              );
             }
             break;
           }

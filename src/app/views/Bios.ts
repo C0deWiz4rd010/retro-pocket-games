@@ -22,11 +22,15 @@ export function renderBios(onDone: () => void): HTMLElement {
   });
   const cursor = el('span', { style: 'animation:led-pulse 1s steps(2) infinite' }, ['_']);
 
-  const root = el('div', {
-    class: 'scroll',
-    style: 'padding:max(24px,var(--safe-t)) 22px;cursor:pointer',
-    onClick: () => finish(),
-  }, [out, cursor]);
+  const root = el(
+    'div',
+    {
+      class: 'scroll',
+      style: 'padding:max(24px,var(--safe-t)) 22px;cursor:pointer',
+      onClick: () => finish(),
+    },
+    [out, cursor],
+  );
 
   let done = false;
   const finish = (): void => {

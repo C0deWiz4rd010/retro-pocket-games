@@ -1,8 +1,24 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
-import { burst, dist, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
+import {
+  burst,
+  dist,
+  drawBackdrop,
+  drawSparks,
+  type Spark,
+  updateSparks,
+} from '@games/_shared/juice';
 
-type Comet = { x: number; y: number; vx: number; vy: number; r: number; hp: number; color: number; kind: 'normal' | 'nova' | 'repair' };
+type Comet = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  hp: number;
+  color: number;
+  kind: 'normal' | 'nova' | 'repair';
+};
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -37,8 +53,22 @@ export default function createGame(ctx: GameContext): Game {
     const aim = Math.atan2(cy - y, cx - x);
     const roll = ctx.rng.next();
     const kind: Comet['kind'] = roll > 0.94 ? 'nova' : roll > 0.86 ? 'repair' : 'normal';
-    const color = kind === 'nova' ? 0xffffff : kind === 'repair' ? 0x3ddc84 : ctx.rng.pick([0xff4d8d, 0xffd200, 0x22d3ee]);
-    comets.push({ x, y, vx: Math.cos(aim) * speed, vy: Math.sin(aim) * speed, r: 10 + ctx.rng.next() * 11, hp: kind === 'normal' ? 1 + Math.floor(score / 2400) : 1, color, kind });
+    const color =
+      kind === 'nova'
+        ? 0xffffff
+        : kind === 'repair'
+          ? 0x3ddc84
+          : ctx.rng.pick([0xff4d8d, 0xffd200, 0x22d3ee]);
+    comets.push({
+      x,
+      y,
+      vx: Math.cos(aim) * speed,
+      vy: Math.sin(aim) * speed,
+      r: 10 + ctx.rng.next() * 11,
+      hp: kind === 'normal' ? 1 + Math.floor(score / 2400) : 1,
+      color,
+      kind,
+    });
   };
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
@@ -64,7 +94,10 @@ export default function createGame(ctx: GameContext): Game {
           // Feature: nova comet clears the whole screen
           ctx.hud.toast('NOVA BLAST!');
           ctx.fx.screenShake(8, 0.2);
-          for (const other of comets) { burst(sparks, ctx.rng, other.x, other.y, other.color, 8, 110); score += 60; }
+          for (const other of comets) {
+            burst(sparks, ctx.rng, other.x, other.y, other.color, 8, 110);
+            score += 60;
+          }
           comets.length = 0;
           ctx.hud.setScore(score);
         } else if (c.kind === 'repair') {
@@ -80,14 +113,27 @@ export default function createGame(ctx: GameContext): Game {
   function draw(): void {
     g.clear();
     drawBackdrop(g, W, H, t, 0x12304a, 0x030610);
-    g.circle(cx, cy, 42).fill({ color: 0x10162a }).stroke({ width: 4, color: shield > 2 ? 0x3ddc84 : 0xff4d8d, alpha: 0.85 });
+    g.circle(cx, cy, 42)
+      .fill({ color: 0x10162a })
+      .stroke({ width: 4, color: shield > 2 ? 0x3ddc84 : 0xff4d8d, alpha: 0.85 });
     g.circle(cx, cy, 19 + Math.sin(t * 4) * 2).fill({ color: 0x22d3ee, alpha: 0.75 });
     g.moveTo(cx, cy - 54);
-    g.arc(cx, cy, 54, -Math.PI / 2, -Math.PI / 2 + heat * Math.PI * 2).stroke({ width: 5, color: heat > 0.8 ? 0xff4d8d : 0xffd200 });
+    g.arc(cx, cy, 54, -Math.PI / 2, -Math.PI / 2 + heat * Math.PI * 2).stroke({
+      width: 5,
+      color: heat > 0.8 ? 0xff4d8d : 0xffd200,
+    });
     for (const c of comets) {
       g.circle(c.x, c.y, c.r).fill({ color: c.color });
-      g.circle(c.x - c.vx * 0.07, c.y - c.vy * 0.07, c.r * 0.55).fill({ color: 0xffffff, alpha: 0.25 });
-      if (c.kind !== 'normal') g.circle(c.x, c.y, c.r + 5).stroke({ width: 2, color: c.kind === 'nova' ? 0xffd200 : 0x3ddc84, alpha: 0.5 + Math.sin(t * 9) * 0.3 });
+      g.circle(c.x - c.vx * 0.07, c.y - c.vy * 0.07, c.r * 0.55).fill({
+        color: 0xffffff,
+        alpha: 0.25,
+      });
+      if (c.kind !== 'normal')
+        g.circle(c.x, c.y, c.r + 5).stroke({
+          width: 2,
+          color: c.kind === 'nova' ? 0xffd200 : 0x3ddc84,
+          alpha: 0.5 + Math.sin(t * 9) * 0.3,
+        });
     }
     drawSparks(g, sparks);
   }
@@ -98,7 +144,8 @@ export default function createGame(ctx: GameContext): Game {
       t += dt;
       updateSparks(sparks, dt);
       heat = Math.max(0, heat - dt * 0.42);
-      if (comboTimer > 0) comboTimer -= dt; else combo = 0;
+      if (comboTimer > 0) comboTimer -= dt;
+      else combo = 0;
       spawn -= dt;
       if (spawn <= 0) {
         spawn = Math.max(0.28, 0.9 - score / 10000);
@@ -122,7 +169,9 @@ export default function createGame(ctx: GameContext): Game {
           }
         }
       }
-      ctx.hud.setLabel(heat > 0.8 ? 'COOLING' : combo >= 5 ? `COMBO x${1 + Math.floor(combo / 5)}` : 'DEFEND');
+      ctx.hud.setLabel(
+        heat > 0.8 ? 'COOLING' : combo >= 5 ? `COMBO x${1 + Math.floor(combo / 5)}` : 'DEFEND',
+      );
       draw();
     },
     destroy() {

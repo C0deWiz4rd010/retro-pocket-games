@@ -9,7 +9,14 @@ interface Cycle {
   dy: number;
   color: number;
 }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 const DIRS: Record<string, { x: number; y: number }> = {
   up: { x: 0, y: -1 },
@@ -36,8 +43,10 @@ export default function createGame(ctx: GameContext): Game {
 
   // static neon grid backdrop
   gridG.rect(0, 0, cols * cell, rows * cell).fill({ color: 0x05060f });
-  for (let x = 0; x <= cols; x += 4) gridG.rect(x * cell, 0, 1, rows * cell).fill({ color: 0x12325a, alpha: 0.4 });
-  for (let y = 0; y <= rows; y += 4) gridG.rect(0, y * cell, cols * cell, 1).fill({ color: 0x12325a, alpha: 0.4 });
+  for (let x = 0; x <= cols; x += 4)
+    gridG.rect(x * cell, 0, 1, rows * cell).fill({ color: 0x12325a, alpha: 0.4 });
+  for (let y = 0; y <= rows; y += 4)
+    gridG.rect(0, y * cell, cols * cell, 1).fill({ color: 0x12325a, alpha: 0.4 });
 
   const grid = new Uint8Array(cols * rows); // 0 empty, 1 player, 2 cpu
   const at = (x: number, y: number): number => grid[y * cols + x] ?? 1;
@@ -45,8 +54,20 @@ export default function createGame(ctx: GameContext): Game {
     grid[y * cols + x] = v;
   };
 
-  const player: Cycle = { x: Math.floor(cols * 0.25), y: Math.floor(rows / 2), dx: 1, dy: 0, color: 0x00f7ff };
-  const cpu: Cycle = { x: Math.floor(cols * 0.75), y: Math.floor(rows / 2), dx: -1, dy: 0, color: 0xff2e97 };
+  const player: Cycle = {
+    x: Math.floor(cols * 0.25),
+    y: Math.floor(rows / 2),
+    dx: 1,
+    dy: 0,
+    color: 0x00f7ff,
+  };
+  const cpu: Cycle = {
+    x: Math.floor(cols * 0.75),
+    y: Math.floor(rows / 2),
+    dx: -1,
+    dy: 0,
+    color: 0xff2e97,
+  };
   let next = { x: 1, y: 0 };
   let acc = 0;
   let speed = 0.08;
@@ -136,7 +157,9 @@ export default function createGame(ctx: GameContext): Game {
   const drawHeads = (): void => {
     headG.clear();
     // glow
-    headG.rect(player.x * cell - 2, player.y * cell - 2, cell + 4, cell + 4).fill({ color: 0x00f7ff, alpha: 0.3 });
+    headG
+      .rect(player.x * cell - 2, player.y * cell - 2, cell + 4, cell + 4)
+      .fill({ color: 0x00f7ff, alpha: 0.3 });
     headG.rect(player.x * cell, player.y * cell, cell, cell).fill({ color: 0xffffff });
     headG.rect(cpu.x * cell, cpu.y * cell, cell, cell).fill({ color: 0xffd200 });
     // pickup
@@ -151,7 +174,10 @@ export default function createGame(ctx: GameContext): Game {
 
   const drawFx = (): void => {
     fxG.clear();
-    for (const p of particles) fxG.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      fxG
+        .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
+        .fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
   };
 
   const reset = (): void => {
@@ -236,7 +262,10 @@ export default function createGame(ctx: GameContext): Game {
       if (boostT > 0) {
         boostT -= dt;
         boost = Math.max(0, boost - dt * 0.6);
-        if (boostT <= 0 || boost <= 0) { boostT = 0; setLabel(); }
+        if (boostT <= 0 || boost <= 0) {
+          boostT = 0;
+          setLabel();
+        }
       } else if (boost < 1) {
         boost = Math.min(1, boost + dt * 0.12);
       }

@@ -42,8 +42,14 @@ export function showTutorial(meta: GameMeta, onStart: () => void): HTMLElement {
     el('div', { class: 'tut__glyph' }, [meta.glyph]),
     el('div', { class: 'panel__title' }, [meta.title.toUpperCase()]),
     el('div', { style: 'color:var(--text-muted);font-size:13px' }, [meta.blurb]),
-    el('div', { class: 'tut__steps' }, hints.slice(0, 3).map((hint) => el('div', { class: 'tut__hint' }, [hint]))),
-    el('button', { class: 'btn btn--primary btn--block', onClick: start }, [`▶  ${t('tut.start')}`]),
+    el(
+      'div',
+      { class: 'tut__steps' },
+      hints.slice(0, 3).map((hint) => el('div', { class: 'tut__hint' }, [hint])),
+    ),
+    el('button', { class: 'btn btn--primary btn--block', onClick: start }, [
+      `▶  ${t('tut.start')}`,
+    ]),
   ]);
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-modal', 'true');

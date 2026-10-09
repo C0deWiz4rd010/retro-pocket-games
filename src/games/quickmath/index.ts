@@ -8,9 +8,23 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   const g = new Graphics();
-  const title = new Text({ text: 'QUICK MATH', style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0x38bdf8 } });
-  const problemText = new Text({ text: '', style: { fontFamily: 'Press Start 2P, monospace', fontSize: 22, fill: 0xffffff, align: 'center' } });
-  const info = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xfacc15 } });
+  const title = new Text({
+    text: 'QUICK MATH',
+    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0x38bdf8 },
+  });
+  const problemText = new Text({
+    text: '',
+    style: {
+      fontFamily: 'Press Start 2P, monospace',
+      fontSize: 22,
+      fill: 0xffffff,
+      align: 'center',
+    },
+  });
+  const info = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xfacc15 },
+  });
   title.anchor.set(0.5);
   problemText.anchor.set(0.5);
   info.anchor.set(0.5);
@@ -41,12 +55,19 @@ export default function createGame(ctx: GameContext): Game {
     if (mode === 3) {
       b = ctx.rng.int(2, 9);
       const q = ctx.rng.int(2, 9);
-      a = b * q; answer = q; label = `${a} / ${b}`;
+      a = b * q;
+      answer = q;
+      label = `${a} / ${b}`;
     } else {
       a = ctx.rng.int(2, mode === 2 ? 6 + level * 3 : 30 + level * 15);
       b = ctx.rng.int(2, mode === 2 ? 5 + level : 25 + level * 12);
       answer = mode === 0 ? a + b : mode === 1 ? Math.max(a, b) - Math.min(a, b) : a * b;
-      label = mode === 0 ? `${a} + ${b}` : mode === 1 ? `${Math.max(a, b)} - ${Math.min(a, b)}` : `${a} x ${b}`;
+      label =
+        mode === 0
+          ? `${a} + ${b}`
+          : mode === 1
+            ? `${Math.max(a, b)} - ${Math.min(a, b)}`
+            : `${a} x ${b}`;
     }
     const choices = new Set<number>([answer]);
     while (choices.size < 3) choices.add(Math.max(0, answer + ctx.rng.int(-10, 10) || answer + 1));
@@ -61,7 +82,11 @@ export default function createGame(ctx: GameContext): Game {
       const speed = Math.max(0, 70 - Math.round((performance.now() - shownAt) / 40)); // faster = more
       score += 80 + streak * 20 + speed;
       time = Math.min(60, time + 1); // Feature: correct answers add a little time
-      if (streak % 5 === 0 && lives < 5) { lives++; ctx.hud.setLives(lives); ctx.hud.toast(`+1 LIFE (streak ${streak})`); } // Feature: streak life
+      if (streak % 5 === 0 && lives < 5) {
+        lives++;
+        ctx.hud.setLives(lives);
+        ctx.hud.toast(`+1 LIFE (streak ${streak})`);
+      } // Feature: streak life
       ctx.audio.sfx('coin');
       ctx.fx.floatingText(speed > 40 ? `FAST x${streak}` : `x${streak}`, W / 2, H * 0.24, 0x38bdf8);
     } else {
@@ -100,8 +125,13 @@ export default function createGame(ctx: GameContext): Game {
     const y = H * 0.62;
     problem.choices.forEach((choice, i) => {
       const x = W * (0.18 + i * 0.32);
-      g.roundRect(x - 44, y, 88, 72, 10).fill({ color: 0x0f172a }).stroke({ width: 2, color: 0x38bdf8 });
-      const t = new Text({ text: String(choice), style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0xffffff } });
+      g.roundRect(x - 44, y, 88, 72, 10)
+        .fill({ color: 0x0f172a })
+        .stroke({ width: 2, color: 0x38bdf8 });
+      const t = new Text({
+        text: String(choice),
+        style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0xffffff },
+      });
       t.anchor.set(0.5);
       t.position.set(x, y + 36);
       labels.push(t);

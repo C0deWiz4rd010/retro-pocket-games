@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { computeLayout, mapToVirtual } from './PixiManager';
 
 /** Forward transform mirrored from the world container (screenX = offsetX ± scale·coord). */
-function virtualToScreen(x: number, y: number, l: ReturnType<typeof computeLayout>): { x: number; y: number } {
+function virtualToScreen(
+  x: number,
+  y: number,
+  l: ReturnType<typeof computeLayout>,
+): { x: number; y: number } {
   if (l.rotated) return { x: l.offsetX - l.scale * y, y: l.offsetY + l.scale * x };
   return { x: l.offsetX + l.scale * x, y: l.offsetY + l.scale * y };
 }
@@ -28,7 +32,12 @@ describe('computeLayout', () => {
 
   it('round-trips virtual → screen → virtual (rotated)', () => {
     const l = computeLayout(640, 360, 390, 844);
-    const pts: [number, number][] = [[0, 0], [640, 360], [320, 180], [100, 300]];
+    const pts: [number, number][] = [
+      [0, 0],
+      [640, 360],
+      [320, 180],
+      [100, 300],
+    ];
     for (const [x, y] of pts) {
       const s = virtualToScreen(x, y, l);
       const v = mapToVirtual(s.x, s.y, l);
@@ -39,7 +48,11 @@ describe('computeLayout', () => {
 
   it('round-trips virtual → screen → virtual (letterboxed)', () => {
     const l = computeLayout(360, 600, 390, 844);
-    const pts: [number, number][] = [[0, 0], [360, 600], [180, 300]];
+    const pts: [number, number][] = [
+      [0, 0],
+      [360, 600],
+      [180, 300],
+    ];
     for (const [x, y] of pts) {
       const s = virtualToScreen(x, y, l);
       const v = mapToVirtual(s.x, s.y, l);

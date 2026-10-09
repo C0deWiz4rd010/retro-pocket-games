@@ -3,8 +3,20 @@ import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 
 type PowerKind = 'grow' | 'shrinkcpu' | 'slow';
-interface Capsule { x: number; y: number; kind: PowerKind; vy: number }
-interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Capsule {
+  x: number;
+  y: number;
+  kind: PowerKind;
+  vy: number;
+}
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -70,11 +82,18 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     // net
-    for (let y = 0; y < H; y += 24) g.rect(W / 2 - 1, y, 2, 12).fill({ color: 0xffffff, alpha: 0.3 });
+    for (let y = 0; y < H; y += 24)
+      g.rect(W / 2 - 1, y, 2, 12).fill({ color: 0xffffff, alpha: 0.3 });
     // score pips
     for (let i = 0; i < WIN; i++) {
-      g.circle(W / 2 - 90 + i * 8, 14, 3).fill({ color: i < pScore ? 0x00f7ff : 0xffffff, alpha: i < pScore ? 1 : 0.15 });
-      g.circle(W / 2 + 18 + i * 8, 14, 3).fill({ color: i < cScore ? 0xff2e97 : 0xffffff, alpha: i < cScore ? 1 : 0.15 });
+      g.circle(W / 2 - 90 + i * 8, 14, 3).fill({
+        color: i < pScore ? 0x00f7ff : 0xffffff,
+        alpha: i < pScore ? 1 : 0.15,
+      });
+      g.circle(W / 2 + 18 + i * 8, 14, 3).fill({
+        color: i < cScore ? 0xff2e97 : 0xffffff,
+        alpha: i < cScore ? 1 : 0.15,
+      });
     }
     // capsules
     for (const c of capsules) {
@@ -91,7 +110,12 @@ export default function createGame(ctx: GameContext): Game {
     // paddles (glow if buffed)
     const pGlow = growT > 0;
     g.roundRect(14, player.y, padW, player.h, 4).fill({ color: pGlow ? 0x9bffce : 0x00f7ff });
-    if (pGlow) g.roundRect(12, player.y - 2, padW + 4, player.h + 4, 5).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
+    if (pGlow)
+      g.roundRect(12, player.y - 2, padW + 4, player.h + 4, 5).stroke({
+        width: 2,
+        color: 0x3ddc84,
+        alpha: 0.6,
+      });
     g.roundRect(W - 14 - padW, cpu.y, padW, cpu.h, 4).fill({ color: 0xff2e97 });
     // ball
     if (overdrive) g.circle(ball.x, ball.y, ball.r + 4).fill({ color: 0xff4d4d, alpha: 0.4 });
@@ -197,7 +221,13 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       // paddle hits
-      const onHit = (paddleY: number, h: number, paddleVy: number, dir: 1 | -1, edge: number): void => {
+      const onHit = (
+        paddleY: number,
+        h: number,
+        paddleVy: number,
+        dir: 1 | -1,
+        edge: number,
+      ): void => {
         ball.x = edge;
         const hit = (ball.y - (paddleY + h / 2)) / (h / 2);
         const sp = Math.min(overdrive ? 720 : 580, Math.hypot(ball.vx, ball.vy) * 1.06);
@@ -215,9 +245,19 @@ export default function createGame(ctx: GameContext): Game {
         ctx.audio.sfx('blip');
       };
 
-      if (ball.vx < 0 && ball.x - ball.r < 24 && ball.y > player.y && ball.y < player.y + player.h) {
+      if (
+        ball.vx < 0 &&
+        ball.x - ball.r < 24 &&
+        ball.y > player.y &&
+        ball.y < player.y + player.h
+      ) {
         onHit(player.y, player.h, player.vy, 1, 24 + ball.r);
-      } else if (ball.vx > 0 && ball.x + ball.r > W - 24 && ball.y > cpu.y && ball.y < cpu.y + cpu.h) {
+      } else if (
+        ball.vx > 0 &&
+        ball.x + ball.r > W - 24 &&
+        ball.y > cpu.y &&
+        ball.y < cpu.y + cpu.h
+      ) {
         onHit(cpu.y, cpu.h, 0, -1, W - 24 - ball.r);
       }
 

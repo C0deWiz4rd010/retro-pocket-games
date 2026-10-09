@@ -66,9 +66,18 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx(chain >= 4 ? 'powerup' : 'blip');
     if (chain >= 3) ctx.fx.floatingText(`CHAIN ${chain}!`, W / 2, oy - 18, 0xc084fc);
     // Feature: big chains refund moves
-    if (chain >= 5) { moves += 2; ctx.fx.floatingText('+2 MOVES', W / 2, oy - 40, 0x3ddc84); }
+    if (chain >= 5) {
+      moves += 2;
+      ctx.fx.floatingText('+2 MOVES', W / 2, oy - 40, 0x3ddc84);
+    }
     // Feature: level progression
-    if (score >= target) { level++; moves += 6; target += 2000 + level * 900; ctx.hud.toast(`LEVEL ${level}! +6`); ctx.audio.sfx('levelup'); }
+    if (score >= target) {
+      level++;
+      moves += 6;
+      target += 2000 + level * 900;
+      ctx.hud.toast(`LEVEL ${level}! +6`);
+      ctx.audio.sfx('levelup');
+    }
     ctx.hud.setLabel(`MOVES ${moves} · L${level}`);
     if (moves <= 0) {
       over = true;
@@ -85,7 +94,9 @@ export default function createGame(ctx: GameContext): Game {
         const value = grid[idx(N, c, r)] ?? 0;
         const x = ox + c * cell;
         const y = oy + r * cell;
-        g.roundRect(x + 3, y + 3, cell - 6, cell - 6, 7).fill({ color: 0x251638 }).stroke({ width: 1, color: 0x6d28d9, alpha: 0.55 });
+        g.roundRect(x + 3, y + 3, cell - 6, cell - 6, 7)
+          .fill({ color: 0x251638 })
+          .stroke({ width: 1, color: 0x6d28d9, alpha: 0.55 });
         for (let p = 0; p < value; p++) {
           const px = x + cell * (0.34 + (p % 2) * 0.32);
           const py = y + cell * (0.34 + Math.floor(p / 2) * 0.32);

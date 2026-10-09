@@ -37,9 +37,18 @@ export default function createGame(ctx: GameContext): Game {
     const stack = [0];
     while (stack.length) {
       const i = stack.pop()!;
-      const c = i % N, r = Math.floor(i / N);
-      for (const j of [c > 0 ? i - 1 : -1, c < N - 1 ? i + 1 : -1, r > 0 ? i - N : -1, r < N - 1 ? i + N : -1]) {
-        if (j >= 0 && !seen.has(j) && src[j] === start) { seen.add(j); stack.push(j); }
+      const c = i % N,
+        r = Math.floor(i / N);
+      for (const j of [
+        c > 0 ? i - 1 : -1,
+        c < N - 1 ? i + 1 : -1,
+        r > 0 ? i - N : -1,
+        r < N - 1 ? i + N : -1,
+      ]) {
+        if (j >= 0 && !seen.has(j) && src[j] === start) {
+          seen.add(j);
+          stack.push(j);
+        }
       }
     }
     return seen.size;
@@ -71,7 +80,8 @@ export default function createGame(ctx: GameContext): Game {
 
   // Feature: greedy hint — the colour that captures the most new cells
   const bestColor = (): number => {
-    let best = -1, bestGain = -1;
+    let best = -1,
+      bestGain = -1;
     for (let col = 0; col < COLORS.length; col++) {
       if (col === grid[0]) continue;
       const copy = grid.slice();
@@ -81,15 +91,20 @@ export default function createGame(ctx: GameContext): Game {
       while (stack.length) {
         const i = stack.pop()!;
         if (seen.has(i) || copy[i] !== start) continue;
-        seen.add(i); copy[i] = col;
-        const c = i % N, r = Math.floor(i / N);
+        seen.add(i);
+        copy[i] = col;
+        const c = i % N,
+          r = Math.floor(i / N);
         if (c > 0) stack.push(i - 1);
         if (c < N - 1) stack.push(i + 1);
         if (r > 0) stack.push(i - N);
         if (r < N - 1) stack.push(i + N);
       }
       const gain = ownedCount(copy);
-      if (gain > bestGain) { bestGain = gain; best = col; }
+      if (gain > bestGain) {
+        bestGain = gain;
+        best = col;
+      }
     }
     return best;
   };
@@ -145,20 +160,37 @@ export default function createGame(ctx: GameContext): Game {
     if (a === 'left') selColor = (selColor + COLORS.length - 1) % COLORS.length;
     else if (a === 'right') selColor = (selColor + 1) % COLORS.length;
     else if (a === 'a') apply(selColor);
-    else if (a === 'b' || a === 'start') { useHint(); return; }
+    else if (a === 'b' || a === 'start') {
+      useHint();
+      return;
+    }
     draw();
   });
 
   function draw(): void {
     g.clear();
     for (let r = 0; r < N; r++)
-      for (let c = 0; c < N; c++) g.rect(ox + c * cell, oy + r * cell, cell, cell).fill({ color: COLORS[grid[r * N + c]!]! });
+      for (let c = 0; c < N; c++)
+        g.rect(ox + c * cell, oy + r * cell, cell, cell).fill({ color: COLORS[grid[r * N + c]!]! });
     const palY = oy + size + 24;
     const palX = ctx.width / 2 - (COLORS.length * cell * 1.4) / 2;
     COLORS.forEach((col, i) => {
-      g.roundRect(palX + i * cell * 1.4, palY - cell * 0.6, cell * 1.2, cell * 1.2, 6).fill({ color: col });
-      if (i === selColor) g.roundRect(palX + i * cell * 1.4, palY - cell * 0.6, cell * 1.2, cell * 1.2, 6).stroke({ width: 3, color: 0xffffff });
-      if (i === flashColor && flashT > 0) g.roundRect(palX + i * cell * 1.4 - 3, palY - cell * 0.6 - 3, cell * 1.2 + 6, cell * 1.2 + 6, 8).stroke({ width: 4, color: 0x00f7ff, alpha: 0.5 + Math.sin(flashT * 16) * 0.4 });
+      g.roundRect(palX + i * cell * 1.4, palY - cell * 0.6, cell * 1.2, cell * 1.2, 6).fill({
+        color: col,
+      });
+      if (i === selColor)
+        g.roundRect(palX + i * cell * 1.4, palY - cell * 0.6, cell * 1.2, cell * 1.2, 6).stroke({
+          width: 3,
+          color: 0xffffff,
+        });
+      if (i === flashColor && flashT > 0)
+        g.roundRect(
+          palX + i * cell * 1.4 - 3,
+          palY - cell * 0.6 - 3,
+          cell * 1.2 + 6,
+          cell * 1.2 + 6,
+          8,
+        ).stroke({ width: 4, color: 0x00f7ff, alpha: 0.5 + Math.sin(flashT * 16) * 0.4 });
     });
   }
   draw();

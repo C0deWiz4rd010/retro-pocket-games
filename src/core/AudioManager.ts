@@ -34,7 +34,9 @@ export class AudioManager {
       if (this.ctx.state === 'suspended') void this.ctx.resume();
       return true;
     }
-    const Ctor = window.AudioContext ?? (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const Ctor =
+      window.AudioContext ??
+      (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return false;
     this.ctx = new Ctor();
     this.master = this.ctx.createGain();
@@ -65,11 +67,14 @@ export class AudioManager {
     const s = settings();
     const blurMuted = this.blurred && s.audio.muteOnBlur;
     if (this.master) this.master.gain.value = !s.audio.sfx || blurMuted ? 0 : s.audio.master;
-    if (this.musicBus) this.musicBus.gain.value = !s.audio.music || blurMuted ? 0 : 0.18 * s.audio.master;
+    if (this.musicBus)
+      this.musicBus.gain.value = !s.audio.music || blurMuted ? 0 : 0.18 * s.audio.master;
   }
 
   // ── menu music: a gentle looping pentatonic arpeggio ──
-  private static readonly MUSIC: number[] = [261.6, 329.6, 392.0, 523.3, 392.0, 329.6, 440.0, 392.0];
+  private static readonly MUSIC: number[] = [
+    261.6, 329.6, 392.0, 523.3, 392.0, 329.6, 440.0, 392.0,
+  ];
 
   startMusic(): void {
     if (!settings().audio.music) return;
@@ -80,7 +85,8 @@ export class AudioManager {
       if (!this.musicSynth) return;
       const note = AudioManager.MUSIC[this.musicStep % AudioManager.MUSIC.length]!;
       this.musicSynth.tone({ freq: note, duration: 0.22, type: 'triangle', volume: 0.5 });
-      if (this.musicStep % 4 === 0) this.musicSynth.tone({ freq: note / 2, duration: 0.4, type: 'square', volume: 0.25 });
+      if (this.musicStep % 4 === 0)
+        this.musicSynth.tone({ freq: note / 2, duration: 0.4, type: 'square', volume: 0.25 });
       this.musicStep++;
     }, 260);
   }

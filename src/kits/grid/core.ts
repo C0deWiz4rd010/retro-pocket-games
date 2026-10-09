@@ -64,7 +64,12 @@ export function clearCells(board: number[], cells: Iterable<number>, empty = EMP
   return count;
 }
 
-export function collapseColumns(board: number[], cols: number, rows: number, empty = EMPTY): GridCollapseMove[] {
+export function collapseColumns(
+  board: number[],
+  cols: number,
+  rows: number,
+  empty = EMPTY,
+): GridCollapseMove[] {
   const moves: GridCollapseMove[] = [];
   for (let c = 0; c < cols; c++) {
     let write = rows - 1;

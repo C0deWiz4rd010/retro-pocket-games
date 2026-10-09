@@ -1,6 +1,13 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
-import { burst, clamp, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
+import {
+  burst,
+  clamp,
+  drawBackdrop,
+  drawSparks,
+  type Spark,
+  updateSparks,
+} from '@games/_shared/juice';
 
 type Gate = { y: number; x: number; w: number; color: number; passed: boolean };
 
@@ -43,7 +50,12 @@ export default function createGame(ctx: GameContext): Game {
     g.clear();
     drawBackdrop(g, W, H, t, 0x172554, 0x050713);
     const center = W / 2 + Math.sin(t * 0.9) * 34;
-    g.moveTo(center - 110, 70).lineTo(center + 110, 70).lineTo(W - 28, H - 62).lineTo(28, H - 62).closePath().fill({ color: 0x080c18, alpha: 0.86 });
+    g.moveTo(center - 110, 70)
+      .lineTo(center + 110, 70)
+      .lineTo(W - 28, H - 62)
+      .lineTo(28, H - 62)
+      .closePath()
+      .fill({ color: 0x080c18, alpha: 0.86 });
     for (let i = 0; i < 16; i++) {
       const yy = 80 + ((i * 46 + t * 180 * boost) % (H - 120));
       g.rect(W / 2 - 2, yy, 4, 24).fill({ color: 0xffffff, alpha: 0.12 });
@@ -58,7 +70,12 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(o.x, o.y, 11).stroke({ width: 3, color: 0x3ddc84 });
       g.circle(o.x, o.y, 5).fill({ color: 0x3ddc84, alpha: 0.85 });
     }
-    if (shieldHits > 0) g.circle(x, H - 94, 30).stroke({ width: 2, color: 0x3ddc84, alpha: 0.5 + Math.sin(t * 10) * 0.2 });
+    if (shieldHits > 0)
+      g.circle(x, H - 94, 30).stroke({
+        width: 2,
+        color: 0x3ddc84,
+        alpha: 0.5 + Math.sin(t * 10) * 0.2,
+      });
     g.roundRect(x - 15, H - 118, 30, 48, 8).fill({ color: boost > 1 ? 0xffd200 : 0x22d3ee });
     g.circle(x - 9, H - 72, 4).fill({ color: 0xff4d8d });
     g.circle(x + 9, H - 72, 4).fill({ color: 0xff4d8d });
@@ -94,7 +111,12 @@ export default function createGame(ctx: GameContext): Game {
             const pts = Math.round((120 * boost + (perfect ? 120 : 0)) * mult);
             score += pts;
             ctx.hud.setScore(score);
-            ctx.fx.floatingText(perfect ? `PERFECT +${pts}` : `+${pts}`, x, H - 138, perfect ? 0xffffff : gate.color);
+            ctx.fx.floatingText(
+              perfect ? `PERFECT +${pts}` : `+${pts}`,
+              x,
+              H - 138,
+              perfect ? 0xffffff : gate.color,
+            );
             if (perfect && streak % 4 === 0) ctx.hud.toast(`STREAK x${mult}`);
             else if (perfect) ctx.hud.toast('PERFECT');
             ctx.audio.sfx('coin');
@@ -122,7 +144,10 @@ export default function createGame(ctx: GameContext): Game {
       for (let i = orbs.length - 1; i >= 0; i--) {
         const o = orbs[i]!;
         o.y += vy * dt;
-        if (o.y > H + 20) { orbs.splice(i, 1); continue; }
+        if (o.y > H + 20) {
+          orbs.splice(i, 1);
+          continue;
+        }
         if (Math.abs(o.x - x) < 26 && Math.abs(o.y - (H - 94)) < 30) {
           orbs.splice(i, 1);
           shieldHits = Math.min(2, shieldHits + 1);
@@ -133,7 +158,15 @@ export default function createGame(ctx: GameContext): Game {
       }
       score += Math.floor(dt * 12 * boost);
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(streak >= 4 ? `STREAK x${1 + Math.floor(streak / 4)}` : boost > 1 ? 'BOOST' : shieldHits > 0 ? 'SHIELDED' : 'DRIFT');
+      ctx.hud.setLabel(
+        streak >= 4
+          ? `STREAK x${1 + Math.floor(streak / 4)}`
+          : boost > 1
+            ? 'BOOST'
+            : shieldHits > 0
+              ? 'SHIELDED'
+              : 'DRIFT',
+      );
       draw();
     },
     destroy() {
@@ -141,4 +174,3 @@ export default function createGame(ctx: GameContext): Game {
     },
   };
 }
-

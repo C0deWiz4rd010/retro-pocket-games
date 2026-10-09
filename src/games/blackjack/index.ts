@@ -4,7 +4,11 @@ import type { Game, GameContext } from '@core/types';
 const SUITS = ['♠', '♥', '♦', '♣'];
 const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
-interface Card { suit: string; value: string; faceUp: boolean }
+interface Card {
+  suit: string;
+  value: string;
+  faceUp: boolean;
+}
 
 const cardValue = (v: string): number => {
   if (['J', 'Q', 'K'].includes(v)) return 10;
@@ -21,7 +25,10 @@ const handValue = (hand: Card[]): number => {
     total += v;
     if (c.value === 'A') aces++;
   }
-  while (total > 21 && aces > 0) { total -= 10; aces--; }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
   return total;
 };
 
@@ -50,9 +57,7 @@ export default function createGame(ctx: GameContext): Game {
   let deck: Card[] = [];
   const shuffle = (): void => {
     deck = [];
-    for (const suit of SUITS)
-      for (const value of VALUES)
-        deck.push({ suit, value, faceUp: true });
+    for (const suit of SUITS) for (const value of VALUES) deck.push({ suit, value, faceUp: true });
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(ctx.rng.next() * (i + 1));
       [deck[i], deck[j]] = [deck[j]!, deck[i]!];
@@ -76,11 +81,26 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setLabel('BLACKJACK');
 
   // UI elements
-  const dealerTitle = new Text({ text: 'DEALER', style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xff4d4d } });
-  const playerTitle = new Text({ text: 'YOU', style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0x9bffce } });
-  const dealerScore = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff } });
-  const playerScore = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff } });
-  const resultText = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0xffd200, align: 'center' } });
+  const dealerTitle = new Text({
+    text: 'DEALER',
+    style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xff4d4d },
+  });
+  const playerTitle = new Text({
+    text: 'YOU',
+    style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0x9bffce },
+  });
+  const dealerScore = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff },
+  });
+  const playerScore = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff },
+  });
+  const resultText = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0xffd200, align: 'center' },
+  });
   resultText.anchor.set(0.5);
 
   layer.addChild(dealerTitle, playerTitle, dealerScore, playerScore, resultText);
@@ -97,7 +117,10 @@ export default function createGame(ctx: GameContext): Game {
     { label: 'DEAL', x: W * 0.5, y: BTN_Y - 44, w: 100, h: 38, action: 'deal' },
   ];
   const btnLabels: Text[] = buttons.map((b) => {
-    const t = new Text({ text: b.label, style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xffffff } });
+    const t = new Text({
+      text: b.label,
+      style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xffffff },
+    });
     t.anchor.set(0.5);
     layer.addChild(t);
     return t;
@@ -115,7 +138,12 @@ export default function createGame(ctx: GameContext): Game {
       if (card.faceUp) {
         const label = new Text({
           text: `${card.value}\n${card.suit}`,
-          style: { fontFamily: 'VT323, monospace', fontSize: cardW * 0.3, fill: red ? 0xcc2222 : 0x111111, align: 'left' },
+          style: {
+            fontFamily: 'VT323, monospace',
+            fontSize: cardW * 0.3,
+            fill: red ? 0xcc2222 : 0x111111,
+            align: 'left',
+          },
         });
         label.position.set(x + 3, y + 2);
         g.addChild?.(label); // won't work but we'll use separate texts
@@ -132,7 +160,11 @@ export default function createGame(ctx: GameContext): Game {
         const red = ['♥', '♦'].includes(card.suit);
         const t = new Text({
           text: card.value + card.suit,
-          style: { fontFamily: 'VT323, monospace', fontSize: cardW * 0.32, fill: red ? 0xcc2222 : 0x111111 },
+          style: {
+            fontFamily: 'VT323, monospace',
+            fontSize: cardW * 0.32,
+            fill: red ? 0xcc2222 : 0x111111,
+          },
         });
         t.position.set(cx + 3, dealerY + 3);
         addTemp(t);
@@ -148,7 +180,11 @@ export default function createGame(ctx: GameContext): Game {
       const red = ['♥', '♦'].includes(card.suit);
       const t = new Text({
         text: card.value + card.suit,
-        style: { fontFamily: 'VT323, monospace', fontSize: cardW * 0.32, fill: red ? 0xcc2222 : 0x111111 },
+        style: {
+          fontFamily: 'VT323, monospace',
+          fontSize: cardW * 0.32,
+          fill: red ? 0xcc2222 : 0x111111,
+        },
       });
       t.position.set(cx + 3, playerY + 3);
       addTemp(t);
@@ -180,11 +216,20 @@ export default function createGame(ctx: GameContext): Game {
 
     buttons.forEach((b, i) => {
       const isBet = b.action.startsWith('bet') || b.action === 'deal';
-      const isPlay = b.action === 'hit' || b.action === 'stand' || b.action === 'double' || b.action === 'surrender';
+      const isPlay =
+        b.action === 'hit' ||
+        b.action === 'stand' ||
+        b.action === 'double' ||
+        b.action === 'surrender';
       const visible = (showBet && isBet) || (showPlay && isPlay);
-      if (!visible) { btnLabels[i]!.text = ''; return; }
+      if (!visible) {
+        btnLabels[i]!.text = '';
+        return;
+      }
 
-      const disabled = (b.action === 'double' && (credits < bet || playerHand.length !== 2)) || (b.action === 'surrender' && playerHand.length !== 2);
+      const disabled =
+        (b.action === 'double' && (credits < bet || playerHand.length !== 2)) ||
+        (b.action === 'surrender' && playerHand.length !== 2);
       g.roundRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h, 6)
         .fill({ color: disabled ? 0x333333 : 0x1a4a2a })
         .stroke({ width: 2, color: disabled ? 0x555555 : 0x3ddc84 });
@@ -196,7 +241,10 @@ export default function createGame(ctx: GameContext): Game {
 
   // Track temporary text nodes to clean up on next draw
   const tempTexts: Text[] = [];
-  const addTemp = (t: Text): void => { tempTexts.push(t); layer.addChild(t); };
+  const addTemp = (t: Text): void => {
+    tempTexts.push(t);
+    layer.addChild(t);
+  };
   const cleanTemps = (): void => {
     for (const t of tempTexts) if (t.parent) t.parent.removeChild(t);
     tempTexts.length = 0;
@@ -265,7 +313,11 @@ export default function createGame(ctx: GameContext): Game {
     // Feature: win-streak bonus
     if (delta > 0) {
       streak++;
-      if (streak >= 3) { const sb = streak * 5; delta += sb; msg += ` (STREAK +${sb})`; }
+      if (streak >= 3) {
+        const sb = streak * 5;
+        delta += sb;
+        msg += ` (STREAK +${sb})`;
+      }
     } else if (delta < 0) streak = 0;
     credits += delta;
     score += Math.max(0, delta);
@@ -291,9 +343,16 @@ export default function createGame(ctx: GameContext): Game {
         else if (b.action === 'stand') stand();
         else if (b.action === 'double') doubleDown();
         else if (b.action === 'surrender') surrender();
-        else if (b.action === 'deal') { bet = Math.min(bet, credits); deal(); }
-        else if (b.action === 'bet+') { bet = Math.min(bet + 10, credits, 100); draw(); }
-        else if (b.action === 'bet-') { bet = Math.max(bet - 10, 10); draw(); }
+        else if (b.action === 'deal') {
+          bet = Math.min(bet, credits);
+          deal();
+        } else if (b.action === 'bet+') {
+          bet = Math.min(bet + 10, credits, 100);
+          draw();
+        } else if (b.action === 'bet-') {
+          bet = Math.max(bet - 10, 10);
+          draw();
+        }
         return;
       }
     }

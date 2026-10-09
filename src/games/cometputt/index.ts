@@ -7,9 +7,25 @@ import type { Game, GameContext } from '@core/types';
  * score. Twists: collectible stars, a fewer-strokes par bonus, and bouncy bumpers. A shared
  * clock keeps every hole tense.
  */
-interface Star { x: number; y: number; taken: boolean }
-interface Bumper { x: number; y: number; r: number; flash: number }
-interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Star {
+  x: number;
+  y: number;
+  taken: boolean;
+}
+interface Bumper {
+  x: number;
+  y: number;
+  r: number;
+  flash: number;
+}
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 const GOLD = 0xffd200;
 const CYAN = 0x22d3ee;
@@ -52,10 +68,21 @@ export default function createGame(ctx: GameContext): Game {
   const layoutHole = (): void => {
     hole = { x: W * (0.45 + ctx.rng.next() * 0.4), y: H * (0.2 + ctx.rng.next() * 0.4) };
     stars.length = 0;
-    for (let i = 0; i < 3; i++) stars.push({ x: 40 + ctx.rng.next() * (W - 80), y: 80 + ctx.rng.next() * (H * 0.55), taken: false });
+    for (let i = 0; i < 3; i++)
+      stars.push({
+        x: 40 + ctx.rng.next() * (W - 80),
+        y: 80 + ctx.rng.next() * (H * 0.55),
+        taken: false,
+      });
     bumpers.length = 0;
     const nb = 1 + Math.floor(holeNo / 2);
-    for (let i = 0; i < Math.min(3, nb); i++) bumpers.push({ x: 60 + ctx.rng.next() * (W - 120), y: H * (0.35 + ctx.rng.next() * 0.3), r: 18, flash: 0 });
+    for (let i = 0; i < Math.min(3, nb); i++)
+      bumpers.push({
+        x: 60 + ctx.rng.next() * (W - 120),
+        y: H * (0.35 + ctx.rng.next() * 0.3),
+        r: 18,
+        flash: 0,
+      });
     strokes = 0;
     setLabel();
   };
@@ -63,7 +90,8 @@ export default function createGame(ctx: GameContext): Game {
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
     if (over || ball.moving) return;
-    const dx = x - ball.x, dy = y - ball.y;
+    const dx = x - ball.x,
+      dy = y - ball.y;
     const power = Math.min(720, Math.hypot(dx, dy) * 2.4);
     const a = Math.atan2(dy, dx);
     ball.vx = Math.cos(a) * power;
@@ -105,15 +133,26 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(b.x, b.y, b.r * 0.5).fill({ color: GOLD });
     }
     // stars
-    for (const s of stars) { if (!s.taken) g.star(s.x, s.y, 5, 9, 4).fill({ color: GOLD }); }
+    for (const s of stars) {
+      if (!s.taken) g.star(s.x, s.y, 5, 9, 4).fill({ color: GOLD });
+    }
     // hole
     const hr = 16 + Math.sin(t * 5) * 2;
     g.circle(hole.x, hole.y, hr).stroke({ width: 3, color: CYAN });
     g.circle(hole.x, hole.y, hr * 0.5).fill({ color: CYAN, alpha: 0.35 });
     // aim hint when at rest
-    if (!ball.moving && !over) g.circle(ball.x, ball.y, ball.r + 6 + Math.sin(t * 6) * 2).stroke({ width: 1.5, color: 0xffffff, alpha: 0.3 });
+    if (!ball.moving && !over)
+      g.circle(ball.x, ball.y, ball.r + 6 + Math.sin(t * 6) * 2).stroke({
+        width: 1.5,
+        color: 0xffffff,
+        alpha: 0.3,
+      });
     // sparks
-    for (const s of sparks) g.circle(s.x, s.y, 3 * Math.min(1, s.life * 2)).fill({ color: s.color, alpha: Math.min(1, s.life * 2) });
+    for (const s of sparks)
+      g.circle(s.x, s.y, 3 * Math.min(1, s.life * 2)).fill({
+        color: s.color,
+        alpha: Math.min(1, s.life * 2),
+      });
     // ball
     g.circle(ball.x, ball.y, ball.r).fill({ color: 0xf8fafc });
     g.circle(ball.x - 3, ball.y - 3, 3).fill({ color: CYAN, alpha: 0.6 });
@@ -124,7 +163,12 @@ export default function createGame(ctx: GameContext): Game {
       if (over) return;
       t += dt;
       time -= dt;
-      if (time <= 0) { over = true; ctx.audio.sfx('gameover'); ctx.gameOver(score, { holes: holeNo - 1 }); return; }
+      if (time <= 0) {
+        over = true;
+        ctx.audio.sfx('gameover');
+        ctx.gameOver(score, { holes: holeNo - 1 });
+        return;
+      }
       ctx.hud.setLabel(`HOLE ${holeNo} · ${strokes} · ${Math.ceil(time)}s`);
 
       for (const b of bumpers) if (b.flash > 0) b.flash -= dt;
@@ -134,19 +178,34 @@ export default function createGame(ctx: GameContext): Game {
         ball.x += ball.vx * dt;
         ball.y += ball.vy * dt;
         // walls
-        if (ball.x < wall + ball.r) { ball.x = wall + ball.r; ball.vx = Math.abs(ball.vx) * 0.72; }
-        if (ball.x > W - wall - ball.r) { ball.x = W - wall - ball.r; ball.vx = -Math.abs(ball.vx) * 0.72; }
-        if (ball.y < wall + ball.r) { ball.y = wall + ball.r; ball.vy = Math.abs(ball.vy) * 0.72; }
-        if (ball.y > groundY - ball.r) { ball.y = groundY - ball.r; ball.vy = -Math.abs(ball.vy) * 0.62; ball.vx *= 0.86; }
+        if (ball.x < wall + ball.r) {
+          ball.x = wall + ball.r;
+          ball.vx = Math.abs(ball.vx) * 0.72;
+        }
+        if (ball.x > W - wall - ball.r) {
+          ball.x = W - wall - ball.r;
+          ball.vx = -Math.abs(ball.vx) * 0.72;
+        }
+        if (ball.y < wall + ball.r) {
+          ball.y = wall + ball.r;
+          ball.vy = Math.abs(ball.vy) * 0.72;
+        }
+        if (ball.y > groundY - ball.r) {
+          ball.y = groundY - ball.r;
+          ball.vy = -Math.abs(ball.vy) * 0.62;
+          ball.vx *= 0.86;
+        }
         // bumpers
         for (const b of bumpers) {
           const d = Math.hypot(ball.x - b.x, ball.y - b.y);
           if (d < b.r + ball.r) {
-            const nx = (ball.x - b.x) / d, ny = (ball.y - b.y) / d;
+            const nx = (ball.x - b.x) / d,
+              ny = (ball.y - b.y) / d;
             ball.x = b.x + nx * (b.r + ball.r);
             ball.y = b.y + ny * (b.r + ball.r);
             const sp = Math.max(260, Math.hypot(ball.vx, ball.vy));
-            ball.vx = nx * sp; ball.vy = ny * sp;
+            ball.vx = nx * sp;
+            ball.vy = ny * sp;
             b.flash = 0.15;
             ctx.audio.sfx('blip');
             burst(ball.x, ball.y, 0xff2e97, 5);
@@ -163,14 +222,27 @@ export default function createGame(ctx: GameContext): Game {
           }
         }
         // hole
-        if (Math.hypot(ball.x - hole.x, ball.y - hole.y) < 14 && Math.hypot(ball.vx, ball.vy) < 520) { sink(); return; }
+        if (
+          Math.hypot(ball.x - hole.x, ball.y - hole.y) < 14 &&
+          Math.hypot(ball.vx, ball.vy) < 520
+        ) {
+          sink();
+          return;
+        }
         // rest
-        if (Math.hypot(ball.vx, ball.vy) < 28 && ball.y > groundY - ball.r - 2) { ball.moving = false; ball.vx = 0; ball.vy = 0; }
+        if (Math.hypot(ball.vx, ball.vy) < 28 && ball.y > groundY - ball.r - 2) {
+          ball.moving = false;
+          ball.vx = 0;
+          ball.vy = 0;
+        }
       }
 
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i]!;
-        s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 200 * dt; s.life -= dt;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.vy += 200 * dt;
+        s.life -= dt;
         if (s.life <= 0) sparks.splice(i, 1);
       }
 

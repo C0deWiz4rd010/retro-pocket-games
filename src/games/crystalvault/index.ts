@@ -119,18 +119,26 @@ export default function createGame(ctx: GameContext): Game {
   function draw(): void {
     g.clear();
     drawBackdrop(g, W, H, t, 0x2b1b5b, 0x070512);
-    g.roundRect(ox - 7, oy - 7, COLS * cell + 14, ROWS * cell + 14, 12).fill({ color: 0x130a24, alpha: 0.86 });
+    g.roundRect(ox - 7, oy - 7, COLS * cell + 14, ROWS * cell + 14, 12).fill({
+      color: 0x130a24,
+      alpha: 0.86,
+    });
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const value = at(c, r);
         const x = ox + c * cell;
         const y = oy + r * cell;
         const pulse = 1 + Math.sin(t * 5 + c + r) * 0.03;
-        g.roundRect(x + 4, y + 4, cell - 8, cell - 8, 8).fill({ color: 0x1d1230 }).stroke({ width: 1, color: 0xffffff, alpha: 0.06 });
+        g.roundRect(x + 4, y + 4, cell - 8, cell - 8, 8)
+          .fill({ color: 0x1d1230 })
+          .stroke({ width: 1, color: 0xffffff, alpha: 0.06 });
         g.roundRect(x + cell * 0.17, y + cell * 0.17, cell * 0.66 * pulse, cell * 0.66 * pulse, 7)
           .fill({ color: COLORS[value] ?? 0xffffff })
           .stroke({ width: 2, color: 0xffffff, alpha: 0.24 });
-        g.circle(x + cell * 0.38, y + cell * 0.32, cell * 0.08).fill({ color: 0xffffff, alpha: 0.38 });
+        g.circle(x + cell * 0.38, y + cell * 0.32, cell * 0.08).fill({
+          color: 0xffffff,
+          alpha: 0.38,
+        });
       }
     }
     drawSparks(g, sparks);

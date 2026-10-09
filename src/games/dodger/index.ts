@@ -9,7 +9,12 @@ interface Meteor {
   vy: number;
   near?: boolean;
 }
-interface Pickup { x: number; y: number; vy: number; kind: 'shield' | 'slow' | 'coin' }
+interface Pickup {
+  x: number;
+  y: number;
+  vy: number;
+  kind: 'shield' | 'slow' | 'coin';
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -23,7 +28,8 @@ export default function createGame(ctx: GameContext): Game {
   let meteors: Meteor[] = [];
   const pickups: Pickup[] = []; // Feature: power-ups + coins
   const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 40; i++) stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 2 + 0.5 });
+  for (let i = 0; i < 40; i++)
+    stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 2 + 0.5 });
   let score = 0;
   let bonus = 0;
   let elapsed = 0;
@@ -50,11 +56,26 @@ export default function createGame(ctx: GameContext): Game {
     pickups.forEach((p) => {
       const col = p.kind === 'shield' ? 0x3ddc84 : p.kind === 'slow' ? 0x00f7ff : 0xffd200;
       if (p.kind === 'coin') g.circle(p.x, p.y, 9).fill({ color: col });
-      else { g.roundRect(p.x - 9, p.y - 9, 18, 18, 4).fill({ color: col }); g.roundRect(p.x - 9, p.y - 3, 18, 6, 2).fill({ color: 0x05060f, alpha: 0.5 }); }
+      else {
+        g.roundRect(p.x - 9, p.y - 9, 18, 18, 4).fill({ color: col });
+        g.roundRect(p.x - 9, p.y - 3, 18, 6, 2).fill({ color: 0x05060f, alpha: 0.5 });
+      }
     });
     if (slowT > 0) g.rect(0, 0, W, H).fill({ color: 0x00f7ff, alpha: 0.05 });
-    if (shield) g.circle(player.x, player.y, player.r + 8).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 + Math.sin(elapsed * 10) * 0.2 });
-    g.poly([player.x, player.y - player.r, player.x - player.r, player.y + player.r, player.x + player.r, player.y + player.r]).fill({ color: 0x00f7ff });
+    if (shield)
+      g.circle(player.x, player.y, player.r + 8).stroke({
+        width: 2,
+        color: 0x3ddc84,
+        alpha: 0.6 + Math.sin(elapsed * 10) * 0.2,
+      });
+    g.poly([
+      player.x,
+      player.y - player.r,
+      player.x - player.r,
+      player.y + player.r,
+      player.x + player.r,
+      player.y + player.r,
+    ]).fill({ color: 0x00f7ff });
   };
 
   return {
@@ -79,7 +100,12 @@ export default function createGame(ctx: GameContext): Game {
       if (spawnAcc >= rate) {
         spawnAcc = 0;
         const r = 8 + ctx.rng.next() * 16;
-        meteors.push({ x: ctx.rng.next() * W, y: -r, r, vy: 120 + ctx.rng.next() * 120 + elapsed * 4 });
+        meteors.push({
+          x: ctx.rng.next() * W,
+          y: -r,
+          r,
+          vy: 120 + ctx.rng.next() * 120 + elapsed * 4,
+        });
       }
       // spawn pickups + coins
       pickAcc += dt;
@@ -94,7 +120,13 @@ export default function createGame(ctx: GameContext): Game {
         m.y += m.vy * slow * dt;
         const d = Math.hypot(m.x - player.x, m.y - player.y);
         if (d < m.r + player.r * 0.7) {
-          if (shield) { shield = false; m.y = H + 99; ctx.audio.sfx('powerup'); ctx.fx.screenShake(5, 0.12); continue; }
+          if (shield) {
+            shield = false;
+            m.y = H + 99;
+            ctx.audio.sfx('powerup');
+            ctx.fx.screenShake(5, 0.12);
+            continue;
+          }
           over = true;
           ctx.audio.sfx('explosion');
           ctx.gameOver(score, { time: Math.floor(elapsed) });
@@ -112,12 +144,22 @@ export default function createGame(ctx: GameContext): Game {
       for (let i = pickups.length - 1; i >= 0; i--) {
         const p = pickups[i]!;
         p.y += p.vy * dt;
-        if (p.y > H + 20) { pickups.splice(i, 1); continue; }
+        if (p.y > H + 20) {
+          pickups.splice(i, 1);
+          continue;
+        }
         if (Math.hypot(p.x - player.x, p.y - player.y) < player.r + 12) {
           pickups.splice(i, 1);
-          if (p.kind === 'shield') { shield = true; ctx.hud.toast('SHIELD'); }
-          else if (p.kind === 'slow') { slowT = 5; ctx.hud.toast('SLOW-MO'); }
-          else { bonus += 100; ctx.fx.floatingText('+100', p.x, p.y, 0xffd200); }
+          if (p.kind === 'shield') {
+            shield = true;
+            ctx.hud.toast('SHIELD');
+          } else if (p.kind === 'slow') {
+            slowT = 5;
+            ctx.hud.toast('SLOW-MO');
+          } else {
+            bonus += 100;
+            ctx.fx.floatingText('+100', p.x, p.y, 0xffd200);
+          }
           ctx.audio.sfx(p.kind === 'coin' ? 'coin' : 'powerup');
         }
       }

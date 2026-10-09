@@ -13,8 +13,14 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   const g = new Graphics();
-  const prompt = new Text({ text: 'TAP THE INK', style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0xffffff } });
-  const word = new Text({ text: '', style: { fontFamily: 'Press Start 2P, monospace', fontSize: 28, fill: 0xffffff } });
+  const prompt = new Text({
+    text: 'TAP THE INK',
+    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0xffffff },
+  });
+  const word = new Text({
+    text: '',
+    style: { fontFamily: 'Press Start 2P, monospace', fontSize: 28, fill: 0xffffff },
+  });
   prompt.anchor.set(0.5);
   word.anchor.set(0.5);
   prompt.position.set(W / 2, H * 0.22);
@@ -59,7 +65,10 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx('hit');
     ctx.fx.screenShake(4, 0.1);
     ctx.hud.setLives(lives);
-    if (lives <= 0) { ctx.gameOver(score, { streak }); return; }
+    if (lives <= 0) {
+      ctx.gameOver(score, { streak });
+      return;
+    }
     next();
   }
 
@@ -71,7 +80,12 @@ export default function createGame(ctx: GameContext): Game {
       score += (120 + speed) * mult;
       time += 0.8;
       ctx.audio.sfx('coin');
-      ctx.fx.floatingText(streak >= 5 ? `x${mult}` : '+TIME', W / 2, H * 0.48, COLORS[target]!.value);
+      ctx.fx.floatingText(
+        streak >= 5 ? `x${mult}` : '+TIME',
+        W / 2,
+        H * 0.48,
+        COLORS[target]!.value,
+      );
       ctx.hud.setScore(score);
       next();
     } else {
@@ -96,14 +110,19 @@ export default function createGame(ctx: GameContext): Game {
     labels.length = 0;
     g.clear();
     // per-question timer bar
-    const tw = (W * 0.6) * Math.max(0, qTime / qMax);
+    const tw = W * 0.6 * Math.max(0, qTime / qMax);
     g.rect(W * 0.2, H * 0.5, W * 0.6, 5).fill({ color: 0x000000, alpha: 0.4 });
     g.rect(W * 0.2, H * 0.5, tw, 5).fill({ color: qTime < qMax * 0.3 ? 0xef4444 : 0x22c55e });
     const y = H * 0.64;
     COLORS.forEach((c, i) => {
       const x = W * (0.125 + i * 0.25);
-      g.roundRect(x - 38, y, 76, 76, 12).fill({ color: c.value }).stroke({ width: 2, color: 0xffffff });
-      const t = new Text({ text: c.name.slice(0, 1), style: { fontFamily: 'Press Start 2P, monospace', fontSize: 16, fill: 0x0f172a } });
+      g.roundRect(x - 38, y, 76, 76, 12)
+        .fill({ color: c.value })
+        .stroke({ width: 2, color: 0xffffff });
+      const t = new Text({
+        text: c.name.slice(0, 1),
+        style: { fontFamily: 'Press Start 2P, monospace', fontSize: 16, fill: 0x0f172a },
+      });
       t.anchor.set(0.5);
       t.position.set(x, y + 38);
       labels.push(t);
@@ -117,8 +136,15 @@ export default function createGame(ctx: GameContext): Game {
       if (lives <= 0) return;
       time -= dt;
       qTime -= dt;
-      ctx.hud.setLabel(streak >= 5 ? `${Math.ceil(Math.max(0, time))}s · x${1 + Math.floor(streak / 5)}` : `${Math.ceil(Math.max(0, time))}s`);
-      if (qTime <= 0) { miss(); return; }
+      ctx.hud.setLabel(
+        streak >= 5
+          ? `${Math.ceil(Math.max(0, time))}s · x${1 + Math.floor(streak / 5)}`
+          : `${Math.ceil(Math.max(0, time))}s`,
+      );
+      if (qTime <= 0) {
+        miss();
+        return;
+      }
       if (time <= 0) ctx.gameOver(score, { streak });
       draw();
     },

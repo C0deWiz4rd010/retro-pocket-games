@@ -23,7 +23,12 @@ export function initPwaUx(): void {
   // iOS Safari never fires `beforeinstallprompt`, so guide users to Add-to-Home-Screen
   // manually after they've returned a couple of times (docs/05 §5, audit §8).
   const sessions = Number(localStorage.getItem('rp:sessions') ?? '0');
-  if (isIosDevice() && !isStandalone() && sessions >= 2 && !localStorage.getItem('rp:iosHintDismissed')) {
+  if (
+    isIosDevice() &&
+    !isStandalone() &&
+    sessions >= 2 &&
+    !localStorage.getItem('rp:iosHintDismissed')
+  ) {
     showIosHint();
   }
 
@@ -32,14 +37,18 @@ export function initPwaUx(): void {
     const banner = el('div', { class: 'install-banner' }, [
       el('span', {}, ['📲 ' + t('install.ios.text')]),
       el('div', { class: 'install-banner__actions' }, [
-        el('button', {
-          class: 'iconbtn',
-          'aria-label': 'Dismiss',
-          onClick: () => {
-            localStorage.setItem('rp:iosHintDismissed', '1');
-            banner.remove();
+        el(
+          'button',
+          {
+            class: 'iconbtn',
+            'aria-label': 'Dismiss',
+            onClick: () => {
+              localStorage.setItem('rp:iosHintDismissed', '1');
+              banner.remove();
+            },
           },
-        }, ['✕']),
+          ['✕'],
+        ),
       ]),
     ]);
     document.body.append(banner);
@@ -50,24 +59,32 @@ export function initPwaUx(): void {
     const banner = el('div', { class: 'install-banner' }, [
       el('span', {}, ['🎮 ' + t('install.text')]),
       el('div', { class: 'install-banner__actions' }, [
-        el('button', {
-          class: 'btn btn--primary',
-          onClick: async () => {
-            banner.remove();
-            if (!deferred) return;
-            await deferred.prompt();
-            await deferred.userChoice;
-            deferred = null;
+        el(
+          'button',
+          {
+            class: 'btn btn--primary',
+            onClick: async () => {
+              banner.remove();
+              if (!deferred) return;
+              await deferred.prompt();
+              await deferred.userChoice;
+              deferred = null;
+            },
           },
-        }, [t('install.cta')]),
-        el('button', {
-          class: 'iconbtn',
-          'aria-label': 'Dismiss',
-          onClick: () => {
-            localStorage.setItem('rp:installDismissed', '1');
-            banner.remove();
+          [t('install.cta')],
+        ),
+        el(
+          'button',
+          {
+            class: 'iconbtn',
+            'aria-label': 'Dismiss',
+            onClick: () => {
+              localStorage.setItem('rp:installDismissed', '1');
+              banner.remove();
+            },
           },
-        }, ['✕']),
+          ['✕'],
+        ),
       ]),
     ]);
     document.body.append(banner);
@@ -83,7 +100,10 @@ export function offlineReadyToast(): void {
 
 function isIosDevice(): boolean {
   const ua = navigator.userAgent;
-  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
 }
 
 function isStandalone(): boolean {
@@ -103,11 +123,16 @@ export function updateReadyBanner(reload: () => void): void {
     el('span', {}, ['↻ ' + t('update.text')]),
     el('div', { class: 'install-banner__actions' }, [
       el('button', { class: 'btn btn--primary', onClick: () => reload() }, [t('update.cta')]),
-      el('button', {
-        class: 'iconbtn',
-        'aria-label': 'Dismiss',
-        onClick: (e: Event) => (e.currentTarget as HTMLElement).closest('.install-banner')?.remove(),
-      }, ['✕']),
+      el(
+        'button',
+        {
+          class: 'iconbtn',
+          'aria-label': 'Dismiss',
+          onClick: (e: Event) =>
+            (e.currentTarget as HTMLElement).closest('.install-banner')?.remove(),
+        },
+        ['✕'],
+      ),
     ]),
   ]);
   document.body.append(banner);

@@ -12,9 +12,26 @@ const PINK = 0xff2e97;
 const GOLD = 0xffd200;
 const GREEN = 0x3ddc84;
 
-interface Barrier { a: number; half: number; ring: 0 | 1; scored: boolean }
-interface Orb { a: number; ring: 0 | 1; taken: boolean; shield: boolean }
-interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Barrier {
+  a: number;
+  half: number;
+  ring: 0 | 1;
+  scored: boolean;
+}
+interface Orb {
+  a: number;
+  ring: 0 | 1;
+  taken: boolean;
+  shield: boolean;
+}
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 const norm = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
 
@@ -49,9 +66,13 @@ export default function createGame(ctx: GameContext): Game {
   const setLabel = (): void => ctx.hud.setLabel(`${shield ? '🛡 ' : ''}ZONE ${zone}`);
   setLabel();
 
-  const swap = (): void => { track = track === 0 ? 1 : 0; ctx.audio.sfx('blip'); };
+  const swap = (): void => {
+    track = track === 0 ? 1 : 0;
+    ctx.audio.sfx('blip');
+  };
   const offDown = ctx.input.on('down', (a) => {
-    if (a === 'a' || a === 'b' || a === 'up' || a === 'down' || a === 'left' || a === 'right') swap();
+    if (a === 'a' || a === 'b' || a === 'up' || a === 'down' || a === 'left' || a === 'right')
+      swap();
   });
   const offTap = ctx.input.on('tap', swap);
 
@@ -65,14 +86,27 @@ export default function createGame(ctx: GameContext): Game {
 
   const spawn = (): void => {
     const ring = (ctx.rng.next() < 0.5 ? 0 : 1) as 0 | 1;
-    barriers.push({ a: norm(dotA + 2.4 + ctx.rng.next() * 0.8), half: 0.3 + ctx.rng.next() * 0.25, ring, scored: false });
+    barriers.push({
+      a: norm(dotA + 2.4 + ctx.rng.next() * 0.8),
+      half: 0.3 + ctx.rng.next() * 0.25,
+      ring,
+      scored: false,
+    });
     if (ctx.rng.next() < 0.6) {
       const oring = (ctx.rng.next() < 0.5 ? 0 : 1) as 0 | 1;
-      orbs.push({ a: norm(dotA + 1.6 + ctx.rng.next() * 1.2), ring: oring, taken: false, shield: ctx.rng.next() < 0.14 });
+      orbs.push({
+        a: norm(dotA + 1.6 + ctx.rng.next() * 1.2),
+        ring: oring,
+        taken: false,
+        shield: ctx.rng.next() < 0.14,
+      });
     }
   };
 
-  const pos = (a: number, r: number): { x: number; y: number } => ({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+  const pos = (a: number, r: number): { x: number; y: number } => ({
+    x: cx + Math.cos(a) * r,
+    y: cy + Math.sin(a) * r,
+  });
 
   const draw = (): void => {
     g.clear();
@@ -92,7 +126,11 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(p.x, p.y, 8).fill({ color: o.shield ? GREEN : GOLD });
     }
     // sparks
-    for (const s of sparks) g.circle(s.x, s.y, 3 * Math.min(1, s.life * 2)).fill({ color: s.color, alpha: Math.min(1, s.life * 2) });
+    for (const s of sparks)
+      g.circle(s.x, s.y, 3 * Math.min(1, s.life * 2)).fill({
+        color: s.color,
+        alpha: Math.min(1, s.life * 2),
+      });
     // dot
     const dp = pos(dotA, R[track]);
     if (shield) g.circle(dp.x, dp.y, 14).stroke({ width: 2, color: GREEN, alpha: 0.7 });
@@ -106,10 +144,19 @@ export default function createGame(ctx: GameContext): Game {
       dotA = norm(dotA + speed * dt);
       score += Math.floor(dt * 10 * zone);
       const nz = 1 + Math.floor(score / 1400);
-      if (nz > zone) { zone = nz; speed = 1.7 + zone * 0.18; ctx.hud.toast(`ZONE ${zone}`); ctx.audio.sfx('powerup'); setLabel(); }
+      if (nz > zone) {
+        zone = nz;
+        speed = 1.7 + zone * 0.18;
+        ctx.hud.toast(`ZONE ${zone}`);
+        ctx.audio.sfx('powerup');
+        setLabel();
+      }
 
       spawnAcc += dt;
-      if (spawnAcc >= Math.max(0.5, 1.1 - zone * 0.05)) { spawnAcc = 0; spawn(); }
+      if (spawnAcc >= Math.max(0.5, 1.1 - zone * 0.05)) {
+        spawnAcc = 0;
+        spawn();
+      }
 
       // barriers: collision on the dot's ring, score the dodge once swept past
       for (let i = barriers.length - 1; i >= 0; i--) {
@@ -132,7 +179,12 @@ export default function createGame(ctx: GameContext): Game {
             ctx.audio.sfx('hit');
             ctx.fx.screenShake(7, 0.16);
             burst(dp.x, dp.y, PINK, 16);
-            if (lives <= 0) { over = true; ctx.audio.sfx('explosion'); ctx.gameOver(score, { zone }); return; }
+            if (lives <= 0) {
+              over = true;
+              ctx.audio.sfx('explosion');
+              ctx.gameOver(score, { zone });
+              return;
+            }
           }
         } else if (rel < -0.45) {
           // swept past without contact → dodged
@@ -140,7 +192,8 @@ export default function createGame(ctx: GameContext): Game {
             combo++;
             const mult = 1 + Math.floor(combo / 6);
             score += 40 * mult;
-            if (combo >= 6 && combo % 6 === 0) ctx.fx.floatingText(`COMBO x${mult}`, cx, cy - R[1] - 16, GOLD);
+            if (combo >= 6 && combo % 6 === 0)
+              ctx.fx.floatingText(`COMBO x${mult}`, cx, cy - R[1] - 16, GOLD);
           }
           barriers.splice(i, 1);
         }
@@ -153,8 +206,11 @@ export default function createGame(ctx: GameContext): Game {
         if (!o.taken && o.ring === track && Math.abs(rel) < 0.16) {
           o.taken = true;
           const p = pos(o.a, R[o.ring]);
-          if (o.shield) { shield = true; ctx.hud.toast('SHIELD'); setLabel(); }
-          else score += 80 * zone;
+          if (o.shield) {
+            shield = true;
+            ctx.hud.toast('SHIELD');
+            setLabel();
+          } else score += 80 * zone;
           ctx.audio.sfx(o.shield ? 'powerup' : 'coin');
           burst(p.x, p.y, o.shield ? GREEN : GOLD, 8);
           orbs.splice(i, 1);
@@ -163,7 +219,9 @@ export default function createGame(ctx: GameContext): Game {
 
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i]!;
-        s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.life -= dt;
         if (s.life <= 0) sparks.splice(i, 1);
       }
 

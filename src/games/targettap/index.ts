@@ -7,12 +7,22 @@ export default function createGame(ctx: GameContext): Game {
   const layer = new Container();
   ctx.stage.addChild(layer);
   const g = new Graphics();
-  const label = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 24, fill: 0x22d3ee } });
+  const label = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 24, fill: 0x22d3ee },
+  });
   label.anchor.set(0.5);
   label.position.set(W / 2, 52);
   layer.addChild(g, label);
 
-  interface Mover { x: number; y: number; r: number; vx: number; vy: number; gold?: boolean }
+  interface Mover {
+    x: number;
+    y: number;
+    r: number;
+    vx: number;
+    vy: number;
+    gold?: boolean;
+  }
   let target: Mover = { x: W / 2, y: H / 2, r: 28, vx: 80, vy: 60 };
   let bomb: Mover | null = null; // Feature: bomb target — don't tap it!
   let bombTimer = 4;
@@ -33,7 +43,9 @@ export default function createGame(ctx: GameContext): Game {
     vy: (ctx.rng.next() - 0.5) * 180,
     gold,
   });
-  const moveTarget = (): void => { target = spawn(ctx.rng.next() < 0.16); }; // Feature: golden target
+  const moveTarget = (): void => {
+    target = spawn(ctx.rng.next() < 0.16);
+  }; // Feature: golden target
   moveTarget();
 
   const offTap = ctx.input.on('tap', ({ x, y }) => {
@@ -57,7 +69,12 @@ export default function createGame(ctx: GameContext): Game {
       score += pts;
       time = Math.min(40, time + (target.gold ? 2 : 0.3)); // Feature: hit time bonus
       ctx.hud.setScore(score);
-      ctx.fx.floatingText(target.gold ? `GOLD +${pts}` : `+${pts}`, target.x, target.y, target.gold ? 0xffd200 : 0x22d3ee);
+      ctx.fx.floatingText(
+        target.gold ? `GOLD +${pts}` : `+${pts}`,
+        target.x,
+        target.y,
+        target.gold ? 0xffd200 : 0x22d3ee,
+      );
       ctx.audio.sfx(target.gold ? 'powerup' : 'coin');
       moveTarget();
     } else {
@@ -96,11 +113,17 @@ export default function createGame(ctx: GameContext): Game {
       moveMover(target, dt);
       // bomb spawn/lifecycle
       bombTimer -= dt;
-      if (!bomb && bombTimer <= 0) { bomb = { ...spawn(false), r: 24 }; bombLife = 2.6; }
+      if (!bomb && bombTimer <= 0) {
+        bomb = { ...spawn(false), r: 24 };
+        bombLife = 2.6;
+      }
       if (bomb) {
         moveMover(bomb, dt);
         bombLife -= dt;
-        if (bombLife <= 0) { bomb = null; bombTimer = 4 + ctx.rng.next() * 3; }
+        if (bombLife <= 0) {
+          bomb = null;
+          bombTimer = 4 + ctx.rng.next() * 3;
+        }
       }
       if (time <= 0) {
         over = true;

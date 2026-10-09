@@ -31,13 +31,19 @@ export default function createGame(ctx: GameContext): Game {
 
   const newArc = (): void => {
     const w = Math.max(0.24, 0.62 - level * 0.045);
-    arc = { a: ctx.rng.next() * Math.PI * 2, w, baseW: w, repair: lives < 3 && ctx.rng.next() < 0.18 };
+    arc = {
+      a: ctx.rng.next() * Math.PI * 2,
+      w,
+      baseW: w,
+      repair: lives < 3 && ctx.rng.next() < 0.18,
+    };
     speed = (2.1 + level * 0.22) * (ctx.rng.next() > 0.5 ? 1 : -1);
     lockTimer = 0;
   };
   newArc();
 
-  const diff = (a: number, b: number): number => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  const diff = (a: number, b: number): number =>
+    Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
   const hit = (): void => {
     if (over) return;
     if (diff(angle, arc.a) < arc.w) {
@@ -53,10 +59,23 @@ export default function createGame(ctx: GameContext): Game {
         ctx.hud.toast('+1 LIFE');
       }
       ctx.hud.setScore(score);
-      ctx.fx.floatingText(acc > 0.85 ? `PERFECT +${pts}` : `+${pts}`, cx, cy - 92, arc.repair ? 0x3ddc84 : 0xffd200);
+      ctx.fx.floatingText(
+        acc > 0.85 ? `PERFECT +${pts}` : `+${pts}`,
+        cx,
+        cy - 92,
+        arc.repair ? 0x3ddc84 : 0xffd200,
+      );
       if (combo >= 4 && combo % 4 === 0) ctx.hud.toast(`STREAK x${mult}`);
       ctx.audio.sfx(acc > 0.72 ? 'powerup' : 'coin');
-      burst(sparks, ctx.rng, cx + Math.cos(angle) * 88, cy + Math.sin(angle) * 88, arc.repair ? 0x3ddc84 : 0xffd200, 18, 140);
+      burst(
+        sparks,
+        ctx.rng,
+        cx + Math.cos(angle) * 88,
+        cy + Math.sin(angle) * 88,
+        arc.repair ? 0x3ddc84 : 0xffd200,
+        18,
+        140,
+      );
       if (pin > 5) {
         pin = 1;
         level++;
@@ -90,7 +109,11 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(cx, cy, r).stroke({ width: 2, color: 0x2d365a, alpha: 0.7 });
     }
     g.moveTo(cx + Math.cos(arc.a - arc.w) * 88, cy + Math.sin(arc.a - arc.w) * 88);
-    g.arc(cx, cy, 88, arc.a - arc.w, arc.a + arc.w).stroke({ width: 12, color: arc.repair ? 0x3ddc84 : 0xffd200, alpha: 0.85 });
+    g.arc(cx, cy, 88, arc.a - arc.w, arc.a + arc.w).stroke({
+      width: 12,
+      color: arc.repair ? 0x3ddc84 : 0xffd200,
+      alpha: 0.85,
+    });
     g.circle(cx, cy, 44).fill({ color: 0x111827 }).stroke({ width: 3, color: 0xb388ff });
     g.circle(cx + Math.cos(angle) * 88, cy + Math.sin(angle) * 88, 12).fill({ color: 0x22d3ee });
     g.rect(cx - 5, cy - 52, 10, 104).fill({ color: 0xffffff, alpha: 0.08 });

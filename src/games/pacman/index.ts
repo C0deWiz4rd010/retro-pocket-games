@@ -49,7 +49,8 @@ export default function createGame(ctx: GameContext): Game {
   const pellet: boolean[][] = [];
   let dotCount = 0;
 
-  const inHouse = (c: number, r: number): boolean => Math.abs(c - homeC) <= 1 && Math.abs(r - homeR) <= 1;
+  const inHouse = (c: number, r: number): boolean =>
+    Math.abs(c - homeC) <= 1 && Math.abs(r - homeR) <= 1;
 
   for (let r = 0; r < ROWS; r++) {
     wall[r] = [];
@@ -58,7 +59,8 @@ export default function createGame(ctx: GameContext): Game {
     for (let c = 0; c < COLS; c++) {
       const border = r === 0 || c === 0 || r === ROWS - 1 || c === COLS - 1;
       const pillar = r % 2 === 0 && c % 2 === 0;
-      const isWall = (border && !(r === homeR && (c === 0 || c === COLS - 1))) || (pillar && !inHouse(c, r));
+      const isWall =
+        (border && !(r === homeR && (c === 0 || c === COLS - 1))) || (pillar && !inHouse(c, r));
       wall[r]![c] = isWall;
       dot[r]![c] = false;
       pellet[r]![c] = false;
@@ -77,7 +79,12 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
     // power pellets near the four corners
-    for (const [c, r] of [[1, 1], [COLS - 2, 1], [1, ROWS - 2], [COLS - 2, ROWS - 2]] as [number, number][]) {
+    for (const [c, r] of [
+      [1, 1],
+      [COLS - 2, 1],
+      [1, ROWS - 2],
+      [COLS - 2, ROWS - 2],
+    ] as [number, number][]) {
       if (dot[r]![c]) {
         dot[r]![c] = false;
         dotCount--;
@@ -96,10 +103,31 @@ export default function createGame(ctx: GameContext): Game {
   const start = { x: homeC, y: ROWS - 2 };
   const pac = { x: start.x, y: start.y, dir: { x: 0, y: 0 }, next: { x: 0, y: 0 }, mouth: 0 };
   const ghosts: Ghost[] = [
-    { x: homeC, y: homeR, dir: DIRS.left!, color: 0xff2e97, scatter: { x: COLS - 2, y: 1 }, frightened: 0 },
+    {
+      x: homeC,
+      y: homeR,
+      dir: DIRS.left!,
+      color: 0xff2e97,
+      scatter: { x: COLS - 2, y: 1 },
+      frightened: 0,
+    },
     { x: homeC, y: homeR, dir: DIRS.up!, color: 0x00f7ff, scatter: { x: 1, y: 1 }, frightened: 0 },
-    { x: homeC, y: homeR, dir: DIRS.right!, color: 0xffb000, scatter: { x: COLS - 2, y: ROWS - 2 }, frightened: 0 },
-    { x: homeC, y: homeR, dir: DIRS.down!, color: 0xff7b00, scatter: { x: 1, y: ROWS - 2 }, frightened: 0 },
+    {
+      x: homeC,
+      y: homeR,
+      dir: DIRS.right!,
+      color: 0xffb000,
+      scatter: { x: COLS - 2, y: ROWS - 2 },
+      frightened: 0,
+    },
+    {
+      x: homeC,
+      y: homeR,
+      dir: DIRS.down!,
+      color: 0xff7b00,
+      scatter: { x: 1, y: ROWS - 2 },
+      frightened: 0,
+    },
   ];
 
   let initialDots = dotCount;
@@ -121,7 +149,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const spawnFruit = (): void => {
     if (fruit || fruitDone) return;
-    fruit = { c: homeC, r: homeR + 2, ttl: 9, worth: 100 * level, };
+    fruit = { c: homeC, r: homeR + 2, ttl: 9, worth: 100 * level };
     fruitDone = true;
   };
 
@@ -136,7 +164,10 @@ export default function createGame(ctx: GameContext): Game {
     mazeG.clear();
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
-        if (wall[r]![c]) mazeG.roundRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2, 3).fill({ color: 0x1d1d6e });
+        if (wall[r]![c])
+          mazeG
+            .roundRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2, 3)
+            .fill({ color: 0x1d1d6e });
   };
   drawMaze();
 
@@ -168,7 +199,8 @@ export default function createGame(ctx: GameContext): Game {
       let choices = Object.values(DIRS).filter(
         (d) => !(d.x === -gh.dir.x && d.y === -gh.dir.y) && !isWall(gh.x + d.x, gh.y + d.y),
       );
-      if (!choices.length) choices = Object.values(DIRS).filter((d) => !isWall(gh.x + d.x, gh.y + d.y));
+      if (!choices.length)
+        choices = Object.values(DIRS).filter((d) => !isWall(gh.x + d.x, gh.y + d.y));
       if (choices.length) {
         if (gh.frightened > 0) {
           gh.dir = ctx.rng.pick(choices);
@@ -214,7 +246,10 @@ export default function createGame(ctx: GameContext): Game {
         modeTimer = 0;
       }
 
-      if (Math.abs(pac.x - Math.round(pac.x)) < 0.12 && Math.abs(pac.y - Math.round(pac.y)) < 0.12) {
+      if (
+        Math.abs(pac.x - Math.round(pac.x)) < 0.12 &&
+        Math.abs(pac.y - Math.round(pac.y)) < 0.12
+      ) {
         const rx = Math.round(pac.x);
         const ry = Math.round(pac.y);
         pac.x = rx;
@@ -300,8 +335,16 @@ export default function createGame(ctx: GameContext): Game {
       g.clear();
       for (let r = 0; r < ROWS; r++)
         for (let c = 0; c < COLS; c++) {
-          if (dot[r]![c]) g.circle(c * cell + cell / 2, r * cell + cell / 2, cell * 0.1).fill({ color: 0xffd27f });
-          else if (pellet[r]![c]) g.circle(c * cell + cell / 2, r * cell + cell / 2, cell * (0.2 + 0.06 * Math.sin(modeTimer * 6))).fill({ color: 0xffd27f });
+          if (dot[r]![c])
+            g.circle(c * cell + cell / 2, r * cell + cell / 2, cell * 0.1).fill({
+              color: 0xffd27f,
+            });
+          else if (pellet[r]![c])
+            g.circle(
+              c * cell + cell / 2,
+              r * cell + cell / 2,
+              cell * (0.2 + 0.06 * Math.sin(modeTimer * 6)),
+            ).fill({ color: 0xffd27f });
         }
       // bonus fruit (cherry)
       if (fruit) {
@@ -325,7 +368,9 @@ export default function createGame(ctx: GameContext): Game {
         const gx = gh.x * cell + cell / 2;
         const gy = gh.y * cell + cell / 2;
         const col = gh.frightened > 0 ? (gh.frightened < 2 ? 0xffffff : 0x4a7bff) : gh.color;
-        g.roundRect(gx - cell * 0.4, gy - cell * 0.45, cell * 0.8, cell * 0.85, cell * 0.3).fill({ color: col });
+        g.roundRect(gx - cell * 0.4, gy - cell * 0.45, cell * 0.8, cell * 0.85, cell * 0.3).fill({
+          color: col,
+        });
         g.circle(gx - cell * 0.15, gy - cell * 0.12, cell * 0.1).fill({ color: 0xffffff });
         g.circle(gx + cell * 0.15, gy - cell * 0.12, cell * 0.1).fill({ color: 0xffffff });
       });

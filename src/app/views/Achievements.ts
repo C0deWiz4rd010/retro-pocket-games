@@ -1,5 +1,11 @@
 import { el } from '@utils/dom';
-import { ACHIEVEMENTS, achievements, isUnlocked, unlockedCount, achievementProgress } from '@store/achievements';
+import {
+  ACHIEVEMENTS,
+  achievements,
+  isUnlocked,
+  unlockedCount,
+  achievementProgress,
+} from '@store/achievements';
 import { audio } from '@core/AudioManager';
 import { t } from '@i18n/index';
 
@@ -14,15 +20,19 @@ export function renderAchievements(): HTMLElement {
   const grid = el('div', { class: 'ach-grid' });
 
   const tabBtn = (f: Filter, label: string): HTMLElement =>
-    el('button', {
-      class: `seg-tab${filter === f ? ' on' : ''}`,
-      'data-f': f,
-      onClick: () => {
-        filter = f;
-        audio.sfx('blip');
-        sync();
+    el(
+      'button',
+      {
+        class: `seg-tab${filter === f ? ' on' : ''}`,
+        'data-f': f,
+        onClick: () => {
+          filter = f;
+          audio.sfx('blip');
+          sync();
+        },
       },
-    }, [label]);
+      [label],
+    );
 
   const tabs = el('div', { class: 'ach-tabs' }, [
     tabBtn('all', t('ach.all')),
@@ -35,9 +45,9 @@ export function renderAchievements(): HTMLElement {
     const pct = Math.round((got / total) * 100);
     bar.style.width = `${pct}%`;
     count.textContent = `${got} / ${total}`;
-    tabs.querySelectorAll('.seg-tab').forEach((b) =>
-      b.classList.toggle('on', (b as HTMLElement).dataset.f === filter),
-    );
+    tabs
+      .querySelectorAll('.seg-tab')
+      .forEach((b) => b.classList.toggle('on', (b as HTMLElement).dataset.f === filter));
     renderGrid();
   };
 
@@ -87,7 +97,8 @@ function card(a: (typeof ACHIEVEMENTS)[number], at: number | undefined): HTMLEle
     el('div', { class: 'ach-card__title' }, [hidden ? '???' : a.title]),
     el('div', { class: 'ach-card__desc' }, [hidden ? t('ach.locked') : a.desc]),
   ];
-  if (unlocked && at) body.push(el('div', { class: 'ach-card__date' }, [new Date(at).toLocaleDateString()]));
+  if (unlocked && at)
+    body.push(el('div', { class: 'ach-card__date' }, [new Date(at).toLocaleDateString()]));
   if (prog && prog.cur > 0) {
     const pct = Math.round((prog.cur / prog.target) * 100);
     body.push(

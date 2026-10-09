@@ -1,9 +1,21 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
-import { burst, clamp, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
+import {
+  burst,
+  clamp,
+  drawBackdrop,
+  drawSparks,
+  type Spark,
+  updateSparks,
+} from '@games/_shared/juice';
 
-type Hazard = { x: number; lane: number; kind: 'block' | 'coin' | 'shield' | 'magnet'; wobble: number };
+type Hazard = {
+  x: number;
+  lane: number;
+  kind: 'block' | 'coin' | 'shield' | 'magnet';
+  wobble: number;
+};
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -77,7 +89,9 @@ export default function createGame(ctx: GameContext): Game {
     for (const h of hazards) {
       const y = lanes[h.lane]!;
       if (h.kind === 'block') {
-        g.roundRect(h.x - 15, y - 18, 30, 36, 6).fill({ color: 0xff2d75 }).stroke({ width: 2, color: 0xffffff, alpha: 0.25 });
+        g.roundRect(h.x - 15, y - 18, 30, 36, 6)
+          .fill({ color: 0xff2d75 })
+          .stroke({ width: 2, color: 0xffffff, alpha: 0.25 });
         g.rect(h.x - 9, y - 4, 18, 8).fill({ color: 0x240012, alpha: 0.55 });
       } else if (h.kind === 'coin') {
         g.circle(h.x, y + Math.sin(t * 7 + h.wobble) * 4, 12).fill({ color: 0xffd200 });
@@ -95,8 +109,18 @@ export default function createGame(ctx: GameContext): Game {
     g.roundRect(px - 8, py - 14, 16, 18, 5).fill({ color: 0x070715, alpha: 0.7 });
     g.circle(px - 8, py + 19, 4).fill({ color: 0xff80ab });
     g.circle(px + 8, py + 19, 4).fill({ color: 0xff80ab });
-    if (shield > 0) g.circle(px, py, 28).stroke({ width: 3, color: 0x93c5fd, alpha: 0.55 + Math.sin(t * 18) * 0.18 });
-    if (magnet > 0) g.circle(px, py, 34).stroke({ width: 2, color: 0xc084fc, alpha: 0.5 + Math.sin(t * 12) * 0.2 });
+    if (shield > 0)
+      g.circle(px, py, 28).stroke({
+        width: 3,
+        color: 0x93c5fd,
+        alpha: 0.55 + Math.sin(t * 18) * 0.18,
+      });
+    if (magnet > 0)
+      g.circle(px, py, 34).stroke({
+        width: 2,
+        color: 0xc084fc,
+        alpha: 0.5 + Math.sin(t * 12) * 0.2,
+      });
     drawSparks(g, sparks);
   }
 
@@ -112,7 +136,11 @@ export default function createGame(ctx: GameContext): Game {
       speed += dt * 3.8;
       // Feature: zone multiplier rises with score
       const nz = 1 + Math.floor(score / 4000);
-      if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); ctx.audio.sfx('powerup'); }
+      if (nz > zone) {
+        zone = nz;
+        ctx.hud.toast(`ZONE ${zone} · x${zone}`);
+        ctx.audio.sfx('powerup');
+      }
       spawn -= dt;
       if (spawn <= 0) {
         spawn = Math.max(0.36, 0.86 - score / 9000);
@@ -162,7 +190,10 @@ export default function createGame(ctx: GameContext): Game {
             score += pts;
             combo++;
             if (h.kind === 'shield') shield = 4;
-            if (h.kind === 'magnet') { magnet = 7; ctx.hud.toast('MAGNET'); }
+            if (h.kind === 'magnet') {
+              magnet = 7;
+              ctx.hud.toast('MAGNET');
+            }
             const col = h.kind === 'coin' ? 0xffd200 : h.kind === 'magnet' ? 0xc084fc : 0x3ddc84;
             ctx.fx.floatingText(`+${pts}`, px, playerY - 32, col);
             ctx.audio.sfx(h.kind === 'coin' ? 'coin' : 'powerup');
@@ -172,7 +203,13 @@ export default function createGame(ctx: GameContext): Game {
       }
       score += Math.floor(dt * 18 * zone);
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(magnet > 0 ? `MAGNET ${Math.ceil(magnet)}` : shield > 0 ? `SHIELD ${Math.ceil(shield)}` : `COMBO ${combo} · Z${zone}`);
+      ctx.hud.setLabel(
+        magnet > 0
+          ? `MAGNET ${Math.ceil(magnet)}`
+          : shield > 0
+            ? `SHIELD ${Math.ceil(shield)}`
+            : `COMBO ${combo} · Z${zone}`,
+      );
       draw();
     },
     destroy() {
@@ -182,4 +219,3 @@ export default function createGame(ctx: GameContext): Game {
     },
   };
 }
-

@@ -25,7 +25,8 @@ export default function createGame(ctx: GameContext): Game {
   const bg = new Graphics();
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
-      if ((x + y) % 2 === 0) bg.rect(x * cell, y * cell, cell, cell).fill({ color: 0xffffff, alpha: 0.03 });
+      if ((x + y) % 2 === 0)
+        bg.rect(x * cell, y * cell, cell, cell).fill({ color: 0xffffff, alpha: 0.03 });
     }
   }
   layer.addChild(bg);
@@ -40,7 +41,14 @@ export default function createGame(ctx: GameContext): Game {
   const edge = new Graphics(); // shield / death edge glow
   layer.addChild(rockG, food, bonusG, poisonG, orbG, snakeG, particleG, edge);
 
-  interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+  interface Particle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    color: number;
+  }
   const particles: Particle[] = [];
 
   const state: SnakeState = createSnake(cols, rows, ctx.rng);
@@ -81,7 +89,8 @@ export default function createGame(ctx: GameContext): Game {
 
   const freeCell = (): Vec | null => {
     const free: Vec[] = [];
-    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) if (!occupied(x, y)) free.push({ x, y });
+    for (let y = 0; y < rows; y++)
+      for (let x = 0; x < cols; x++) if (!occupied(x, y)) free.push({ x, y });
     return free.length ? ctx.rng.pick(free) : null;
   };
 
@@ -91,7 +100,14 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const angle = (i / n) * Math.PI * 2;
       const speed = 40 + Math.random() * 60;
-      particles.push({ x: cx, y: cy, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, life: 1, color });
+      particles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        color,
+      });
     }
   };
 
@@ -126,14 +142,22 @@ export default function createGame(ctx: GameContext): Game {
       .circle(state.food.x * cell + cell / 2, state.food.y * cell + cell / 2, cell * 0.34)
       .fill({ color: 0xff2e97 });
     food
-      .circle(state.food.x * cell + cell / 2 - cell * 0.1, state.food.y * cell + cell / 2 - cell * 0.1, cell * 0.1)
+      .circle(
+        state.food.x * cell + cell / 2 - cell * 0.1,
+        state.food.y * cell + cell / 2 - cell * 0.1,
+        cell * 0.1,
+      )
       .fill({ color: 0xffffff, alpha: 0.6 });
 
     // rocks
     rockG.clear();
     for (const o of state.obstacles!) {
-      rockG.roundRect(o.x * cell + 1, o.y * cell + 1, cell - 2, cell - 2, 3).fill({ color: 0x3a4256 });
-      rockG.roundRect(o.x * cell + 3, o.y * cell + 3, cell - 8, cell - 8, 2).fill({ color: 0x596279, alpha: 0.6 });
+      rockG
+        .roundRect(o.x * cell + 1, o.y * cell + 1, cell - 2, cell - 2, 3)
+        .fill({ color: 0x3a4256 });
+      rockG
+        .roundRect(o.x * cell + 3, o.y * cell + 3, cell - 8, cell - 8, 2)
+        .fill({ color: 0x596279, alpha: 0.6 });
     }
 
     // bonus
@@ -173,18 +197,25 @@ export default function createGame(ctx: GameContext): Game {
       const head = i === 0;
       const t = i / Math.max(1, state.body.length - 1);
       const base = shielded ? 0x00f7ff : 0x3ddc84;
-      snakeG
-        .roundRect(seg.x * cell + 1, seg.y * cell + 1, cell - 2, cell - 2, 4)
-        .fill({ color: head ? (shielded ? 0xbdfaff : 0x9bffce) : base, alpha: head ? 1 : 0.9 - t * 0.35 });
+      snakeG.roundRect(seg.x * cell + 1, seg.y * cell + 1, cell - 2, cell - 2, 4).fill({
+        color: head ? (shielded ? 0xbdfaff : 0x9bffce) : base,
+        alpha: head ? 1 : 0.9 - t * 0.35,
+      });
       if (head) {
         // eyes facing travel direction
-        const ex = state.dir.x, ey = state.dir.y;
+        const ex = state.dir.x,
+          ey = state.dir.y;
         const cxp = seg.x * cell + cell / 2;
         const cyp = seg.y * cell + cell / 2;
         const off = cell * 0.16;
-        const px = -ey * off, py = ex * off; // perpendicular
-        snakeG.circle(cxp + px + ex * off, cyp + py + ey * off, cell * 0.09).fill({ color: 0x0a0a12 });
-        snakeG.circle(cxp - px + ex * off, cyp - py + ey * off, cell * 0.09).fill({ color: 0x0a0a12 });
+        const px = -ey * off,
+          py = ex * off; // perpendicular
+        snakeG
+          .circle(cxp + px + ex * off, cyp + py + ey * off, cell * 0.09)
+          .fill({ color: 0x0a0a12 });
+        snakeG
+          .circle(cxp - px + ex * off, cyp - py + ey * off, cell * 0.09)
+          .fill({ color: 0x0a0a12 });
       }
     });
 
@@ -196,7 +227,8 @@ export default function createGame(ctx: GameContext): Game {
 
     // edge glow (shield / death)
     edge.clear();
-    const w = cols * cell, h = rows * cell;
+    const w = cols * cell,
+      h = rows * cell;
     if (shield > 0) {
       const a = 0.25 + 0.15 * Math.sin(pulse * 6);
       edge.rect(0, 0, w, h).stroke({ width: 6, color: 0x00f7ff, alpha: a });

@@ -13,8 +13,19 @@ interface Cube {
   col: number;
   state: number; // flip progress 0..target
 }
-interface Hopper { row: number; col: number; t: number }
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Hopper {
+  row: number;
+  col: number;
+  t: number;
+}
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -67,7 +78,14 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 90;
-      particles.push({ x: p.x, y: p.y + cubeH * 0.4, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
+      particles.push({
+        x: p.x,
+        y: p.y + cubeH * 0.4,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s,
+        life: 0.5,
+        color,
+      });
     }
   };
 
@@ -168,9 +186,29 @@ export default function createGame(ctx: GameContext): Game {
     const left = f >= 1 ? 0x2bb86c : f > 0 ? 0x6a9fd6 : 0xc99a00;
     const right = f >= 1 ? 0x238f54 : f > 0 ? 0x4a7bb0 : 0xa37e00;
     const hw = tile * 0.55;
-    g.poly([x, y, x + hw, y + cubeH * 0.4, x, y + cubeH * 0.8, x - hw, y + cubeH * 0.4]).fill({ color: top });
-    g.poly([x - hw, y + cubeH * 0.4, x, y + cubeH * 0.8, x, y + cubeH * 1.3, x - hw, y + cubeH * 0.9]).fill({ color: left });
-    g.poly([x + hw, y + cubeH * 0.4, x, y + cubeH * 0.8, x, y + cubeH * 1.3, x + hw, y + cubeH * 0.9]).fill({ color: right });
+    g.poly([x, y, x + hw, y + cubeH * 0.4, x, y + cubeH * 0.8, x - hw, y + cubeH * 0.4]).fill({
+      color: top,
+    });
+    g.poly([
+      x - hw,
+      y + cubeH * 0.4,
+      x,
+      y + cubeH * 0.8,
+      x,
+      y + cubeH * 1.3,
+      x - hw,
+      y + cubeH * 0.9,
+    ]).fill({ color: left });
+    g.poly([
+      x + hw,
+      y + cubeH * 0.4,
+      x,
+      y + cubeH * 0.8,
+      x,
+      y + cubeH * 1.3,
+      x + hw,
+      y + cubeH * 0.9,
+    ]).fill({ color: right });
   };
 
   const draw = (): void => {
@@ -181,7 +219,11 @@ export default function createGame(ctx: GameContext): Game {
         drawCube(p.x, p.y, cubes[row]![col]!.state);
       }
     // particles
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
     // bonus orb
     if (orb) {
       const p = pos(orb.row, orb.col);
@@ -208,7 +250,9 @@ export default function createGame(ctx: GameContext): Game {
       // particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
 
@@ -226,7 +270,11 @@ export default function createGame(ctx: GameContext): Game {
           if (e.t >= 0.7) {
             e.t = 0;
             if (!hopDown(e)) enemies.splice(i, 1);
-            else if (e.row === q.row && e.col === q.col) { ctx.audio.sfx('hit'); loseLife(); return; }
+            else if (e.row === q.row && e.col === q.col) {
+              ctx.audio.sfx('hit');
+              loseLife();
+              return;
+            }
           }
         }
       }

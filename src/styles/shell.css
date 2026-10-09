@@ -221,8 +221,16 @@
   background:
     linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(135deg, color-mix(in srgb, var(--bg) 94%, var(--primary)), var(--bg) 52%, color-mix(in srgb, var(--bg) 88%, var(--accent)));
-  background-size: 42px 42px, 42px 42px, auto;
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--bg) 94%, var(--primary)),
+      var(--bg) 52%,
+      color-mix(in srgb, var(--bg) 88%, var(--accent))
+    );
+  background-size:
+    42px 42px,
+    42px 42px,
+    auto;
 }
 :root[data-skin='launcher'] .device__brand,
 :root[data-skin='launcher'] .device__grille {

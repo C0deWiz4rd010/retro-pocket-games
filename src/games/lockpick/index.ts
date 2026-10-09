@@ -6,7 +6,10 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   const g = new Graphics();
-  const label = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0xfacc15 } });
+  const label = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0xfacc15 },
+  });
   label.anchor.set(0.5);
   label.position.set(W / 2, H * 0.18);
   layer.addChild(g, label);
@@ -46,9 +49,15 @@ export default function createGame(ctx: GameContext): Game {
       combo++;
       const mult = 1 + Math.floor(combo / 4);
       const perfect = d < width * 0.15;
-      score += (300 + pin * 80 + lockNo * 60 + Math.floor((width - d) * 120) + (perfect ? 200 : 0)) * mult;
+      score +=
+        (300 + pin * 80 + lockNo * 60 + Math.floor((width - d) * 120) + (perfect ? 200 : 0)) * mult;
       ctx.audio.sfx(perfect ? 'powerup' : 'coin');
-      ctx.fx.floatingText(perfect ? `PERFECT${mult > 1 ? ` x${mult}` : ''}` : 'CLICK', W / 2, H * 0.3, 0xfacc15);
+      ctx.fx.floatingText(
+        perfect ? `PERFECT${mult > 1 ? ` x${mult}` : ''}` : 'CLICK',
+        W / 2,
+        H * 0.3,
+        0xfacc15,
+      );
       ctx.fx.flashRect(W * 0.2, H * 0.24, W * 0.6, H * 0.56, 0xfacc15);
       pin++;
       if (pin > 5) {
@@ -66,7 +75,10 @@ export default function createGame(ctx: GameContext): Game {
       ctx.audio.sfx('hit');
       ctx.fx.screenShake(5, 0.12);
       ctx.hud.setLives(lives);
-      if (lives <= 0) { ctx.gameOver(score, { pins: pin - 1, locks: lockNo - 1 }); return; }
+      if (lives <= 0) {
+        ctx.gameOver(score, { pins: pin - 1, locks: lockNo - 1 });
+        return;
+      }
     }
     ctx.hud.setScore(score);
   }
@@ -89,7 +101,9 @@ export default function createGame(ctx: GameContext): Game {
       g.clear();
       g.circle(cx, cy, r).stroke({ width: 8, color: 0x334155 });
       g.arc(cx, cy, r, tx1, tx2).stroke({ width: 12, color: 0xfacc15 });
-      g.moveTo(cx, cy).lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r).stroke({ width: 4, color: 0xf8fafc });
+      g.moveTo(cx, cy)
+        .lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r)
+        .stroke({ width: 4, color: 0xf8fafc });
       g.circle(cx, cy, 9).fill({ color: 0xf8fafc });
     },
     destroy() {

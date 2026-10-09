@@ -74,10 +74,21 @@ export default function createGame(ctx: GameContext): Game {
     });
     for (const it of items) {
       if (it.kind === 'coin') g.circle(it.x, it.y, 7).fill({ color: 0xffd200 });
-      else { g.circle(it.x, it.y, 10).stroke({ width: 3, color: 0x3ddc84 }); g.circle(it.x, it.y, 4).fill({ color: 0x3ddc84 }); }
+      else {
+        g.circle(it.x, it.y, 10).stroke({ width: 3, color: 0x3ddc84 });
+        g.circle(it.x, it.y, 4).fill({ color: 0x3ddc84 });
+      }
     }
-    if (shield || invuln > 0) g.circle(ship.x, ship.y, ship.r + 6).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
-    g.poly([ship.x, ship.y - ship.r, ship.x - ship.r, ship.y + ship.r, ship.x + ship.r, ship.y + ship.r]).fill({ color: 0x42a5f5 });
+    if (shield || invuln > 0)
+      g.circle(ship.x, ship.y, ship.r + 6).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
+    g.poly([
+      ship.x,
+      ship.y - ship.r,
+      ship.x - ship.r,
+      ship.y + ship.r,
+      ship.x + ship.r,
+      ship.y + ship.r,
+    ]).fill({ color: 0x42a5f5 });
     g.circle(ship.x, ship.y + 2, 3).fill({ color: 0x00f7ff });
   };
 
@@ -88,7 +99,10 @@ export default function createGame(ctx: GameContext): Game {
       dist += speed * dt;
       if (invuln > 0) invuln -= dt;
       const nz = 1 + Math.floor(dist / 1800);
-      if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); }
+      if (nz > zone) {
+        zone = nz;
+        ctx.hud.toast(`ZONE ${zone} · x${zone}`);
+      }
       ctx.hud.setScore(Math.floor(dist / 10) * zone + bonus);
 
       // smooth steering
@@ -107,16 +121,29 @@ export default function createGame(ctx: GameContext): Game {
       if (spawnAcc >= 1.1) {
         spawnAcc = 0;
         const top = slices[0]!;
-        items.push({ x: top.cx + (ctx.rng.next() - 0.5) * top.half, y: -10, kind: ctx.rng.next() < 0.12 ? 'shield' : 'coin' });
+        items.push({
+          x: top.cx + (ctx.rng.next() - 0.5) * top.half,
+          y: -10,
+          kind: ctx.rng.next() < 0.12 ? 'shield' : 'coin',
+        });
       }
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i]!;
         it.y += speed * dt;
-        if (it.y > H + 10) { items.splice(i, 1); continue; }
+        if (it.y > H + 10) {
+          items.splice(i, 1);
+          continue;
+        }
         if (Math.hypot(it.x - ship.x, it.y - ship.y) < ship.r + 10) {
           items.splice(i, 1);
-          if (it.kind === 'coin') { bonus += 30 * zone; ctx.audio.sfx('coin'); }
-          else { shield = true; ctx.hud.toast('SHIELD'); ctx.audio.sfx('powerup'); }
+          if (it.kind === 'coin') {
+            bonus += 30 * zone;
+            ctx.audio.sfx('coin');
+          } else {
+            shield = true;
+            ctx.hud.toast('SHIELD');
+            ctx.audio.sfx('powerup');
+          }
         }
       }
 

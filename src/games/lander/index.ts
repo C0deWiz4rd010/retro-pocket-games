@@ -1,7 +1,14 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 
-interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  color: number;
+}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -23,7 +30,12 @@ export default function createGame(ctx: GameContext): Game {
   const ROT = 2.6;
 
   const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 50; i++) stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H * 0.7, s: ctx.rng.next() * 1.3 + 0.4 });
+  for (let i = 0; i < 50; i++)
+    stars.push({
+      x: ctx.rng.next() * W,
+      y: ctx.rng.next() * H * 0.7,
+      s: ctx.rng.next() * 1.3 + 0.4,
+    });
 
   let points: { x: number; y: number }[] = [];
   let padX1 = 0;
@@ -64,7 +76,8 @@ export default function createGame(ctx: GameContext): Game {
     // Feature: floating fuel canisters
     fuelCans = [];
     const cans = 1 + Math.floor(ctx.rng.next() * 2);
-    for (let i = 0; i < cans; i++) fuelCans.push({ x: 40 + ctx.rng.next() * (W - 80), y: H * 0.25 + ctx.rng.next() * H * 0.25 });
+    for (let i = 0; i < cans; i++)
+      fuelCans.push({ x: 40 + ctx.rng.next() * (W - 80), y: H * 0.25 + ctx.rng.next() * H * 0.25 });
     drawTerrain();
   };
 
@@ -106,7 +119,10 @@ export default function createGame(ctx: GameContext): Game {
     terrainG.poly(path).fill({ color: 0x1a1a2e });
     terrainG.poly(points.flatMap((p) => [p.x, p.y])).stroke({ width: 2, color: 0x8a8aa3 });
     terrainG.rect(padX1, padY - 2, padX2 - padX1, 4).fill({ color: 0x3ddc84 });
-    const flag = new Text({ text: `x${padMult}`, style: { fontFamily: 'VT323, monospace', fontSize: 16, fill: 0x3ddc84 } });
+    const flag = new Text({
+      text: `x${padMult}`,
+      style: { fontFamily: 'VT323, monospace', fontSize: 16, fill: 0x3ddc84 },
+    });
     flag.position.set((padX1 + padX2) / 2 - 8, padY - 22);
     terrainG.addChild(flag);
   }
@@ -114,7 +130,8 @@ export default function createGame(ctx: GameContext): Game {
   const drawBg = (): void => {
     bgG.clear();
     bgG.rect(0, 0, W, H).fill({ color: 0x05060f });
-    for (const s of stars) bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.12 + s.s * 0.18 });
+    for (const s of stars)
+      bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.12 + s.s * 0.18 });
   };
   drawBg();
   genTerrain();
@@ -135,7 +152,11 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     // particles
-    for (const p of particles) g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
+        color: p.color,
+        alpha: Math.min(1, p.life * 2),
+      });
     // fuel canisters
     fuelCans.forEach((c) => {
       g.roundRect(c.x - 6, c.y - 8, 12, 16, 3).fill({ color: 0x00f7ff });
@@ -177,7 +198,14 @@ export default function createGame(ctx: GameContext): Game {
         // thruster particles
         const fx = ship.x - Math.sin(ship.a) * 12;
         const fy = ship.y + Math.cos(ship.a) * 12;
-        particles.push({ x: fx, y: fy, vx: ship.vx * 0.3 + (ctx.rng.next() - 0.5) * 30, vy: 60 + ctx.rng.next() * 40, life: 0.3, color: 0xff7b00 });
+        particles.push({
+          x: fx,
+          y: fy,
+          vx: ship.vx * 0.3 + (ctx.rng.next() - 0.5) * 30,
+          vy: 60 + ctx.rng.next() * 40,
+          life: 0.3,
+          color: 0xff7b00,
+        });
       }
       ship.x += ship.vx * dt;
       ship.y += ship.vy * dt;
@@ -187,7 +215,9 @@ export default function createGame(ctx: GameContext): Game {
       // particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
-        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
 

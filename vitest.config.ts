@@ -21,7 +21,7 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/games/**/core/**', 'src/kits/**', 'src/utils/**', 'src/store/**'],
+      include: ['src/games/**/core.ts', 'src/kits/**', 'src/utils/**', 'src/store/**'],
       reporter: ['text', 'html'],
     },
   },

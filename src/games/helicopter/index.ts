@@ -81,9 +81,15 @@ export default function createGame(ctx: GameContext): Game {
     });
     obstacles.forEach((o) => g.rect(o.x - scrollX, o.y, o.w, o.h).fill({ color: 0xff4d4d }));
     coins.forEach((c) => g.circle(c.x - scrollX, c.y, 7).fill({ color: 0xffd200 }));
-    powerups.forEach((p) => { g.circle(p.x - scrollX, p.y, 11).stroke({ width: 3, color: 0x3ddc84 }); g.circle(p.x - scrollX, p.y, 5).fill({ color: 0x3ddc84 }); });
-    if (shield || invuln > 0) g.circle(heli.x, heli.y, heli.r + 7).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
-    g.roundRect(heli.x - heli.r, heli.y - heli.r * 0.6, heli.r * 2, heli.r * 1.2, 4).fill({ color: 0x26c6da });
+    powerups.forEach((p) => {
+      g.circle(p.x - scrollX, p.y, 11).stroke({ width: 3, color: 0x3ddc84 });
+      g.circle(p.x - scrollX, p.y, 5).fill({ color: 0x3ddc84 });
+    });
+    if (shield || invuln > 0)
+      g.circle(heli.x, heli.y, heli.r + 7).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
+    g.roundRect(heli.x - heli.r, heli.y - heli.r * 0.6, heli.r * 2, heli.r * 1.2, 4).fill({
+      color: 0x26c6da,
+    });
     g.rect(heli.x - heli.r * 1.4, heli.y - heli.r, heli.r * 2.8, 2).fill({ color: 0xffffff });
   };
 
@@ -100,7 +106,10 @@ export default function createGame(ctx: GameContext): Game {
       dist += SPEED * dt;
       gap = Math.max(120, 200 - dist * 0.01);
       const nz = 1 + Math.floor(dist / 1500);
-      if (nz > zone) { zone = nz; ctx.hud.toast(`ZONE ${zone} · x${zone}`); }
+      if (nz > zone) {
+        zone = nz;
+        ctx.hud.toast(`ZONE ${zone} · x${zone}`);
+      }
       score = Math.floor(dist / 10) * zone + bonus;
       ctx.hud.setScore(score);
 
@@ -136,7 +145,15 @@ export default function createGame(ctx: GameContext): Game {
       let hitObs = false;
       for (const o of obstacles) {
         const sx = o.x - scrollX;
-        if (heli.x + heli.r > sx && heli.x - heli.r < sx + o.w && heli.y + heli.r > o.y && heli.y - heli.r < o.y + o.h) { hitObs = true; break; }
+        if (
+          heli.x + heli.r > sx &&
+          heli.x - heli.r < sx + o.w &&
+          heli.y + heli.r > o.y &&
+          heli.y - heli.r < o.y + o.h
+        ) {
+          hitObs = true;
+          break;
+        }
       }
       if ((hitWall || hitObs || heli.y < 0 || heli.y > H) && invuln <= 0) {
         if (shield) {

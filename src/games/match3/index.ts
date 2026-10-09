@@ -39,33 +39,50 @@ export default function createGame(ctx: GameContext): Game {
     for (let r = 0; r < N; r++)
       for (let c = 0; c < N - 2; c++) {
         const v = at(c, r);
-        if (v === at(c + 1, r) && v === at(c + 2, r)) m[r * N + c] = m[r * N + c + 1] = m[r * N + c + 2] = true;
+        if (v === at(c + 1, r) && v === at(c + 2, r))
+          m[r * N + c] = m[r * N + c + 1] = m[r * N + c + 2] = true;
       }
     for (let c = 0; c < N; c++)
       for (let r = 0; r < N - 2; r++) {
         const v = at(c, r);
-        if (v === at(c, r + 1) && v === at(c, r + 2)) m[r * N + c] = m[(r + 1) * N + c] = m[(r + 2) * N + c] = true;
+        if (v === at(c, r + 1) && v === at(c, r + 2))
+          m[r * N + c] = m[(r + 1) * N + c] = m[(r + 2) * N + c] = true;
       }
     return m;
   };
 
   const resolve = (): boolean => {
     const m = findMatches();
-    if (!m.some(Boolean)) { cascade = 0; return false; }
+    if (!m.some(Boolean)) {
+      cascade = 0;
+      return false;
+    }
     // Feature: a run of 4+ blasts the whole row (horizontal) or column (vertical)
     let blasted = false;
     for (let r = 0; r < N; r++) {
       let run = 1;
       for (let c = 1; c <= N; c++) {
         if (c < N && at(c, r) === at(c - 1, r)) run++;
-        else { if (run >= 4) { for (let k = 0; k < N; k++) m[r * N + k] = true; blasted = true; } run = 1; }
+        else {
+          if (run >= 4) {
+            for (let k = 0; k < N; k++) m[r * N + k] = true;
+            blasted = true;
+          }
+          run = 1;
+        }
       }
     }
     for (let c = 0; c < N; c++) {
       let run = 1;
       for (let r = 1; r <= N; r++) {
         if (r < N && at(c, r) === at(c, r - 1)) run++;
-        else { if (run >= 4) { for (let k = 0; k < N; k++) m[k * N + c] = true; blasted = true; } run = 1; }
+        else {
+          if (run >= 4) {
+            for (let k = 0; k < N; k++) m[k * N + c] = true;
+            blasted = true;
+          }
+          run = 1;
+        }
       }
     }
     const count = m.filter(Boolean).length;
@@ -76,9 +93,18 @@ export default function createGame(ctx: GameContext): Game {
     if (blasted) ctx.hud.toast(`LINE BLAST! +${pts}`);
     else if (cascade >= 2) ctx.hud.toast(`CASCADE x${cascade}! +${pts}`);
     // Feature: big clears refund moves
-    if (count >= 8) { moves += 2; ctx.fx.floatingText('+2 MOVES', ctx.width / 2, oy - 14, 0x3ddc84); }
+    if (count >= 8) {
+      moves += 2;
+      ctx.fx.floatingText('+2 MOVES', ctx.width / 2, oy - 14, 0x3ddc84);
+    }
     // Feature: level progression
-    if (score >= target) { level++; moves += 8; target += 2500 + level * 1200; ctx.hud.toast(`LEVEL ${level}! +8 MOVES`); ctx.audio.sfx('levelup'); }
+    if (score >= target) {
+      level++;
+      moves += 8;
+      target += 2500 + level * 1200;
+      ctx.hud.toast(`LEVEL ${level}! +8 MOVES`);
+      ctx.audio.sfx('levelup');
+    }
     ctx.audio.sfx('coin');
     for (let c = 0; c < N; c++) {
       const kept: number[] = [];
@@ -135,7 +161,8 @@ export default function createGame(ctx: GameContext): Game {
         const x = ox + c * cell;
         const y = oy + r * cell;
         g.roundRect(x + 3, y + 3, cell - 6, cell - 6, 6).fill({ color: COLORS[at(c, r)]! });
-        if (sel && sel.c === c && sel.r === r) g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 7).stroke({ width: 3, color: 0xffffff });
+        if (sel && sel.c === c && sel.r === r)
+          g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 7).stroke({ width: 3, color: 0xffffff });
       }
   }
 

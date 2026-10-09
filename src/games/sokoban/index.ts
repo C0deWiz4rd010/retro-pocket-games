@@ -37,7 +37,8 @@ export default function createGame(ctx: GameContext): Game {
   let steps = 0;
   let over = false;
   // Feature: undo history (snapshots of box layout + player + counters)
-  const history: { boxes: boolean[][]; px: number; py: number; pushes: number; steps: number }[] = [];
+  const history: { boxes: boolean[][]; px: number; py: number; pushes: number; steps: number }[] =
+    [];
 
   const load = (li: number): void => {
     const map = LEVELS[li]!;
@@ -70,15 +71,18 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setScore(0);
 
   const solved = (): boolean => {
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (boxes[r]![c] && !goals[r]![c]) return false;
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) if (boxes[r]![c] && !goals[r]![c]) return false;
     return true;
   };
   const progress = (): { on: number; total: number } => {
-    let on = 0, total = 0;
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      if (goals[r]![c]) total++;
-      if (boxes[r]![c] && goals[r]![c]) on++;
-    }
+    let on = 0,
+      total = 0;
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        if (goals[r]![c]) total++;
+        if (boxes[r]![c] && goals[r]![c]) on++;
+      }
     return { on, total };
   };
   const setLabel = (): void => {
@@ -174,11 +178,16 @@ export default function createGame(ctx: GameContext): Game {
         const y = oy + r * cell;
         if (walls[r]![c]) g.rect(x, y, cell, cell).fill({ color: 0x4a4a5a });
         else g.rect(x, y, cell, cell).fill({ color: 0x14141f });
-        if (goals[r]![c]) g.circle(x + cell / 2, y + cell / 2, cell * 0.16).fill({ color: 0x3ddc84 });
+        if (goals[r]![c])
+          g.circle(x + cell / 2, y + cell / 2, cell * 0.16).fill({ color: 0x3ddc84 });
         if (boxes[r]![c])
-          g.roundRect(x + 4, y + 4, cell - 8, cell - 8, 4).fill({ color: goals[r]![c] ? 0x3ddc84 : 0xa1887f });
+          g.roundRect(x + 4, y + 4, cell - 8, cell - 8, 4).fill({
+            color: goals[r]![c] ? 0x3ddc84 : 0xa1887f,
+          });
       }
-    g.circle(ox + px * cell + cell / 2, oy + py * cell + cell / 2, cell * 0.34).fill({ color: 0x00f7ff });
+    g.circle(ox + px * cell + cell / 2, oy + py * cell + cell / 2, cell * 0.34).fill({
+      color: 0x00f7ff,
+    });
   }
   draw();
 

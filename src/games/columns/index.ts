@@ -21,11 +21,14 @@ const COLORBLIND_COLORS = [0xe69f00, 0x56b4e9, 0x009e73, 0xf0e442, 0x0072b2, 0xc
 
 export default function createGame(ctx: GameContext): Game {
   const state = createColumns(ctx.rng);
-  const colors = document.documentElement.dataset.colorblind === 'off' ? DEFAULT_COLORS : COLORBLIND_COLORS;
+  const colors =
+    document.documentElement.dataset.colorblind === 'off' ? DEFAULT_COLORS : COLORBLIND_COLORS;
 
   const previewReserve = 64;
   const controlsReserve = 112;
-  const cell = Math.floor(Math.min((ctx.width - previewReserve) / COLS, (ctx.height - controlsReserve) / ROWS));
+  const cell = Math.floor(
+    Math.min((ctx.width - previewReserve) / COLS, (ctx.height - controlsReserve) / ROWS),
+  );
   const fieldW = COLS * cell;
   const fieldH = ROWS * cell;
   const previewCell = Math.max(14, Math.floor(cell * 0.58));
@@ -65,11 +68,13 @@ export default function createGame(ctx: GameContext): Game {
   let wasDanger = false; // Feature: danger-zone warning
 
   const boardEmpty = (): boolean => {
-    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (at(state, c, r) >= 0) return false;
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) if (at(state, c, r) >= 0) return false;
     return true;
   };
   const inDanger = (): boolean => {
-    for (let r = 0; r < 3; r++) for (let c = 0; c < COLS; c++) if (at(state, c, r) >= 0) return true;
+    for (let r = 0; r < 3; r++)
+      for (let c = 0; c < COLS; c++) if (at(state, c, r) >= 0) return true;
     return false;
   };
   const hold = (): void => {
@@ -194,24 +199,42 @@ export default function createGame(ctx: GameContext): Game {
     if (value === 0) {
       g.circle(midX, midY, size * 0.13).fill({ color: ink, alpha: alpha * 0.45 });
     } else if (value === 1) {
-      g.roundRect(midX - mark / 2, y + size * 0.28, mark, size * 0.44, 2).fill({ color: ink, alpha: alpha * 0.44 });
+      g.roundRect(midX - mark / 2, y + size * 0.28, mark, size * 0.44, 2).fill({
+        color: ink,
+        alpha: alpha * 0.44,
+      });
     } else if (value === 2) {
-      g.roundRect(x + size * 0.28, midY - mark / 2, size * 0.44, mark, 2).fill({ color: ink, alpha: alpha * 0.44 });
+      g.roundRect(x + size * 0.28, midY - mark / 2, size * 0.44, mark, 2).fill({
+        color: ink,
+        alpha: alpha * 0.44,
+      });
     } else if (value === 3) {
       g.circle(x + size * 0.39, midY, size * 0.08).fill({ color: ink, alpha: alpha * 0.42 });
       g.circle(x + size * 0.61, midY, size * 0.08).fill({ color: ink, alpha: alpha * 0.42 });
     } else if (value === 4) {
-      g.roundRect(midX - mark / 2, y + size * 0.3, mark, size * 0.4, 2).fill({ color: ink, alpha: alpha * 0.42 });
-      g.roundRect(x + size * 0.3, midY - mark / 2, size * 0.4, mark, 2).fill({ color: ink, alpha: alpha * 0.42 });
+      g.roundRect(midX - mark / 2, y + size * 0.3, mark, size * 0.4, 2).fill({
+        color: ink,
+        alpha: alpha * 0.42,
+      });
+      g.roundRect(x + size * 0.3, midY - mark / 2, size * 0.4, mark, 2).fill({
+        color: ink,
+        alpha: alpha * 0.42,
+      });
     } else {
-      g.roundRect(x + size * 0.35, y + size * 0.35, size * 0.3, size * 0.3, 2).fill({ color: ink, alpha: alpha * 0.42 });
+      g.roundRect(x + size * 0.35, y + size * 0.35, size * 0.3, size * 0.3, 2).fill({
+        color: ink,
+        alpha: alpha * 0.42,
+      });
     }
   };
 
   const drawJewelAt = (x: number, y: number, size: number, value: number, alpha = 1): void => {
     const color = colors[value] ?? colors[0]!;
     g.roundRect(x + 2, y + 2, size - 4, size - 4, Math.max(4, size * 0.14)).fill({ color, alpha });
-    g.circle(x + size * 0.34, y + size * 0.28, Math.max(2, size * 0.1)).fill({ color: 0xffffff, alpha: alpha * 0.36 });
+    g.circle(x + size * 0.34, y + size * 0.28, Math.max(2, size * 0.1)).fill({
+      color: 0xffffff,
+      alpha: alpha * 0.36,
+    });
     g.roundRect(x + size * 0.18, y + size * 0.68, size * 0.64, Math.max(2, size * 0.08), 2).fill({
       color: 0x000000,
       alpha: alpha * 0.18,
@@ -252,16 +275,34 @@ export default function createGame(ctx: GameContext): Game {
         if (r >= 0 && r < ROWS) drawJewel(state.piece.col, r, state.piece.cells[i]!);
       }
     }
-    g.roundRect(previewX, previewY, previewW, previewCell * 3 + 14, 8).fill({ color: 0x101020, alpha: 0.78 });
+    g.roundRect(previewX, previewY, previewW, previewCell * 3 + 14, 8).fill({
+      color: 0x101020,
+      alpha: 0.78,
+    });
     for (let i = 0; i < state.next.length; i++) {
       drawJewelAt(previewX + 9, previewY + 7 + i * previewCell, previewCell, state.next[i]!, 0.92);
     }
     // Feature: hold piece preview
     const holdY = previewY + previewCell * 3 + 30;
-    g.roundRect(previewX, holdY, previewW, previewCell * 3 + 14, 8).fill({ color: 0x101020, alpha: 0.6 }).stroke({ width: 1, color: holdUsed ? 0x444466 : 0xb388ff, alpha: 0.6 });
-    if (heldCells) for (let i = 0; i < heldCells.length; i++) drawJewelAt(previewX + 9, holdY + 7 + i * previewCell, previewCell, heldCells[i]!, holdUsed ? 0.4 : 0.92);
+    g.roundRect(previewX, holdY, previewW, previewCell * 3 + 14, 8)
+      .fill({ color: 0x101020, alpha: 0.6 })
+      .stroke({ width: 1, color: holdUsed ? 0x444466 : 0xb388ff, alpha: 0.6 });
+    if (heldCells)
+      for (let i = 0; i < heldCells.length; i++)
+        drawJewelAt(
+          previewX + 9,
+          holdY + 7 + i * previewCell,
+          previewCell,
+          heldCells[i]!,
+          holdUsed ? 0.4 : 0.92,
+        );
     // Feature: danger-zone warning border
-    if (inDanger()) g.rect(0, 0, fieldW, fieldH).stroke({ width: 3, color: 0xff4d4d, alpha: 0.4 + Math.sin(performance.now() / 120) * 0.3 });
+    if (inDanger())
+      g.rect(0, 0, fieldW, fieldH).stroke({
+        width: 3,
+        color: 0xff4d4d,
+        alpha: 0.4 + Math.sin(performance.now() / 120) * 0.3,
+      });
   }
   draw();
 
@@ -280,7 +321,12 @@ export default function createGame(ctx: GameContext): Game {
           if (result.cleared > 0) {
             ctx.audio.sfx(result.combo > 1 ? 'powerup' : 'clear');
             ctx.fx.flashRect(0, 0, fieldW, fieldH, 0xffffff);
-            ctx.fx.floatingText(result.combo > 1 ? `CASCADE x${result.combo}` : `+${result.scoreDelta}`, fieldW / 2, fieldH * 0.18, 0xffd200);
+            ctx.fx.floatingText(
+              result.combo > 1 ? `CASCADE x${result.combo}` : `+${result.scoreDelta}`,
+              fieldW / 2,
+              fieldH * 0.18,
+              0xffd200,
+            );
             ctx.fx.screenShake(Math.min(8, 2 + result.combo * 1.6), 0.14);
             // Feature: all-clear bonus
             if (boardEmpty()) {

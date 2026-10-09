@@ -29,7 +29,8 @@ export default function createGame(ctx: GameContext): Game {
   const revealed = new Map<number, number>(); // pos -> colour
 
   ctx.hud.setScore(0);
-  const setLabel = (): void => ctx.hud.setLabel(`R${round} · ROW ${guesses.length + 1}/${MAX_ROWS} · 💡${hints}`);
+  const setLabel = (): void =>
+    ctx.hud.setLabel(`R${round} · ROW ${guesses.length + 1}/${MAX_ROWS} · 💡${hints}`);
   setLabel();
 
   const score = (guess: number[]): { black: number; white: number } => {
@@ -171,7 +172,9 @@ export default function createGame(ctx: GameContext): Game {
     for (let s = 0; s < SLOTS; s++) {
       const x = boardX + s * peg * 1.4;
       const col = current[s] !== undefined ? COLORS[current[s]!]! : 0x14141f;
-      g.circle(x + peg / 2, cy + peg / 2, peg / 2).fill({ color: col }).stroke({ width: 2, color: 0x8a8aa3 });
+      g.circle(x + peg / 2, cy + peg / 2, peg / 2)
+        .fill({ color: col })
+        .stroke({ width: 2, color: 0x8a8aa3 });
       // Feature: revealed hint markers
       if (revealed.has(s)) {
         g.circle(x + peg / 2, cy + peg / 2, peg * 0.22).fill({ color: COLORS[revealed.get(s)!]! });
@@ -183,7 +186,11 @@ export default function createGame(ctx: GameContext): Game {
     const palX = ctx.width / 2 - (COLORS.length * peg * 1.2) / 2;
     COLORS.forEach((c, i) => {
       g.circle(palX + i * peg * 1.2 + peg / 2, palY, peg / 2).fill({ color: c });
-      if (i === selColor) g.circle(palX + i * peg * 1.2 + peg / 2, palY, peg / 2 + 3).stroke({ width: 2, color: 0xffffff });
+      if (i === selColor)
+        g.circle(palX + i * peg * 1.2 + peg / 2, palY, peg / 2 + 3).stroke({
+          width: 2,
+          color: 0xffffff,
+        });
     });
   }
   draw();

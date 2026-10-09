@@ -4,8 +4,17 @@ import type { Action, Dir } from '@core/InputManager';
 
 const N = 4;
 const COLORS: Record<number, number> = {
-  2: 0x3c3a32, 4: 0x4a4632, 8: 0xf2b179, 16: 0xf59563, 32: 0xf67c5f, 64: 0xf65e3b,
-  128: 0xedcf72, 256: 0xedcc61, 512: 0xedc850, 1024: 0xedc53f, 2048: 0xedc22e,
+  2: 0x3c3a32,
+  4: 0x4a4632,
+  8: 0xf2b179,
+  16: 0xf59563,
+  32: 0xf67c5f,
+  64: 0xf65e3b,
+  128: 0xedcf72,
+  256: 0xedcc61,
+  512: 0xedc850,
+  1024: 0xedc53f,
+  2048: 0xedc22e,
 };
 
 export default function createGame(ctx: GameContext): Game {
@@ -34,7 +43,16 @@ export default function createGame(ctx: GameContext): Game {
   const labels: Text[] = [];
   layer.addChild(tilesG, fxG);
   for (let i = 0; i < N * N; i++) {
-    const t = new Text({ text: '', style: { fontFamily: 'Inter, sans-serif', fontWeight: '800', fontSize: cell * 0.32, fill: 0x101018, align: 'center' } });
+    const t = new Text({
+      text: '',
+      style: {
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: '800',
+        fontSize: cell * 0.32,
+        fill: 0x101018,
+        align: 'center',
+      },
+    });
     t.anchor.set(0.5);
     labels.push(t);
     layer.addChild(t);
@@ -50,8 +68,18 @@ export default function createGame(ctx: GameContext): Game {
   let hammerArmed = false;
   // per-cell scale for merge bounce animation [0,1] => 1 when idle
   const cellScale: number[] = new Array(N * N).fill(1);
-  interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
-  interface Popup { life: number; t: Text }
+  interface Particle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    color: number;
+  }
+  interface Popup {
+    life: number;
+    t: Text;
+  }
   const particles: Particle[] = [];
   const popups: Popup[] = [];
 
@@ -69,7 +97,16 @@ export default function createGame(ctx: GameContext): Game {
   };
   const popup = (i: number, text: string, color: number): void => {
     const c = cellCenter(i);
-    const t = new Text({ text, style: { fontFamily: 'Inter, sans-serif', fontWeight: '800', fontSize: cell * 0.22, fill: color, align: 'center' } });
+    const t = new Text({
+      text,
+      style: {
+        fontFamily: 'Inter, sans-serif',
+        fontWeight: '800',
+        fontSize: cell * 0.22,
+        fill: color,
+        align: 'center',
+      },
+    });
     t.anchor.set(0.5);
     t.position.set(c.x, c.y);
     layer.addChild(t);
@@ -127,10 +164,19 @@ export default function createGame(ctx: GameContext): Game {
       for (let j = 0; j < N; j++) {
         const v = row[j] as number;
         let idx = -1;
-        if (dir === 'left') { set(j, i, v); idx = i * N + j; }
-        else if (dir === 'right') { set(N - 1 - j, i, v); idx = i * N + (N - 1 - j); }
-        else if (dir === 'up') { set(i, j, v); idx = j * N + i; }
-        else { set(i, N - 1 - j, v); idx = (N - 1 - j) * N + i; }
+        if (dir === 'left') {
+          set(j, i, v);
+          idx = i * N + j;
+        } else if (dir === 'right') {
+          set(N - 1 - j, i, v);
+          idx = i * N + (N - 1 - j);
+        } else if (dir === 'up') {
+          set(i, j, v);
+          idx = j * N + i;
+        } else {
+          set(i, N - 1 - j, v);
+          idx = (N - 1 - j) * N + i;
+        }
         if (mergedAt.includes(j) && idx >= 0) {
           cellScale[idx] = 1.25;
           mergeCount++;
@@ -214,17 +260,22 @@ export default function createGame(ctx: GameContext): Game {
       }
       const sc = cellScale[i] ?? 1;
       const off = ((sc - 1) * cell) / 2;
-      tilesG.roundRect(px - off, py - off, cell * sc, cell * sc, 8).fill({ color: COLORS[v] ?? 0xedc22e });
+      tilesG
+        .roundRect(px - off, py - off, cell * sc, cell * sc, 8)
+        .fill({ color: COLORS[v] ?? 0xedc22e });
       label.text = String(v);
       label.style.fill = v <= 4 ? 0xcadc9f : 0x101018;
       label.position.set(px + cell / 2, py + cell / 2);
     });
     // hammer highlight overlay
     if (hammerArmed) {
-      fxG.roundRect(0, 0, boardSize, boardSize, 12).stroke({ width: 3, color: 0xff4d4d, alpha: 0.6 });
+      fxG
+        .roundRect(0, 0, boardSize, boardSize, 12)
+        .stroke({ width: 3, color: 0xff4d4d, alpha: 0.6 });
     }
     // particles
-    for (const p of particles) fxG.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life });
+    for (const p of particles)
+      fxG.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life });
   };
 
   const smash = (i: number): void => {
@@ -241,7 +292,10 @@ export default function createGame(ctx: GameContext): Game {
   const handle = (a: Action | Dir): void => {
     if (over) return;
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') {
-      if (hammerArmed) { hammerArmed = false; setLabel(); }
+      if (hammerArmed) {
+        hammerArmed = false;
+        setLabel();
+      }
       move(a);
     } else if (a === 'b' || a === 'select') undo();
     else if (a === 'a' || a === 'start') {

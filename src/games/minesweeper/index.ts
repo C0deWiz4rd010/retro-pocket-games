@@ -1,7 +1,9 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 
-const NUM_COLORS = [0x000000, 0x4a7bff, 0x3ddc84, 0xff4d4d, 0x9a5bff, 0xff7b00, 0x00c2c7, 0xeeeeee, 0x9aa0ff];
+const NUM_COLORS = [
+  0x000000, 0x4a7bff, 0x3ddc84, 0xff4d4d, 0x9a5bff, 0xff7b00, 0x00c2c7, 0xeeeeee, 0x9aa0ff,
+];
 
 export default function createGame(ctx: GameContext): Game {
   const COLS = 9;
@@ -24,14 +26,24 @@ export default function createGame(ctx: GameContext): Game {
   const revealed = new Array(COLS * ROWS).fill(false);
   const flagged = new Array(COLS * ROWS).fill(false);
   const adj = new Array(COLS * ROWS).fill(0);
-  interface Particle { x: number; y: number; vx: number; vy: number; life: number; color: number }
+  interface Particle {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    color: number;
+  }
   const particles: Particle[] = [];
   let level = 1;
   let hints = 2; // Feature: safe-cell hints
   let score = 0;
   const labels: Text[] = [];
   for (let i = 0; i < COLS * ROWS; i++) {
-    const t = new Text({ text: '', style: { fontFamily: 'Inter, sans-serif', fontWeight: '800', fontSize: cell * 0.5 } });
+    const t = new Text({
+      text: '',
+      style: { fontFamily: 'Inter, sans-serif', fontWeight: '800', fontSize: cell * 0.5 },
+    });
     t.anchor.set(0.5);
     t.visible = false;
     labels.push(t);
@@ -66,8 +78,7 @@ export default function createGame(ctx: GameContext): Game {
       n++;
     }
     for (let y = 0; y < ROWS; y++)
-      for (let x = 0; x < COLS; x++)
-        adj[idx(x, y)] = neighbors(x, y).filter((i) => mine[i]).length;
+      for (let x = 0; x < COLS; x++) adj[idx(x, y)] = neighbors(x, y).filter((i) => mine[i]).length;
     placed = true;
   };
 
@@ -151,7 +162,8 @@ export default function createGame(ctx: GameContext): Game {
       ctx.hud.setScore(score);
       ctx.audio.sfx('powerup');
       ctx.hud.toast('CLEARED!');
-      for (let i = 0; i < COLS * ROWS; i++) if (!mine[i]) pop(i % COLS, Math.floor(i / COLS), 0xffd200, 2);
+      for (let i = 0; i < COLS * ROWS; i++)
+        if (!mine[i]) pop(i % COLS, Math.floor(i / COLS), 0xffd200, 2);
       nextLevel();
     }
   };
@@ -187,7 +199,9 @@ export default function createGame(ctx: GameContext): Game {
 
   const updateLabel = (): void => {
     const left = MINES - flaggedCount();
-    ctx.hud.setLabel(`${flagMode ? '🚩' : '⛏'} ${left} • L${level} • 💡${hints} • ${Math.floor(elapsed)}s`);
+    ctx.hud.setLabel(
+      `${flagMode ? '🚩' : '⛏'} ${left} • L${level} • 💡${hints} • ${Math.floor(elapsed)}s`,
+    );
   };
 
   const setMode = (m: boolean): void => {
@@ -238,7 +252,10 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
     fxG.clear();
-    for (const p of particles) fxG.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    for (const p of particles)
+      fxG
+        .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
+        .fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
   };
 
   setMode(false);
@@ -261,7 +278,10 @@ export default function createGame(ctx: GameContext): Game {
       }
       if (dirty) {
         fxG.clear();
-        for (const p of particles) fxG.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+        for (const p of particles)
+          fxG
+            .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
+            .fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
       }
       if (over || !started) return;
       elapsed += dt;

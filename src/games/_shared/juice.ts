@@ -12,10 +12,20 @@ export interface Spark {
   size: number;
 }
 
-export const clamp = (n: number, min: number, max: number): number => Math.max(min, Math.min(max, n));
-export const dist = (ax: number, ay: number, bx: number, by: number): number => Math.hypot(ax - bx, ay - by);
+export const clamp = (n: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, n));
+export const dist = (ax: number, ay: number, bx: number, by: number): number =>
+  Math.hypot(ax - bx, ay - by);
 
-export function burst(sparks: Spark[], rng: RNG, x: number, y: number, color: number, count = 14, power = 120): void {
+export function burst(
+  sparks: Spark[],
+  rng: RNG,
+  x: number,
+  y: number,
+  color: number,
+  count = 14,
+  power = 120,
+): void {
   for (let i = 0; i < count; i++) {
     const a = rng.next() * Math.PI * 2;
     const speed = power * (0.35 + rng.next() * 0.75);
@@ -51,14 +61,20 @@ export function drawSparks(g: Graphics, sparks: readonly Spark[]): void {
   }
 }
 
-export function drawBackdrop(g: Graphics, w: number, h: number, t: number, a = 0x10132a, b = 0x050510): void {
+export function drawBackdrop(
+  g: Graphics,
+  w: number,
+  h: number,
+  t: number,
+  a = 0x10132a,
+  b = 0x050510,
+): void {
   g.rect(0, 0, w, h).fill({ color: b });
   for (let y = -24; y < h + 48; y += 24) {
-    const yy = (y + (t * 18) % 24) | 0;
+    const yy = (y + ((t * 18) % 24)) | 0;
     g.rect(0, yy, w, 1).fill({ color: a, alpha: 0.35 });
   }
   for (let x = 0; x < w; x += 32) {
     g.rect(x, 0, 1, h).fill({ color: a, alpha: 0.2 });
   }
 }
-

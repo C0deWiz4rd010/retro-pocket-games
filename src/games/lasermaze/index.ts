@@ -50,7 +50,12 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < 10 + level; i++) {
       const c = ctx.rng.int(0, COLS - 1);
       const r = ctx.rng.int(0, ROWS - 1);
-      if ((c === player.c && r === player.r) || (c === exit.c && r === exit.r) || (c === key.c && r === key.r)) continue;
+      if (
+        (c === player.c && r === player.r) ||
+        (c === exit.c && r === exit.r) ||
+        (c === key.c && r === key.r)
+      )
+        continue;
       walls.add(idx(COLS, c, r));
     }
     const freeCell = (): number => {
@@ -58,11 +63,20 @@ export default function createGame(ctx: GameContext): Game {
         const c = ctx.rng.int(0, COLS - 1);
         const r = ctx.rng.int(0, ROWS - 1);
         const i = idx(COLS, c, r);
-        if (!walls.has(i) && !(c === key.c && r === key.r) && !(c === player.c && r === player.r) && !gems.has(i)) return i;
+        if (
+          !walls.has(i) &&
+          !(c === key.c && r === key.r) &&
+          !(c === player.c && r === player.r) &&
+          !gems.has(i)
+        )
+          return i;
       }
       return -1;
     };
-    for (let i = 0; i < 2 + (level % 2); i++) { const gi = freeCell(); if (gi >= 0) gems.add(gi); }
+    for (let i = 0; i < 2 + (level % 2); i++) {
+      const gi = freeCell();
+      if (gi >= 0) gems.add(gi);
+    }
     const oi = freeCell();
     if (oi >= 0) orb = { c: oi % COLS, r: Math.floor(oi / COLS) };
   };
@@ -127,30 +141,61 @@ export default function createGame(ctx: GameContext): Game {
   function draw(): void {
     g.clear();
     drawBackdrop(g, W, H, t, 0x182d4c, 0x050611);
-    g.roundRect(ox - 6, oy - 6, COLS * cell + 12, ROWS * cell + 12, 12).fill({ color: 0x080b18, alpha: 0.88 });
+    g.roundRect(ox - 6, oy - 6, COLS * cell + 12, ROWS * cell + 12, 12).fill({
+      color: 0x080b18,
+      alpha: 0.88,
+    });
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const x = ox + c * cell;
         const y = oy + r * cell;
-        g.roundRect(x + 2, y + 2, cell - 4, cell - 4, 5).fill({ color: walls.has(idx(COLS, c, r)) ? 0x29324d : 0x10162a });
+        g.roundRect(x + 2, y + 2, cell - 4, cell - 4, 5).fill({
+          color: walls.has(idx(COLS, c, r)) ? 0x29324d : 0x10162a,
+        });
       }
     }
     const beamAlpha = freeze > 0 ? 0.14 : 1;
-    for (let r = 0; r < ROWS; r++) if (beamHits(0, r)) g.rect(ox, oy + r * cell + cell * 0.42, COLS * cell, cell * 0.16).fill({ color: 0xff2d75, alpha: 0.68 * beamAlpha });
-    for (let c = 0; c < COLS; c++) if (beamHits(c, 0)) g.rect(ox + c * cell + cell * 0.42, oy, cell * 0.16, ROWS * cell).fill({ color: 0x00f7ff, alpha: 0.52 * beamAlpha });
+    for (let r = 0; r < ROWS; r++)
+      if (beamHits(0, r))
+        g.rect(ox, oy + r * cell + cell * 0.42, COLS * cell, cell * 0.16).fill({
+          color: 0xff2d75,
+          alpha: 0.68 * beamAlpha,
+        });
+    for (let c = 0; c < COLS; c++)
+      if (beamHits(c, 0))
+        g.rect(ox + c * cell + cell * 0.42, oy, cell * 0.16, ROWS * cell).fill({
+          color: 0x00f7ff,
+          alpha: 0.52 * beamAlpha,
+        });
     for (const gi of gems) {
       const gx = ox + (gi % COLS) * cell + cell / 2;
       const gy = oy + Math.floor(gi / COLS) * cell + cell / 2;
-      g.poly([gx, gy - cell * 0.18, gx + cell * 0.16, gy, gx, gy + cell * 0.18, gx - cell * 0.16, gy]).fill({ color: 0x3ddc84 });
+      g.poly([
+        gx,
+        gy - cell * 0.18,
+        gx + cell * 0.16,
+        gy,
+        gx,
+        gy + cell * 0.18,
+        gx - cell * 0.16,
+        gy,
+      ]).fill({ color: 0x3ddc84 });
     }
     if (orb) {
       const oxp = ox + orb.c * cell + cell / 2;
       const oyp = oy + orb.r * cell + cell / 2;
       g.circle(oxp, oyp, cell * (0.2 + 0.04 * Math.sin(t * 6))).fill({ color: 0x00f7ff });
     }
-    g.circle(ox + key.c * cell + cell / 2, oy + key.r * cell + cell / 2, cell * 0.18).fill({ color: hasKey ? 0x334155 : 0xffd200 });
-    g.roundRect(ox + exit.c * cell + 6, oy + exit.r * cell + 6, cell - 12, cell - 12, 6).stroke({ width: 3, color: hasKey ? 0x3ddc84 : 0x475569 });
-    g.circle(ox + player.c * cell + cell / 2, oy + player.r * cell + cell / 2, cell * 0.24).fill({ color: 0xb388ff });
+    g.circle(ox + key.c * cell + cell / 2, oy + key.r * cell + cell / 2, cell * 0.18).fill({
+      color: hasKey ? 0x334155 : 0xffd200,
+    });
+    g.roundRect(ox + exit.c * cell + 6, oy + exit.r * cell + 6, cell - 12, cell - 12, 6).stroke({
+      width: 3,
+      color: hasKey ? 0x3ddc84 : 0x475569,
+    });
+    g.circle(ox + player.c * cell + cell / 2, oy + player.r * cell + cell / 2, cell * 0.24).fill({
+      color: 0xb388ff,
+    });
     drawSparks(g, sparks);
   }
 
@@ -166,7 +211,15 @@ export default function createGame(ctx: GameContext): Game {
         ctx.hud.setLives(lives);
         ctx.fx.screenShake(7, 0.12);
         ctx.audio.sfx('hit');
-        burst(sparks, ctx.rng, ox + player.c * cell + cell / 2, oy + player.r * cell + cell / 2, 0xff2d75, 22, 160);
+        burst(
+          sparks,
+          ctx.rng,
+          ox + player.c * cell + cell / 2,
+          oy + player.r * cell + cell / 2,
+          0xff2d75,
+          22,
+          160,
+        );
         player = { c: 0, r: ROWS - 1 };
         if (lives <= 0) {
           over = true;
@@ -181,4 +234,3 @@ export default function createGame(ctx: GameContext): Game {
     },
   };
 }
-

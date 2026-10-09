@@ -2,9 +2,14 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 
 const LINES = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8],
-  [0, 3, 6], [1, 4, 7], [2, 5, 8],
-  [0, 4, 8], [2, 4, 6],
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6],
 ];
 
 export default function createGame(ctx: GameContext): Game {
@@ -29,11 +34,15 @@ export default function createGame(ctx: GameContext): Game {
   let winLine: number[] = [];
 
   ctx.hud.setScore(0);
-  const setLabel = (): void => ctx.hud.setLabel(`GAME ${gameNo}/${SERIES} · YOU ${pWins}-${cWins} CPU`);
+  const setLabel = (): void =>
+    ctx.hud.setLabel(`GAME ${gameNo}/${SERIES} · YOU ${pWins}-${cWins} CPU`);
   setLabel();
 
   const winLineOf = (b: number[]): number[] | null => {
-    for (const line of LINES) { const [a, c, d] = line; if (b[a!] && b[a!] === b[c!] && b[a!] === b[d!]) return line; }
+    for (const line of LINES) {
+      const [a, c, d] = line;
+      if (b[a!] && b[a!] === b[c!] && b[a!] === b[d!]) return line;
+    }
     return null;
   };
   const winner = (b: number[]): number => {
@@ -74,16 +83,32 @@ export default function createGame(ctx: GameContext): Game {
     if (w || board.every((v) => v)) {
       over = true;
       winLine = winLineOf(board) ?? [];
-      if (w === 1) { pWins++; score += 1000; ctx.audio.sfx('levelup'); ctx.hud.toast('YOU WIN!'); }
-      else if (w === 2) { cWins++; score += 100; ctx.audio.sfx('gameover'); ctx.hud.toast('CPU WINS'); }
-      else { score += 400; ctx.hud.toast('DRAW'); }
+      if (w === 1) {
+        pWins++;
+        score += 1000;
+        ctx.audio.sfx('levelup');
+        ctx.hud.toast('YOU WIN!');
+      } else if (w === 2) {
+        cWins++;
+        score += 100;
+        ctx.audio.sfx('gameover');
+        ctx.hud.toast('CPU WINS');
+      } else {
+        score += 400;
+        ctx.hud.toast('DRAW');
+      }
       ctx.hud.setScore(score);
       setLabel();
       draw();
       if (pWins > SERIES / 2 || cWins > SERIES / 2 || gameNo >= SERIES) {
         const bonus = pWins > cWins ? 1500 : 0;
-        ctx.hud.toast(pWins > cWins ? 'SERIES WON!' : pWins < cWins ? 'SERIES LOST' : 'SERIES TIED');
-        window.setTimeout(() => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }), 900);
+        ctx.hud.toast(
+          pWins > cWins ? 'SERIES WON!' : pWins < cWins ? 'SERIES LOST' : 'SERIES TIED',
+        );
+        window.setTimeout(
+          () => ctx.gameOver(score + bonus, { won: pWins > cWins ? 1 : 0, games: gameNo }),
+          900,
+        );
       } else {
         window.setTimeout(nextGame, 1100);
       }
@@ -136,9 +161,17 @@ export default function createGame(ctx: GameContext): Game {
       const cx = ox + c * cell + cell / 2;
       const cy = oy + r * cell + cell / 2;
       const m = cell * 0.28;
-      if (winLine.includes(i)) g.roundRect(ox + c * cell + 4, oy + r * cell + 4, cell - 8, cell - 8, 8).fill({ color: 0x3ddc84, alpha: 0.22 });
+      if (winLine.includes(i))
+        g.roundRect(ox + c * cell + 4, oy + r * cell + 4, cell - 8, cell - 8, 8).fill({
+          color: 0x3ddc84,
+          alpha: 0.22,
+        });
       if (board[i] === 1) {
-        g.moveTo(cx - m, cy - m).lineTo(cx + m, cy + m).moveTo(cx + m, cy - m).lineTo(cx - m, cy + m).stroke({ width: 6, color: 0x00f7ff });
+        g.moveTo(cx - m, cy - m)
+          .lineTo(cx + m, cy + m)
+          .moveTo(cx + m, cy - m)
+          .lineTo(cx - m, cy + m)
+          .stroke({ width: 6, color: 0x00f7ff });
       } else if (board[i] === 2) {
         g.circle(cx, cy, m).stroke({ width: 6, color: 0xff4d4d });
       }

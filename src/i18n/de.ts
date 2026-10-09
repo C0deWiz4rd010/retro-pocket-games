@@ -135,7 +135,8 @@ export const de: Dict = {
   'go.commentBest': 'Saubere Ausführung und ein neuer Rekord. Der gehört ins Regal.',
   'go.commentElite': 'Starker Lauf. Du hast das Zieltempo geschlagen — Platz für die Bestenliste.',
   'go.commentSolid': 'Solide Mittelphase. Ein Fehler weniger und daraus wird eine Rekordjagd.',
-  'go.commentRough': 'Holpriger Start, nützliche Daten. Schnell neu starten und das erste sichere Muster suchen.',
+  'go.commentRough':
+    'Holpriger Start, nützliche Daten. Schnell neu starten und das erste sichere Muster suchen.',
   'go.cellTarget': 'Ziel',
   'go.cellDelta': 'Best-Differenz',
   'go.cellMastery': 'Meisterschaft',
@@ -281,15 +282,20 @@ export const de: Dict = {
   'onboard.next': 'Weiter',
   'onboard.start': 'Los geht’s',
   'onboard.s1t': 'Willkommen bei Retro Pocket',
-  'onboard.s1b': '85 Arcade-Klassiker in der Hosentasche — eine installierbare App, komplett offline.',
+  'onboard.s1b':
+    '85 Arcade-Klassiker in der Hosentasche — eine installierbare App, komplett offline.',
   'onboard.s2t': 'Tippe ein Cabinet zum Spielen',
-  'onboard.s2b': 'Wähl eine leuchtende Kachel. Wischen, Tippen oder das Bildschirm-Pad — Tastatur & Gamepad gehen auch.',
+  'onboard.s2b':
+    'Wähl eine leuchtende Kachel. Wischen, Tippen oder das Bildschirm-Pad — Tastatur & Gamepad gehen auch.',
   'onboard.s3t': 'Sammle XP, steig im Level auf',
-  'onboard.s3b': 'Jede Runde bringt Pixel-XP. Steig in Leveln auf und meistere jedes Spiel in Bronze, Silber, Gold.',
+  'onboard.s3b':
+    'Jede Runde bringt Pixel-XP. Steig in Leveln auf und meistere jedes Spiel in Bronze, Silber, Gold.',
   'onboard.s4t': 'Tokens & Tages-Challenge',
-  'onboard.s4b': 'Pocket Chips gibt’s nur für Kosmetik — nie Pay-to-Win. Eine neue Tages-Challenge hält die Serie am Leben.',
+  'onboard.s4b':
+    'Pocket Chips gibt’s nur für Kosmetik — nie Pay-to-Win. Eine neue Tages-Challenge hält die Serie am Leben.',
   'onboard.s5t': 'Als App installieren',
-  'onboard.s5b': 'Füg Retro Pocket zum Homescreen hinzu — Vollbild, offline. Dein Fortschritt bleibt auf dem Gerät.',
+  'onboard.s5b':
+    'Füg Retro Pocket zum Homescreen hinzu — Vollbild, offline. Dein Fortschritt bleibt auf dem Gerät.',
   'home.search': 'Spiele suchen…',
   'home.favorites': 'FAVORITEN',
   'home.library': 'BIBLIOTHEK',

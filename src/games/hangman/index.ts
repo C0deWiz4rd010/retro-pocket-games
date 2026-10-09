@@ -1,7 +1,24 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 
-const WORDS = ['PIXEL', 'ARCADE', 'POCKET', 'VECTOR', 'BUTTON', 'PUZZLE', 'RETRO', 'SCREEN', 'JOYSTICK', 'CARTRIDGE', 'HIGHSCORE', 'POWERUP', 'NEON', 'CONSOLE', 'CHIPTUNE', 'GLITCH'];
+const WORDS = [
+  'PIXEL',
+  'ARCADE',
+  'POCKET',
+  'VECTOR',
+  'BUTTON',
+  'PUZZLE',
+  'RETRO',
+  'SCREEN',
+  'JOYSTICK',
+  'CARTRIDGE',
+  'HIGHSCORE',
+  'POWERUP',
+  'NEON',
+  'CONSOLE',
+  'CHIPTUNE',
+  'GLITCH',
+];
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 export default function createGame(ctx: GameContext): Game {
@@ -10,9 +27,18 @@ export default function createGame(ctx: GameContext): Game {
   const layer = new Container();
   ctx.stage.addChild(layer);
   const g = new Graphics();
-  const title = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0x7dd3fc, align: 'center' } });
-  const wordText = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 34, fill: 0xffffff, align: 'center' } });
-  const info = new Text({ text: '', style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: 0xffd200, align: 'center' } });
+  const title = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0x7dd3fc, align: 'center' },
+  });
+  const wordText = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 34, fill: 0xffffff, align: 'center' },
+  });
+  const info = new Text({
+    text: '',
+    style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: 0xffd200, align: 'center' },
+  });
   title.anchor.set(0.5);
   wordText.anchor.set(0.5);
   info.anchor.set(0.5);
@@ -40,7 +66,8 @@ export default function createGame(ctx: GameContext): Game {
   const maxMisses = 6;
 
   ctx.hud.setScore(0);
-  const setLabel = (): void => ctx.hud.setLabel(`ROUND ${round} · ✗${misses}/${maxMisses} · 💡${hints}`);
+  const setLabel = (): void =>
+    ctx.hud.setLabel(`ROUND ${round} · ✗${misses}/${maxMisses} · 💡${hints}`);
   setLabel();
 
   const newWord = (): void => {
@@ -51,7 +78,11 @@ export default function createGame(ctx: GameContext): Game {
     setLabel();
   };
 
-  const visibleWord = (): string => word.split('').map((l) => (guessed.has(l) ? l : '_')).join(' ');
+  const visibleWord = (): string =>
+    word
+      .split('')
+      .map((l) => (guessed.has(l) ? l : '_'))
+      .join(' ');
   const hasWon = (): boolean => word.split('').every((l) => guessed.has(l));
 
   const guess = (letter: string): void => {
@@ -104,7 +135,10 @@ export default function createGame(ctx: GameContext): Game {
     if (letter) guess(letter);
   });
   const offDown = ctx.input.on('down', (a) => {
-    if (a === 'b' || a === 'start') { useHint(); return; }
+    if (a === 'b' || a === 'start') {
+      useHint();
+      return;
+    }
     if (a === 'a') {
       const next = LETTERS.find((l) => !guessed.has(l));
       if (next) guess(next);
@@ -123,14 +157,37 @@ export default function createGame(ctx: GameContext): Game {
     wordText.text = visibleWord();
     info.text = over ? word : `MISSES ${misses}/${maxMisses}`;
 
-    g.roundRect(W * 0.22, H * 0.1, W * 0.56, H * 0.18, 10).stroke({ width: 3, color: 0x7dd3fc, alpha: 0.8 });
-    g.moveTo(W * 0.34, H * 0.26).lineTo(W * 0.34, H * 0.13).lineTo(W * 0.55, H * 0.13).lineTo(W * 0.55, H * 0.17).stroke({ width: 4, color: 0xdbeafe });
+    g.roundRect(W * 0.22, H * 0.1, W * 0.56, H * 0.18, 10).stroke({
+      width: 3,
+      color: 0x7dd3fc,
+      alpha: 0.8,
+    });
+    g.moveTo(W * 0.34, H * 0.26)
+      .lineTo(W * 0.34, H * 0.13)
+      .lineTo(W * 0.55, H * 0.13)
+      .lineTo(W * 0.55, H * 0.17)
+      .stroke({ width: 4, color: 0xdbeafe });
     if (misses > 0) g.circle(W * 0.55, H * 0.2, 15).stroke({ width: 3, color: 0xffffff });
-    if (misses > 1) g.moveTo(W * 0.55, H * 0.215).lineTo(W * 0.55, H * 0.26).stroke({ width: 3, color: 0xffffff });
-    if (misses > 2) g.moveTo(W * 0.55, H * 0.23).lineTo(W * 0.51, H * 0.25).stroke({ width: 3, color: 0xffffff });
-    if (misses > 3) g.moveTo(W * 0.55, H * 0.23).lineTo(W * 0.59, H * 0.25).stroke({ width: 3, color: 0xffffff });
-    if (misses > 4) g.moveTo(W * 0.55, H * 0.26).lineTo(W * 0.52, H * 0.29).stroke({ width: 3, color: 0xffffff });
-    if (misses > 5) g.moveTo(W * 0.55, H * 0.26).lineTo(W * 0.58, H * 0.29).stroke({ width: 3, color: 0xffffff });
+    if (misses > 1)
+      g.moveTo(W * 0.55, H * 0.215)
+        .lineTo(W * 0.55, H * 0.26)
+        .stroke({ width: 3, color: 0xffffff });
+    if (misses > 2)
+      g.moveTo(W * 0.55, H * 0.23)
+        .lineTo(W * 0.51, H * 0.25)
+        .stroke({ width: 3, color: 0xffffff });
+    if (misses > 3)
+      g.moveTo(W * 0.55, H * 0.23)
+        .lineTo(W * 0.59, H * 0.25)
+        .stroke({ width: 3, color: 0xffffff });
+    if (misses > 4)
+      g.moveTo(W * 0.55, H * 0.26)
+        .lineTo(W * 0.52, H * 0.29)
+        .stroke({ width: 3, color: 0xffffff });
+    if (misses > 5)
+      g.moveTo(W * 0.55, H * 0.26)
+        .lineTo(W * 0.58, H * 0.29)
+        .stroke({ width: 3, color: 0xffffff });
 
     const cols = 7;
     const keyW = W / cols;
@@ -144,8 +201,13 @@ export default function createGame(ctx: GameContext): Game {
       const used = guessed.has(letter);
       // Feature: colour feedback — green for correct guesses, red for wrong
       const keyColor = used ? (word.includes(letter) ? 0x1d6e44 : 0x7a2424) : 0x164e63;
-      g.roundRect(x, y, keyW - 8, keyH - 6, 7).fill({ color: keyColor }).stroke({ width: 1, color: 0x7dd3fc, alpha: used ? 0.25 : 0.9 });
-      const t = new Text({ text: letter, style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: used ? 0xcccccc : 0xffffff } });
+      g.roundRect(x, y, keyW - 8, keyH - 6, 7)
+        .fill({ color: keyColor })
+        .stroke({ width: 1, color: 0x7dd3fc, alpha: used ? 0.25 : 0.9 });
+      const t = new Text({
+        text: letter,
+        style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: used ? 0xcccccc : 0xffffff },
+      });
       t.anchor.set(0.5);
       t.position.set(c * keyW + keyW / 2, y + keyH / 2 - 2);
       addTemp(t);

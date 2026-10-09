@@ -39,7 +39,8 @@ export default function createGame(ctx: GameContext): Game {
     toggle(c, r - 1);
     toggle(c, r + 1);
     const i = idx(c, r);
-    if (solution.has(i)) solution.delete(i); else solution.add(i);
+    if (solution.has(i)) solution.delete(i);
+    else solution.add(i);
     if (!silent) {
       moves++;
       ctx.audio.sfx('blip');
@@ -64,9 +65,20 @@ export default function createGame(ctx: GameContext): Game {
       for (let c = 0; c < N; c++) {
         const i = idx(c, r);
         const on = lights[i];
-        g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).fill({ color: on ? 0xffd200 : 0x1d1d2b });
-        if (on) g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).stroke({ width: 2, color: 0xfff6b0 });
-        if (i === flash && flashT > 0) g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).stroke({ width: 4, color: 0x00f7ff, alpha: 0.5 + Math.sin(flashT * 18) * 0.4 });
+        g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).fill({
+          color: on ? 0xffd200 : 0x1d1d2b,
+        });
+        if (on)
+          g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).stroke({
+            width: 2,
+            color: 0xfff6b0,
+          });
+        if (i === flash && flashT > 0)
+          g.roundRect(c * cell + 4, r * cell + 4, cell - 8, cell - 8, 8).stroke({
+            width: 4,
+            color: 0x00f7ff,
+            alpha: 0.5 + Math.sin(flashT * 18) * 0.4,
+          });
       }
   };
 
@@ -79,7 +91,9 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx('powerup');
     draw();
   };
-  const offDown = ctx.input.on('down', (a) => { if (a === 'a' || a === 'b' || a === 'start') useHint(); });
+  const offDown = ctx.input.on('down', (a) => {
+    if (a === 'a' || a === 'b' || a === 'start') useHint();
+  });
 
   const tap = (vx: number, vy: number): void => {
     if (over) return;

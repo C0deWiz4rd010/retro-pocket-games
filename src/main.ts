@@ -25,10 +25,17 @@ async function boot(): Promise<void> {
   }
 
   // Count sessions (drives the delayed install banner).
-  localStorage.setItem('rp:sessions', String(Number(localStorage.getItem('rp:sessions') ?? '0') + 1));
+  localStorage.setItem(
+    'rp:sessions',
+    String(Number(localStorage.getItem('rp:sessions') ?? '0') + 1),
+  );
 
   // Move older installs that still carried the old console default onto the new launcher landing.
-  if (!location.hash && !localStorage.getItem('rp:launcherDefaultApplied') && settings().skin === 'console') {
+  if (
+    !location.hash &&
+    !localStorage.getItem('rp:launcherDefaultApplied') &&
+    settings().skin === 'console'
+  ) {
     updateSettings({ skin: 'launcher' });
     localStorage.setItem('rp:launcherDefaultApplied', '1');
   }

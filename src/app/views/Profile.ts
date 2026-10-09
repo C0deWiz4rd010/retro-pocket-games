@@ -42,7 +42,9 @@ export function renderProfile(): HTMLElement {
     // level header
     el('div', { class: 'profile-hero' }, [
       el('div', { class: 'profile-hero__level' }, [`Lv.${p.level}`]),
-      el('div', { class: 'xpbar', style: 'margin:10px 0 4px' }, [el('i', { style: `width:${pct}%` })]),
+      el('div', { class: 'xpbar', style: 'margin:10px 0 4px' }, [
+        el('i', { style: `width:${pct}%` }),
+      ]),
       el('div', { style: 'color:var(--text-muted);font-size:12px' }, [`${p.xp} / ${need} XP`]),
     ]),
     el('div', { class: 'statgrid' }, [
@@ -55,24 +57,32 @@ export function renderProfile(): HTMLElement {
       stat(`⏱ ${formatPlayTime(p.stats.playTimeMs)}`, t('profile.playTime')),
     ]),
     favMeta
-      ? el('button', {
-          class: 'fav-game',
-          onClick: () => (location.hash = `#/play/${favMeta.id}`),
-        }, [
-          el('span', { class: 'fav-game__glyph' }, [glyphEl(favMeta.glyph)]),
-          el('div', {}, [
-            el('div', { class: 'fav-game__label' }, [t('profile.favorite')]),
-            el('div', { class: 'fav-game__title' }, [`${favMeta.title} · ${favPlays}×`]),
-          ]),
-        ])
+      ? el(
+          'button',
+          {
+            class: 'fav-game',
+            onClick: () => (location.hash = `#/play/${favMeta.id}`),
+          },
+          [
+            el('span', { class: 'fav-game__glyph' }, [glyphEl(favMeta.glyph)]),
+            el('div', {}, [
+              el('div', { class: 'fav-game__label' }, [t('profile.favorite')]),
+              el('div', { class: 'fav-game__title' }, [`${favMeta.title} · ${favPlays}×`]),
+            ]),
+          ],
+        )
       : '',
     el('div', { class: 'panel__row', style: 'margin-top:14px' }, [
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => (location.hash = '#/achievements') }, [
-        `🏆 ${t('nav.achievements')}`,
-      ]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => (location.hash = '#/scores') }, [
-        `🏅 ${t('nav.scores')}`,
-      ]),
+      el(
+        'button',
+        { class: 'btn btn--ghost btn--block', onClick: () => (location.hash = '#/achievements') },
+        [`🏆 ${t('nav.achievements')}`],
+      ),
+      el(
+        'button',
+        { class: 'btn btn--ghost btn--block', onClick: () => (location.hash = '#/scores') },
+        [`🏅 ${t('nav.scores')}`],
+      ),
     ]),
   ]);
 }

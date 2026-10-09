@@ -6,8 +6,14 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   const g = new Graphics();
-  const title = new Text({ text: 'NUMBER HUNT', style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0x34d399 } });
-  const prompt = new Text({ text: '', style: { fontFamily: 'Press Start 2P, monospace', fontSize: 18, fill: 0xffffff } });
+  const title = new Text({
+    text: 'NUMBER HUNT',
+    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0x34d399 },
+  });
+  const prompt = new Text({
+    text: '',
+    style: { fontFamily: 'Press Start 2P, monospace', fontSize: 18, fill: 0xffffff },
+  });
   title.anchor.set(0.5);
   prompt.anchor.set(0.5);
   title.position.set(W / 2, 46);
@@ -99,7 +105,11 @@ export default function createGame(ctx: GameContext): Game {
         .stroke({ width: hot ? 3 : 1, color: hot ? 0x34d399 : 0x1f6b4f });
       const t = new Text({
         text: done ? '' : String(n),
-        style: { fontFamily: 'Press Start 2P, monospace', fontSize: 16, fill: hot ? 0x34d399 : 0xffffff },
+        style: {
+          fontFamily: 'Press Start 2P, monospace',
+          fontSize: 16,
+          fill: hot ? 0x34d399 : 0xffffff,
+        },
       });
       t.anchor.set(0.5);
       t.position.set(x + cell / 2, y + cell / 2);

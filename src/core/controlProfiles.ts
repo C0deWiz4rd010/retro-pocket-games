@@ -123,6 +123,7 @@ const explicit: Record<string, ControlProfile> = {
   gearlock: CONTROL_PROFILES.tap,
   echorunner: CONTROL_PROFILES.tap,
   wordmix: { ...CONTROL_PROFILES.tap, assist: { action: 'select', label: 'assist.hint' } },
+  sudoku: { ...CONTROL_PROFILES.tap, assist: { action: 'select', label: 'assist.hint' } },
   driftracer: CONTROL_PROFILES.vector,
   pinball: base({
     preset: 'dual',

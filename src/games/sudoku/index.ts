@@ -1,41 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
-
-const N = 9;
-const BOX = 3;
-
-/** Generate a full valid Sudoku grid using constraint-based fill + backtrack. */
-function generateFull(rng: { next(): number; shuffle<T>(a: T[]): T[] }): number[][] {
-  const grid: number[][] = Array.from({ length: N }, () => new Array(N).fill(0));
-  const rows = Array.from({ length: N }, () => new Set<number>());
-  const cols = Array.from({ length: N }, () => new Set<number>());
-  const boxes = Array.from({ length: N }, () => new Set<number>());
-  const boxIdx = (r: number, c: number): number => Math.floor(r / BOX) * BOX + Math.floor(c / BOX);
-
-  const fill = (pos: number): boolean => {
-    if (pos === N * N) return true;
-    const r = Math.floor(pos / N);
-    const c = pos % N;
-    const bi = boxIdx(r, c);
-    const nums = rng.shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    for (const n of nums) {
-      if (!rows[r]!.has(n) && !cols[c]!.has(n) && !boxes[bi]!.has(n)) {
-        grid[r]![c] = n;
-        rows[r]!.add(n);
-        cols[c]!.add(n);
-        boxes[bi]!.add(n);
-        if (fill(pos + 1)) return true;
-        grid[r]![c] = 0;
-        rows[r]!.delete(n);
-        cols[c]!.delete(n);
-        boxes[bi]!.delete(n);
-      }
-    }
-    return false;
-  };
-  fill(0);
-  return grid;
-}
+import { BOX, N, generateSolved, makePuzzle } from './core';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -79,32 +44,19 @@ export default function createGame(ctx: GameContext): Game {
   eraseLabel.anchor.set(0.5);
   layer.addChild(eraseLabel);
 
-  const solution = generateFull(ctx.rng);
-  const given: boolean[][] = Array.from({ length: N }, () => new Array(N).fill(false));
-  const userGrid: number[][] = Array.from({ length: N }, () => new Array(N).fill(0));
+  const timeText = new Text({
+    text: '0:00',
+    style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.6, fill: 0x9bffce },
+  });
+  timeText.anchor.set(0.5);
+  timeText.position.set(ox + gw / 2, Math.max(cell * 0.5, oy - cell * 0.6));
+  layer.addChild(timeText);
 
-  // remove cells to create puzzle (difficulty: ~35 clues)
-  const removals = ctx.rng.shuffle(Array.from({ length: N * N }, (_, i) => i));
-  let removed = 0;
-  const target = 46; // cells to remove = 46 → 35 clues
-  for (const pos of removals) {
-    if (removed >= target) break;
-    const r = Math.floor(pos / N);
-    const c = pos % N;
-    given[r]![c] = false;
-    userGrid[r]![c] = 0;
-    removed++;
-  }
-  // mark remaining as given
-  for (let r = 0; r < N; r++)
-    for (let c = 0; c < N; c++) {
-      if (userGrid[r]![c] !== 0 || solution[r]![c] !== 0) {
-        if (!removals.slice(0, removed).includes(r * N + c)) {
-          given[r]![c] = true;
-          userGrid[r]![c] = solution[r]![c]!;
-        }
-      }
-    }
+  const solution = generateSolved(ctx.rng);
+  // ~35 clues; makePuzzle only digs holes that keep the puzzle uniquely solvable.
+  const { puzzle } = makePuzzle(ctx.rng, solution, 46);
+  const given: boolean[][] = puzzle.map((row) => row.map((v) => v !== 0));
+  const userGrid: number[][] = puzzle.map((row) => [...row]);
 
   let sel: { r: number; c: number } | null = null;
   let selectedNum = 0;
@@ -114,6 +66,12 @@ export default function createGame(ctx: GameContext): Game {
   const MAX_MISTAKES = 3; // Feature: three-strikes limit
   const startTime = ctx.timers.now() * 1000;
 
+  const correctCount = (): number => {
+    let n = 0;
+    for (let r = 0; r < N; r++)
+      for (let c = 0; c < N; c++) if (!given[r]![c] && userGrid[r]![c] === solution[r]![c]) n++;
+    return n;
+  };
   ctx.hud.setScore(0);
   const setLabel = (): void => ctx.hud.setLabel(`✗ ${mistakes}/${MAX_MISTAKES} · 💡${hints}`);
   setLabel();
@@ -225,40 +183,8 @@ export default function createGame(ctx: GameContext): Game {
     const r = Math.floor((y - oy) / cell);
     if (c >= 0 && c < N && r >= 0 && r < N) {
       if (selectedNum !== 0 && !given[r]![c]) {
-        if (selectedNum === -1) {
-          userGrid[r]![c] = 0;
-        } else {
-          const prev = userGrid[r]![c];
-          userGrid[r]![c] = selectedNum;
-          if (selectedNum !== solution[r]![c]) {
-            if (prev !== selectedNum) {
-              mistakes++;
-              ctx.audio.sfx('hit');
-              setLabel();
-              if (mistakes >= MAX_MISTAKES) {
-                over = true;
-                ctx.audio.sfx('gameover');
-                ctx.hud.toast('THREE STRIKES!');
-                draw();
-                ctx.gameOver(0, { mistakes });
-                return;
-              }
-            }
-          } else {
-            ctx.audio.sfx('eat');
-          }
-        }
-        if (checkSolved()) {
-          over = true;
-          const elapsed = Math.round((ctx.timers.now() * 1000 - startTime) / 1000);
-          const timeBonus = Math.max(0, 600 - elapsed) * 10;
-          const penaltyScore = Math.max(0, 5000 - mistakes * 200 + timeBonus);
-          ctx.audio.sfx('powerup');
-          ctx.hud.toast('SOLVED!');
-          draw();
-          ctx.gameOver(penaltyScore, { mistakes, seconds: elapsed });
-          return;
-        }
+        place(r, c);
+        if (over) return;
       } else {
         sel = { r, c };
       }
@@ -304,8 +230,54 @@ export default function createGame(ctx: GameContext): Game {
     draw();
     finishIfSolved();
   };
+  const place = (r: number, c: number): void => {
+    if (selectedNum === 0 || given[r]![c]) return;
+    if (selectedNum === -1) {
+      userGrid[r]![c] = 0;
+    } else {
+      const prev = userGrid[r]![c];
+      userGrid[r]![c] = selectedNum;
+      if (selectedNum !== solution[r]![c]) {
+        if (prev !== selectedNum) {
+          mistakes++;
+          ctx.audio.sfx('hit');
+          setLabel();
+          if (mistakes >= MAX_MISTAKES) {
+            over = true;
+            ctx.audio.sfx('gameover');
+            ctx.hud.toast('THREE STRIKES!');
+            draw();
+            ctx.gameOver(0, { mistakes });
+            return;
+          }
+        }
+      } else {
+        ctx.audio.sfx('eat');
+      }
+    }
+    finishIfSolved();
+  };
+
+  // Keyboard / gamepad: D-pad moves the cursor, A places the picked number, B cycles the picked
+  // number (1-9, erase), Enter/Select asks for a hint.
   const offDown = ctx.input.on('down', (a) => {
-    if (a === 'a' || a === 'b' || a === 'start') useHint();
+    if (over) return;
+    if (a === 'start' || a === 'select') {
+      useHint();
+      return;
+    }
+    if (a === 'up' || a === 'down' || a === 'left' || a === 'right') {
+      const cur = sel ?? { r: 4, c: 4 };
+      const dr = a === 'down' ? 1 : a === 'up' ? -1 : 0;
+      const dc = a === 'right' ? 1 : a === 'left' ? -1 : 0;
+      sel = { r: (cur.r + dr + N) % N, c: (cur.c + dc + N) % N };
+    } else if (a === 'b') {
+      selectedNum = selectedNum === -1 ? 1 : selectedNum === 9 ? -1 : selectedNum + 1;
+    } else if (a === 'a') {
+      if (!sel) sel = { r: 4, c: 4 };
+      place(sel.r, sel.c);
+    } else return;
+    if (!over) draw();
   });
 
   draw();
@@ -313,8 +285,12 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update() {
       if (over) return;
-      const elapsed = Math.round((ctx.timers.now() * 1000 - startTime) / 1000);
-      ctx.hud.setScore(elapsed);
+      // HUD score = cells you solved yourself; the clock lives on the board so the HUD doesn't
+      // pulse every second.
+      ctx.hud.setScore(correctCount() * 10);
+      const elapsed = Math.floor((ctx.timers.now() * 1000 - startTime) / 1000);
+      const text = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
+      if (timeText.text !== text) timeText.text = text;
     },
     destroy() {
       offTap();

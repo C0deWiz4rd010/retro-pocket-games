@@ -61,6 +61,53 @@ export function drawSparks(g: Graphics, sparks: readonly Spark[]): void {
   }
 }
 
+/**
+ * Static + slowly-animated background layers living *under* a game's per-frame Graphics.
+ * Backdrops used to be re-tessellated into the game graphic every frame (hundreds of primitives);
+ * now the unchanging part is drawn once and the animated part only ~15x per second.
+ */
+export interface BackdropLayers {
+  still: Graphics;
+  anim: Graphics;
+  /** Key of what `still` currently shows; redraw when it changes. */
+  stillKey: string;
+  /** Game time of the last `anim` redraw. */
+  lastAnim: number;
+  /** True for the frame in which `anim` was just cleared and redrawn. */
+  animFresh: boolean;
+  /** Game time of the last backdropLayers() call, so several helpers in one frame agree. */
+  lastCall: number;
+}
+
+const layerCache = new WeakMap<Graphics, BackdropLayers>();
+const ANIM_STEP = 1 / 15;
+
+/** Layers for `g`, created on first use as siblings beneath it. Null if `g` isn't mounted yet. */
+export function backdropLayers(g: Graphics, t: number): BackdropLayers | null {
+  let layers = layerCache.get(g);
+  if (!layers) {
+    const parent = g.parent;
+    if (!parent) return null;
+    const at = parent.getChildIndex(g);
+    const still = new Graphics();
+    const anim = new Graphics();
+    parent.addChildAt(still, at);
+    parent.addChildAt(anim, at + 1);
+    layers = { still, anim, stillKey: '', lastAnim: -Infinity, animFresh: false, lastCall: NaN };
+    layerCache.set(g, layers);
+  }
+  if (layers.lastCall === t) return layers; // same frame: backdrop() then city() share one decision
+  layers.lastCall = t;
+  // Time can restart (new run on the same graphic); also redraw on the very first call.
+  const due = t - layers.lastAnim >= ANIM_STEP || t < layers.lastAnim;
+  layers.animFresh = due;
+  if (due) {
+    layers.lastAnim = t;
+    layers.anim.clear();
+  }
+  return layers;
+}
+
 export function drawBackdrop(
   g: Graphics,
   w: number,
@@ -69,12 +116,22 @@ export function drawBackdrop(
   a = 0x10132a,
   b = 0x050510,
 ): void {
-  g.rect(0, 0, w, h).fill({ color: b });
-  for (let y = -24; y < h + 48; y += 24) {
-    const yy = (y + ((t * 18) % 24)) | 0;
-    g.rect(0, yy, w, 1).fill({ color: a, alpha: 0.35 });
+  const layers = backdropLayers(g, t);
+  const still = layers?.still ?? g;
+  const anim = layers?.anim ?? g;
+  const key = `${w}|${h}|${a}|${b}`;
+  if (!layers || layers.stillKey !== key) {
+    if (layers) {
+      layers.stillKey = key;
+      still.clear();
+    }
+    still.rect(0, 0, w, h).fill({ color: b });
+    for (let x = 0; x < w; x += 32) still.rect(x, 0, 1, h).fill({ color: a, alpha: 0.2 });
   }
-  for (let x = 0; x < w; x += 32) {
-    g.rect(x, 0, 1, h).fill({ color: a, alpha: 0.2 });
+  if (!layers || layers.animFresh) {
+    for (let y = -24; y < h + 48; y += 24) {
+      const yy = (y + ((t * 18) % 24)) | 0;
+      anim.rect(0, yy, w, 1).fill({ color: a, alpha: 0.35 });
+    }
   }
 }

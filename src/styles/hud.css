@@ -1,0 +1,113 @@
+/* HUD */
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px max(14px, var(--safe-r)) 10px max(14px, var(--safe-l));
+  padding-top: max(10px, var(--safe-t));
+  font-family: var(--font-hud);
+  isolation: isolate;
+}
+.hud__score {
+  position: relative;
+  font-size: 26px;
+  color: var(--text);
+  text-shadow: 0 0 8px var(--glow);
+  min-width: 38px;
+  line-height: 1;
+}
+.hud__label {
+  font-size: 18px;
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hud__lives {
+  font-size: 18px;
+  color: var(--danger);
+  min-width: 42px;
+  text-align: right;
+}
+.hud__score.is-up,
+.hud__lives.is-up {
+  animation: hud-pop 0.34s var(--ease);
+}
+.hud__lives.is-hit {
+  animation: hud-hit 0.34s var(--ease);
+}
+.hud__label.is-change {
+  animation: hud-label-flash 0.36s var(--ease);
+}
+.hud-delta {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 0);
+  color: var(--warn);
+  font-size: 15px;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: hud-delta 0.72s var(--ease) forwards;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--warn) 60%, transparent);
+}
+@keyframes hud-pop {
+  45% {
+    transform: scale(1.18);
+    filter: brightness(1.4);
+  }
+}
+@keyframes hud-hit {
+  18% {
+    transform: translateX(-3px);
+    filter: brightness(1.6);
+  }
+  36% {
+    transform: translateX(3px);
+  }
+  54% {
+    transform: translateX(-2px);
+  }
+}
+@keyframes hud-label-flash {
+  45% {
+    color: var(--primary);
+    text-shadow: 0 0 12px var(--glow);
+  }
+}
+@keyframes hud-delta {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -18px);
+  }
+}
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  transform: translateX(-50%);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  z-index: 25;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 40%, transparent);
+  animation: toast 1.8s var(--ease) forwards;
+}
+@keyframes toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  15%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+  }
+}

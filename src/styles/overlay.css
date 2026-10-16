@@ -1,0 +1,79 @@
+/* Overlay / modal (pause, game over, tutorial) */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: max(18px, var(--safe-t)) max(16px, var(--safe-r)) max(18px, var(--safe-b))
+    max(16px, var(--safe-l));
+  background: rgba(4, 4, 10, 0.78);
+  backdrop-filter: blur(3px);
+  animation: fade 0.18s var(--ease);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.panel {
+  width: min(100%, 386px);
+  max-height: min(680px, calc(100dvh - max(36px, var(--safe-t)) - max(36px, var(--safe-b))));
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--surface-2);
+  border-radius: var(--radius-lg);
+  padding: 26px 22px calc(24px + var(--safe-b));
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.46);
+}
+.panel__title {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--primary);
+  text-shadow: 0 0 12px var(--glow);
+  line-height: 1.35;
+  margin-bottom: 2px;
+}
+.panel__score {
+  font-family: var(--font-hud);
+  font-size: 40px;
+  line-height: 0.95;
+  color: var(--text);
+}
+.panel__row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.panel__row > .btn {
+  flex: 1 1 142px;
+  min-width: 0;
+}
+
+/* Mobile: present overlays (pause / game over) as a bottom sheet for a native feel. */
+@media (max-width: 560px) {
+  .overlay {
+    align-items: end;
+  }
+  .panel {
+    width: 100%;
+    max-width: 520px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation: sheet-up 0.24s var(--ease);
+  }
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(12%);
+    opacity: 0;
+  }
+}
+.a11y-reduced-motion .panel {
+  animation: none;
+}

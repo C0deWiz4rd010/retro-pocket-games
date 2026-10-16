@@ -81,3 +81,10 @@
   -webkit-overflow-scrolling: touch;
   padding: 0 14px calc(20px + var(--safe-b));
 }
+
+/* Icon + label pairs (banners) */
+.install-banner__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

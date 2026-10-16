@@ -1,5 +1,6 @@
 import { el } from '@utils/dom';
 import { t } from '@i18n/index';
+import { icon } from '@ui/icons';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -57,7 +58,7 @@ export function initPwaUx(): void {
   function showInstallBanner(): void {
     if (document.querySelector('.install-banner')) return;
     const banner = el('div', { class: 'install-banner' }, [
-      el('span', {}, ['🎮 ' + t('install.text')]),
+      el('span', { class: 'install-banner__text' }, [icon('download'), t('install.text')]),
       el('div', { class: 'install-banner__actions' }, [
         el(
           'button',
@@ -120,7 +121,7 @@ function isStandalone(): boolean {
 export function updateReadyBanner(reload: () => void): void {
   if (document.querySelector('.install-banner')) return;
   const banner = el('div', { class: 'install-banner' }, [
-    el('span', {}, ['↻ ' + t('update.text')]),
+    el('span', { class: 'install-banner__text' }, [icon('restart'), t('update.text')]),
     el('div', { class: 'install-banner__actions' }, [
       el('button', { class: 'btn btn--primary', onClick: () => reload() }, [t('update.cta')]),
       el(

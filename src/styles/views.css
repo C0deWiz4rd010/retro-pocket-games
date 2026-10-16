@@ -660,6 +660,10 @@
   flex-wrap: wrap;
 }
 .quick-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   flex: 1 1 132px;
   min-height: 42px;
   padding: 10px 12px;
@@ -669,6 +673,11 @@
   font-size: 12px;
   font-weight: 600;
   opacity: 0.6;
+}
+.quick-toggle .lucide-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 .quick-toggle.on {
   opacity: 1;

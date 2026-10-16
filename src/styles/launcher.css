@@ -655,14 +655,9 @@
   pointer-events: none;
   background: linear-gradient(rgba(255, 255, 255, 0.024) 50%, transparent 50%);
   background-size: 100% 6px;
-  opacity: 0.32;
-  mix-blend-mode: screen;
-  animation: scan-drift 8s linear infinite;
-}
-@keyframes scan-drift {
-  to {
-    transform: translateY(24px);
-  }
+  /* Static: a full-viewport blend-mode layer with an infinite animation re-composited the whole
+     page every frame. */
+  opacity: 0.22;
 }
 :root[data-skin='launcher'] .hero {
   display: grid;
@@ -693,7 +688,7 @@
   pointer-events: none;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
   transform: translateX(-120%);
-  animation: hero-sheen 6s var(--ease) infinite;
+  animation: hero-sheen 6s var(--ease) 3; /* a few passes on arrival, then still */
 }
 @keyframes hero-sheen {
   42%,
@@ -844,6 +839,10 @@
   gap: 16px;
 }
 :root[data-skin='launcher'] .tile {
+  /* Off-screen tiles (85 of them, several with looping previews) skip layout, paint and
+     animation work until scrolled near. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 174px;
   min-height: 174px;
   aspect-ratio: auto;
   cursor: pointer;

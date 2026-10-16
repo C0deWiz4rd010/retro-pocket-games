@@ -543,28 +543,32 @@ export class GameHost {
       el('div', { class: 'panel__title' }, [t('game.paused')]),
       this.buildQuickToggles(),
       el('button', { class: 'btn btn--primary btn--block', onClick: () => this.resume() }, [
-        `▶  ${t('game.resume')}`,
+        icon('play'),
+        t('game.resume'),
       ]),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.restart() }, [
-        `↻  ${t('game.restart')}`,
+        icon('restart'),
+        t('game.restart'),
       ]),
       el('div', { class: 'panel__row' }, [
         el(
           'button',
           { class: 'btn btn--ghost btn--block', onClick: () => this.showControlsPanel() },
-          [`🎮  ${t('settings.controls')}`],
+          [icon('controls'), t('settings.controls')],
         ),
         el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showRulesPanel() }, [
-          `📖  ${t('game.rules')}`,
+          icon('rules'),
+          t('game.rules'),
         ]),
       ]),
       el(
         'button',
         { class: 'btn btn--ghost btn--block', onClick: () => this.showAccessibilityPanel() },
-        [`♿  ${t('settings.a11y')}`],
+        [icon('a11y'), t('settings.a11y')],
       ),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.confirmQuit() }, [
-        `⌂  ${t('game.home')}`,
+        icon('home'),
+        t('game.home'),
       ]),
     ]);
     this.showOverlay(panel);
@@ -591,7 +595,8 @@ export class GameHost {
     }
     rows.push(
       el('button', { class: 'btn btn--primary btn--block', onClick: () => this.showPauseMenu() }, [
-        `←  ${t('game.back')}`,
+        icon('back'),
+        t('game.back'),
       ]),
     );
     this.showOverlay(el('div', { class: 'panel' }, rows));
@@ -614,7 +619,8 @@ export class GameHost {
       );
     rows.push(
       el('button', { class: 'btn btn--primary btn--block', onClick: () => this.showPauseMenu() }, [
-        `←  ${t('game.back')}`,
+        icon('back'),
+        t('game.back'),
       ]),
     );
     this.showOverlay(el('div', { class: 'panel' }, rows));
@@ -633,7 +639,7 @@ export class GameHost {
             'aria-pressed': String(on),
             onClick,
           },
-          [`${on ? '☑' : '☐'}  ${label}`],
+          [icon(on ? 'checkOn' : 'checkOff'), label],
         );
       clear(panel);
       panel.append(
@@ -653,7 +659,7 @@ export class GameHost {
         el(
           'button',
           { class: 'btn btn--primary btn--block', onClick: () => this.showPauseMenu() },
-          [`←  ${t('game.back')}`],
+          [icon('back'), t('game.back')],
         ),
       );
     };
@@ -663,7 +669,7 @@ export class GameHost {
 
   /** Inline sound / FX quick-toggles on the pause overlay. */
   private buildQuickToggles(): HTMLElement {
-    const chip = (on: boolean, label: string, onClick: () => void): HTMLElement =>
+    const chip = (on: boolean, label: (Node | string)[], onClick: () => void): HTMLElement =>
       el(
         'button',
         {
@@ -671,33 +677,33 @@ export class GameHost {
           'aria-pressed': String(on),
           onClick,
         },
-        [label],
+        label,
       );
     const row = el('div', { class: 'quick-toggles' });
     const rebuild = (): void => {
       const s = settings();
       row.replaceChildren(
-        chip(s.audio.sfx, `🔊 ${t('settings.sfx')}`, () => {
+        chip(s.audio.sfx, [icon('soundOn'), t('settings.sfx')], () => {
           updateSettings({ audio: { ...settings().audio, sfx: !settings().audio.sfx } });
           rebuild();
         }),
-        chip(s.audio.music, `🎵 ${t('settings.music')}`, () => {
+        chip(s.audio.music, [icon('music'), t('settings.music')], () => {
           updateSettings({ audio: { ...settings().audio, music: !settings().audio.music } });
           rebuild();
         }),
-        chip(s.controls.haptics, `📳 ${t('settings.haptics')}`, () => {
+        chip(s.controls.haptics, [icon('haptics'), t('settings.haptics')], () => {
           updateSettings({
             controls: { ...settings().controls, haptics: !settings().controls.haptics },
           });
           if (settings().controls.haptics) haptics.bump();
           rebuild();
         }),
-        chip(s.screenFx.mode !== 'off', '📺 CRT', () => {
+        chip(s.screenFx.mode !== 'off', [icon('crt'), 'CRT'], () => {
           const mode = settings().screenFx.mode === 'off' ? 'css' : 'off';
           updateSettings({ screenFx: { ...settings().screenFx, mode } });
           rebuild();
         }),
-        chip(s.controls.touchLayout === 'left', `🤚 ${t('settings.hand')}`, () => {
+        chip(s.controls.touchLayout === 'left', [icon('hand'), t('settings.hand')], () => {
           const touchLayout = settings().controls.touchLayout === 'left' ? 'right' : 'left';
           updateSettings({ controls: { ...settings().controls, touchLayout } });
           // Reflect the change live on the already-mounted control surface.
@@ -716,7 +722,8 @@ export class GameHost {
     const panel = el('div', { class: 'panel' }, [
       el('div', { class: 'panel__title' }, [t('game.quitConfirm')]),
       el('button', { class: 'btn btn--danger btn--block', onClick: () => this.exit() }, [
-        `⌂  ${t('game.quit')}`,
+        icon('home'),
+        t('game.quit'),
       ]),
       el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.showPauseMenu() }, [
         t('game.keepPlaying'),
@@ -869,10 +876,12 @@ export class GameHost {
       el('div', { class: 'panel__actions' }, [
         el('div', { class: 'panel__row' }, [
           el('button', { class: 'btn btn--primary btn--block', onClick: () => this.restart() }, [
-            `↻  ${t('game.retry')}`,
+            icon('restart'),
+            t('game.retry'),
           ]),
           el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.nextGame() }, [
-            `⏭  ${t('game.next')}`,
+            icon('skip'),
+            t('game.next'),
           ]),
         ]),
         el('div', { class: 'panel__row' }, [
@@ -885,7 +894,7 @@ export class GameHost {
                 location.hash = `#/scores/${this.meta.id}`;
               },
             },
-            [`🏅  ${t('game.leaderboard')}`],
+            [icon('leaderboard'), t('game.leaderboard')],
           ),
           el(
             'button',
@@ -893,11 +902,12 @@ export class GameHost {
               class: 'btn btn--ghost btn--block',
               onClick: () => void shareScoreCard(this.meta, score, isBest),
             },
-            [`↗  ${t('game.share')}`],
+            [icon('share'), t('game.share')],
           ),
         ]),
         el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [
-          `⌂  ${t('game.home')}`,
+          icon('home'),
+          t('game.home'),
         ]),
       ]),
     );

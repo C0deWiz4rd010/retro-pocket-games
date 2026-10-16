@@ -1118,9 +1118,11 @@ export class App {
         el(
           'button',
           { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
-          ['☰'],
+          [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, ['‹']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
+          icon('back'),
+        ]),
         el('div', { class: 'topbar__title' }, ['SETTINGS']),
       ]),
       renderSettings(),
@@ -1137,9 +1139,11 @@ export class App {
         el(
           'button',
           { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
-          ['☰'],
+          [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, ['‹']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
+          icon('back'),
+        ]),
         el('div', { class: 'topbar__title' }, [t('ach.title')]),
       ]),
       renderAchievements(),
@@ -1157,9 +1161,9 @@ export class App {
         el(
           'button',
           { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
-          ['☰'],
+          [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: back }, ['‹']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: back }, [icon('back')]),
         el('div', { class: 'topbar__title' }, [t('nav.scores')]),
       ]),
       await renderScores(arg),
@@ -1176,9 +1180,11 @@ export class App {
         el(
           'button',
           { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
-          ['☰'],
+          [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, ['‹']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
+          icon('back'),
+        ]),
         el('div', { class: 'topbar__title' }, [t('nav.profile')]),
       ]),
       renderProfile(),
@@ -1195,9 +1201,11 @@ export class App {
         el(
           'button',
           { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
-          ['☰'],
+          [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, ['‹']),
+        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
+          icon('back'),
+        ]),
         el('div', { class: 'topbar__title' }, [t('nav.about')]),
       ]),
       renderAbout(),

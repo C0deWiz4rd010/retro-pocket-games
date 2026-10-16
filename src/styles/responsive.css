@@ -110,11 +110,6 @@
   display: none;
 }
 
-/* ── Launcher stat grid: never force horizontal scroll ── */
-:root[data-skin='launcher'] .statgrid {
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-}
-
 /* ── Game-over panel: the actions stay reachable however tall the stats get ── */
 .panel__actions {
   position: sticky;

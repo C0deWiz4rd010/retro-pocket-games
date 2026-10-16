@@ -103,7 +103,15 @@ export class GameHost {
     this.paused = false;
     const runId = ++this.runId;
     this.startedAt = performance.now();
-    await Promise.all([loadScores(this.meta.id), loadLeaderboard(this.meta.id)]);
+    await Promise.all([
+      loadScores(this.meta.id),
+      loadLeaderboard(this.meta.id),
+      // Canvas text rasterises on creation; without this a cold start can bake in the fallback font.
+      Promise.race([
+        document.fonts.load('24px VT323'),
+        new Promise((resolve) => window.setTimeout(resolve, 1500)),
+      ]).catch(() => undefined),
+    ]);
     audio.unlock();
     void wakeLock.request();
     pixi.setVirtual(this.meta.virtual.w, this.meta.virtual.h);

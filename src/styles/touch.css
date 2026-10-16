@@ -40,7 +40,7 @@
 }
 .touch-assist:active {
   background: var(--primary);
-  color: #04040a;
+  color: var(--on-primary);
   transform: translateX(-50%) scale(0.94);
 }
 .touch--swipe,
@@ -84,7 +84,7 @@
 }
 .dpad button:active {
   background: var(--primary);
-  color: #04040a;
+  color: var(--on-primary);
 }
 .dpad .up {
   grid-area: 1 / 2;
@@ -109,7 +109,7 @@
   border-radius: 50%;
   font-family: var(--font-pixel);
   font-size: 16px;
-  color: #04040a;
+  color: var(--on-primary);
 }
 .actionbtns .a {
   background: var(--accent);

@@ -24,7 +24,7 @@
 }
 .btn--primary {
   background: var(--primary);
-  color: #04040a;
+  color: var(--on-primary);
   box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 60%, transparent);
 }
 .btn--ghost {

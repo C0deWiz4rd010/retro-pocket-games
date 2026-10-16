@@ -19,7 +19,7 @@
 
 .filter-row__label {
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   color: var(--text-muted);
   text-transform: uppercase;
 }
@@ -35,24 +35,13 @@
 .cat-chips--library {
   display: flex;
   gap: 7px;
+  margin-bottom: 14px;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
 .cat-chips--library::-webkit-scrollbar {
   display: none;
-}
-
-:root[data-skin='launcher'] .tilegrid {
-  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
-}
-
-:root[data-skin='launcher'] .tile {
-  min-height: 238px;
-  aspect-ratio: auto;
-  cursor: pointer;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tile-accent) 18%, transparent);
-  transform-origin: center;
 }
 
 :root[data-skin='launcher'] .tile:hover,
@@ -142,7 +131,7 @@
 
 .tile-stat small {
   margin-top: 1px;
-  font-size: 8px;
+  font-size: var(--fs-2xs);
   color: var(--text-muted);
   text-transform: uppercase;
 }
@@ -781,7 +770,7 @@
   background: color-mix(in srgb, var(--surface-2) 70%, transparent);
 }
 :root[data-skin='launcher'] .statgrid {
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
 }
 :root[data-skin='launcher'] .statcard,
@@ -836,9 +825,6 @@
   background: color-mix(in srgb, var(--surface) 82%, transparent);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-.cat-chips--library {
-  margin-bottom: 14px;
-}
 .cat-chip {
   transition:
     transform 0.12s var(--ease),
@@ -859,6 +845,9 @@
 }
 :root[data-skin='launcher'] .tile {
   min-height: 174px;
+  aspect-ratio: auto;
+  cursor: pointer;
+  transform-origin: center;
   border-radius: 14px;
   background:
     linear-gradient(
@@ -901,7 +890,7 @@
   display: grid;
   place-items: center;
   border-radius: 10px;
-  color: #04040a;
+  color: var(--on-primary);
   background: linear-gradient(135deg, var(--primary), var(--accent));
   box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 45%, transparent);
 }

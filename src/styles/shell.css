@@ -64,7 +64,7 @@
   justify-content: space-between;
   padding: 0 6px 2px;
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   letter-spacing: 1px;
   color: var(--text-muted);
 }

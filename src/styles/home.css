@@ -14,7 +14,7 @@
 }
 .hero__tag {
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: var(--fs-2xs);
   color: var(--accent);
   letter-spacing: 1px;
 }
@@ -344,17 +344,8 @@
   top: 22%;
   transform: rotate(8deg);
 }
-.tile__glyph {
-  position: relative;
-  z-index: 1;
-  margin-top: auto;
-}
 .tile:active {
   transform: scale(0.95);
-}
-.tile__glyph {
-  font-size: 30px;
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tile-accent) 70%, transparent));
 }
 .tile__title {
   font-size: 12px;
@@ -386,10 +377,10 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  font-size: 8px;
+  font-size: var(--fs-2xs);
   font-family: var(--font-pixel);
   background: var(--accent);
-  color: #04040a;
+  color: var(--on-primary);
   padding: 3px 5px;
   border-radius: 6px;
 }
@@ -434,7 +425,7 @@
 }
 .nav__group {
   font-family: var(--font-pixel);
-  font-size: 8px;
+  font-size: var(--fs-2xs);
   letter-spacing: 1px;
   color: var(--text-muted);
   padding: 12px 18px 4px;

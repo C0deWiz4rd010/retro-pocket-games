@@ -1,5 +1,14 @@
 import { Application, Container } from 'pixi.js';
 
+/** Screen space (CSS px) taken by HUD/controls; the game is letterboxed into what remains. */
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+export const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+
 export interface LayoutResult {
   rotated: boolean;
   scale: number;
@@ -12,19 +21,33 @@ export interface LayoutResult {
  * portrait viewport (sh > sw) rotate 90° so they fill the screen. Returns the transform
  * applied to the world container.
  */
-export function computeLayout(vw: number, vh: number, sw: number, sh: number): LayoutResult {
+export function computeLayout(
+  vw: number,
+  vh: number,
+  screenW: number,
+  screenH: number,
+  insets: Insets = NO_INSETS,
+): LayoutResult {
+  // The play area is the screen minus whatever HUD/controls occupy (never below 1px).
+  const sw = Math.max(1, screenW - insets.left - insets.right);
+  const sh = Math.max(1, screenH - insets.top - insets.bottom);
   const rotated = vw > vh && sh > sw;
   if (rotated) {
     const scale = Math.min(sw / vh, sh / vw);
     return {
       rotated,
       scale,
-      offsetX: (sw + vh * scale) / 2,
-      offsetY: (sh - vw * scale) / 2,
+      offsetX: insets.left + (sw + vh * scale) / 2,
+      offsetY: insets.top + (sh - vw * scale) / 2,
     };
   }
   const scale = Math.min(sw / vw, sh / vh);
-  return { rotated, scale, offsetX: (sw - vw * scale) / 2, offsetY: (sh - vh * scale) / 2 };
+  return {
+    rotated,
+    scale,
+    offsetX: insets.left + (sw - vw * scale) / 2,
+    offsetY: insets.top + (sh - vh * scale) / 2,
+  };
 }
 
 /** Inverse of the world transform: map viewport-local px back to virtual game coords. */
@@ -53,6 +76,7 @@ export class PixiManager {
   private running = false;
 
   /** Render-resolution tiers, best first. PerfMonitor steps down when frames stay too slow. */
+  private insets: Insets = NO_INSETS;
   private tiers: number[] = [2];
   private tier = 0;
 
@@ -127,6 +151,20 @@ export class PixiManager {
     this.rect = null;
   };
 
+  /** Reserve screen edges for HUD/controls so they never cover the playfield. */
+  setInsets(insets: Insets): void {
+    const a = this.insets;
+    if (
+      a.top === insets.top &&
+      a.right === insets.right &&
+      a.bottom === insets.bottom &&
+      a.left === insets.left
+    )
+      return;
+    this.insets = insets;
+    this.layout();
+  }
+
   setVirtual(w: number, h: number): void {
     this.vw = w;
     this.vh = h;
@@ -138,7 +176,7 @@ export class PixiManager {
     this.rect = null;
     const sw = this.host.clientWidth || window.innerWidth;
     const sh = this.host.clientHeight || window.innerHeight;
-    const l = computeLayout(this.vw, this.vh, sw, sh);
+    const l = computeLayout(this.vw, this.vh, sw, sh, this.insets);
     this.rotated = l.rotated;
     this.scale = l.scale;
     this.offsetX = l.offsetX;
@@ -161,6 +199,7 @@ export class PixiManager {
   };
 
   clearWorld(): void {
+    this.insets = NO_INSETS;
     for (const child of this.world.removeChildren()) child.destroy({ children: true });
   }
 

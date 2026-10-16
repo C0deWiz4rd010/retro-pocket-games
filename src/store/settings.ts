@@ -71,6 +71,15 @@ function applyToDom(s: Settings): void {
   root.dataset.skin = s.skin;
   root.dataset.shell = s.shell;
   root.dataset.fx = s.screenFx.mode === 'full' && fxState.forcedCss ? 'css' : s.screenFx.mode;
+  try {
+    // Read synchronously by the inline script in index.html on the next load.
+    localStorage.setItem(
+      'rp:boot',
+      JSON.stringify({ theme: s.theme, skin: s.skin, shell: s.shell, fx: root.dataset.fx }),
+    );
+  } catch {
+    /* storage unavailable: worst case is a brief default-skin flash */
+  }
   root.dataset.colorblind = s.a11y.colorblind;
   root.classList.toggle('a11y-reduced-motion', s.a11y.reducedMotion);
   root.classList.toggle('a11y-high-contrast', s.a11y.highContrast);

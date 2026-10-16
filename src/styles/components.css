@@ -626,7 +626,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 10px max(14px, var(--safe-r)) 10px max(14px, var(--safe-l));
   padding-top: max(10px, var(--safe-t));
   font-family: var(--font-hud);
   isolation: isolate;
@@ -737,12 +737,17 @@
 
 /* Touch controls (overlay in launcher skin, hardware area in console skin) */
 .touch {
+  /* Button size: 64px × the user's size setting, but never so big that D-pad + action buttons
+     (≈ 4.4 button-widths + gaps) stop fitting the screen. cqw = width of the .screen container,
+     so the console housing's inner width is respected, not just the viewport. */
+  --btn: min(calc(64px * var(--touch-scale, 1)), calc((100cqw - 64px) / 4.4));
+  --cell: calc(var(--btn) * 0.78);
   position: absolute;
   inset: auto 0 0 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 0 18px calc(18px + var(--safe-b));
+  padding: 0 max(14px, var(--safe-r)) calc(16px + var(--safe-b)) max(14px, var(--safe-l));
   z-index: 10;
   opacity: var(--touch-opacity, 0.9);
   /* Let taps in the empty gap between the pads reach the game field. */
@@ -751,14 +756,6 @@
 .touch .dpad,
 .touch .actionbtns {
   pointer-events: auto;
-  transform: scale(var(--touch-scale, 1));
-  transform-origin: bottom center;
-}
-.touch--left .dpad {
-  transform-origin: bottom left;
-}
-.touch--left .actionbtns {
-  transform-origin: bottom right;
 }
 /* Secondary assist button (tap games: minesweeper flag, puzzle hint) — kept reachable
    even though the main .touch surface is hidden for tap presets. */
@@ -810,8 +807,8 @@
 /* on-screen controls are shown during play in both skins (v1) */
 .dpad {
   display: grid;
-  grid-template-columns: repeat(3, 46px);
-  grid-template-rows: repeat(3, 46px);
+  grid-template-columns: repeat(3, var(--cell, 46px));
+  grid-template-rows: repeat(3, var(--cell, 46px));
   gap: 4px;
 }
 .dpad button {
@@ -840,12 +837,12 @@
 }
 .actionbtns {
   display: flex;
-  gap: 14px;
+  gap: clamp(8px, 2.5cqw, 14px);
   align-items: center;
 }
 .actionbtns button {
-  width: 64px;
-  height: 64px;
+  width: var(--btn, 64px);
+  height: var(--btn, 64px);
   border-radius: 50%;
   font-family: var(--font-pixel);
   font-size: 16px;
@@ -864,16 +861,11 @@
 }
 
 /* Accessibility: enlarge the on-screen game controls for the large-targets option. */
-.a11y-large-targets .dpad {
-  grid-template-columns: repeat(3, 54px);
-  grid-template-rows: repeat(3, 54px);
+.a11y-large-targets .touch {
+  --btn: min(calc(76px * var(--touch-scale, 1)), calc((100cqw - 64px) / 4.4));
 }
 .a11y-large-targets .dpad button {
   font-size: 21px;
-}
-.a11y-large-targets .actionbtns button {
-  width: 76px;
-  height: 76px;
 }
 
 .tooltip {
@@ -1321,50 +1313,6 @@
   font-weight: 700;
   font-size: 16px;
 }
-
-/* ── Rotate-device prompt (landscape games in a portrait viewport) ── */
-.rotate-prompt {
-  display: none;
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  text-align: center;
-  padding: 24px;
-  background: var(--bg);
-}
-.rotate-prompt__icon {
-  font-size: 56px;
-  animation: rotate-wiggle 1.6s ease-in-out infinite;
-}
-.a11y-reduced-motion .rotate-prompt__icon {
-  animation: none;
-}
-@keyframes rotate-wiggle {
-  0%,
-  100% {
-    transform: rotate(-12deg);
-  }
-  50% {
-    transform: rotate(12deg);
-  }
-}
-.rotate-prompt__title {
-  font-family: var(--font-pixel);
-  font-size: 14px;
-  color: var(--primary);
-  text-shadow: 0 0 10px var(--glow);
-}
-.rotate-prompt__hint {
-  font-size: 13px;
-  color: var(--text-muted);
-  max-width: 240px;
-}
-/* Landscape games now auto-rotate to fill a portrait viewport (see PixiManager.computeLayout),
-   so the rotate-device prompt is kept for reference but no longer shown. */
 
 /* ── HUD best-to-beat badge ── */
 .hud__best {

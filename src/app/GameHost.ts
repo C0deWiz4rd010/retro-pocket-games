@@ -31,6 +31,12 @@ import { attachTooltip } from '@ui/tooltip';
 import type { Game, GameContext, Hud } from '@core/types';
 import type { GameMeta, GameMode } from '@core/Registry';
 
+/**
+ * Short landscape screens (phones on their side): too little height for controls below the
+ * game, so the pads move to the sides. CSS (responsive.css) uses the identical query.
+ */
+export const SIDE_CONTROLS_QUERY = '(orientation: landscape) and (max-height: 520px)';
+
 export interface RunOptions {
   seed?: number;
   label?: string; // e.g. "DAILY" banner
@@ -193,8 +199,6 @@ export class GameHost {
   private buildChrome(): void {
     clear(this.screenView);
     this.screenView.classList.add('is-game', 'power-on');
-    // Drives the CSS rotate-prompt for landscape games viewed in portrait.
-    this.screenView.dataset.orient = this.meta.orientation;
 
     this.hudScore = el('div', { class: 'hud__score' }, ['0']);
     const labelText = this.opts.label
@@ -262,13 +266,77 @@ export class GameHost {
 
     this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
 
-    this.screenView.append(
-      hud,
-      this.buildControls(),
-      this.buildAssist(),
-      this.buildRotatePrompt(),
-      this.overlayHost,
-    );
+    this.screenView.append(hud, this.buildControls(), this.buildAssist(), this.overlayHost);
+    this.watchInsets();
+    // Landscape games are auto-rotated to fill a portrait screen; nudge towards the better fit.
+    if (
+      this.meta.orientation === 'landscape' &&
+      this.screenView.clientHeight > this.screenView.clientWidth
+    )
+      this.toast(t('rotate.text'));
+  }
+
+  /**
+   * Keep the playfield clear of the HUD and on-screen controls: measure what they occupy and
+   * tell Pixi to letterbox into the remaining area. Re-measured whenever any of them (or the
+   * screen) changes size, e.g. rotation, handedness, control size, or the large-targets option.
+   */
+  private watchInsets(): void {
+    let raf = 0;
+    const measure = (): void => {
+      raf = 0;
+      const sr = this.screenView.getBoundingClientRect();
+      if (sr.width === 0 || sr.height === 0) return;
+      let top = 0;
+      let right = 0;
+      let bottom = 0;
+      let left = 0;
+      const hud = this.screenView.querySelector('.hud');
+      if (hud) top = Math.max(0, hud.getBoundingClientRect().bottom - sr.top);
+      // Wide screens (landscape phones, desktop, the "wide" console shell) have width to spare and
+      // height to protect, so the pads' left/right edges are reserved instead of a bottom band.
+      const sideLayout =
+        window.matchMedia(SIDE_CONTROLS_QUERY).matches || sr.width / sr.height > 1.45;
+      const pads = this.screenView.querySelectorAll<HTMLElement>(
+        '.touch .dpad, .touch .actionbtns, .touch-assist',
+      );
+      for (const pad of pads) {
+        const r = pad.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue; // hidden for this control preset
+        const isAssist = pad.classList.contains('touch-assist');
+        if (sideLayout && !isAssist) {
+          // Short landscape screens: pads sit in the bottom corners, so reserve the sides.
+          if (r.left + r.width / 2 < sr.left + sr.width / 2)
+            left = Math.max(left, r.right - sr.left + 8);
+          else right = Math.max(right, sr.right - r.left + 8);
+        } else {
+          bottom = Math.max(bottom, sr.bottom - r.top + 6);
+        }
+      }
+      pixi.setInsets({
+        top: Math.round(top),
+        right: Math.round(right),
+        bottom: Math.round(bottom),
+        left: Math.round(left),
+      });
+    };
+    const schedule = (): void => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+    const ro = new ResizeObserver(schedule);
+    ro.observe(this.screenView);
+    for (const node of this.screenView.querySelectorAll(
+      '.hud, .touch .dpad, .touch .actionbtns, .touch-assist',
+    ))
+      ro.observe(node);
+    const mq = window.matchMedia(SIDE_CONTROLS_QUERY);
+    mq.addEventListener('change', schedule);
+    this.cleanups.push(() => {
+      ro.disconnect();
+      mq.removeEventListener('change', schedule);
+      cancelAnimationFrame(raf);
+    });
+    schedule();
   }
 
   /** A single secondary on-screen button for tap games whose D-pad is hidden
@@ -314,16 +382,6 @@ export class GameHost {
       onPointercancel: release,
       onLostpointercapture: release,
     };
-  }
-
-  private buildRotatePrompt(): HTMLElement {
-    // CSS decides visibility (only landscape games in a portrait viewport). aria-hidden when
-    // not shown is handled by display:none in CSS.
-    return el('div', { class: 'rotate-prompt', role: 'alert' }, [
-      el('div', { class: 'rotate-prompt__icon' }, ['📱↻']),
-      el('div', { class: 'rotate-prompt__title' }, [t('rotate.text')]),
-      el('div', { class: 'rotate-prompt__hint' }, [t('rotate.hint')]),
-    ]);
   }
 
   private buildControls(): HTMLElement {
@@ -800,37 +858,39 @@ export class GameHost {
     }
 
     rows.push(
-      el('div', { class: 'panel__row' }, [
-        el('button', { class: 'btn btn--primary btn--block', onClick: () => this.restart() }, [
-          `↻  ${t('game.retry')}`,
+      el('div', { class: 'panel__actions' }, [
+        el('div', { class: 'panel__row' }, [
+          el('button', { class: 'btn btn--primary btn--block', onClick: () => this.restart() }, [
+            `↻  ${t('game.retry')}`,
+          ]),
+          el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.nextGame() }, [
+            `⏭  ${t('game.next')}`,
+          ]),
         ]),
-        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.nextGame() }, [
-          `⏭  ${t('game.next')}`,
-        ]),
-      ]),
-      el('div', { class: 'panel__row' }, [
-        el(
-          'button',
-          {
-            class: 'btn btn--ghost btn--block',
-            onClick: () => {
-              this.teardown();
-              location.hash = `#/scores/${this.meta.id}`;
+        el('div', { class: 'panel__row' }, [
+          el(
+            'button',
+            {
+              class: 'btn btn--ghost btn--block',
+              onClick: () => {
+                this.teardown();
+                location.hash = `#/scores/${this.meta.id}`;
+              },
             },
-          },
-          [`🏅  ${t('game.leaderboard')}`],
-        ),
-        el(
-          'button',
-          {
-            class: 'btn btn--ghost btn--block',
-            onClick: () => void shareScoreCard(this.meta, score, isBest),
-          },
-          [`↗  ${t('game.share')}`],
-        ),
-      ]),
-      el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [
-        `⌂  ${t('game.home')}`,
+            [`🏅  ${t('game.leaderboard')}`],
+          ),
+          el(
+            'button',
+            {
+              class: 'btn btn--ghost btn--block',
+              onClick: () => void shareScoreCard(this.meta, score, isBest),
+            },
+            [`↗  ${t('game.share')}`],
+          ),
+        ]),
+        el('button', { class: 'btn btn--ghost btn--block', onClick: () => this.exit() }, [
+          `⌂  ${t('game.home')}`,
+        ]),
       ]),
     );
 

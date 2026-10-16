@@ -1,7 +1,21 @@
 <!doctype html>
-<html lang="en" data-theme="cyberpunk" data-skin="console" data-shell="brick">
+<html lang="en" data-theme="cyberpunk" data-skin="launcher" data-shell="brick">
   <head>
     <meta charset="UTF-8" />
+    <!-- Apply the last-used theme/skin before first paint (settings live in IndexedDB, which is
+         async), so there is no flash of the wrong skin while the app boots. -->
+    <script>
+      try {
+        var b = JSON.parse(localStorage.getItem('rp:boot') || 'null');
+        if (b) {
+          var d = document.documentElement.dataset;
+          if (b.theme) d.theme = b.theme;
+          if (b.skin) d.skin = b.skin;
+          if (b.shell) d.shell = b.shell;
+          if (b.fx) d.fx = b.fx;
+        }
+      } catch (e) {}
+    </script>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1"

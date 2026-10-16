@@ -1,0 +1,140 @@
+/* Responsive overrides, loaded last. Mobile-first fixes for tiny phones (320px), short
+   landscape screens, notches and very large displays. See docs/17 / the phase 3 plan.
+   The "side controls" media query below must stay in sync with SIDE_CONTROLS_QUERY in
+   src/app/GameHost.ts. */
+
+/* ── Tiny screens: the HUD must fit 4 controls without overflowing ── */
+@container screen (max-width: 359px) {
+  .hud {
+    gap: 8px;
+    padding-left: max(10px, var(--safe-l));
+    padding-right: max(10px, var(--safe-r));
+  }
+  /* Mute + fullscreen live in the pause menu on tiny screens; keep only Pause. */
+  .hud > .iconbtn:not(:last-child) {
+    display: none;
+  }
+  .hud__best {
+    display: none;
+  }
+}
+@container screen (max-width: 419px) {
+  .hud__label {
+    font-size: 16px;
+  }
+}
+
+/* ── Short landscape screens (phones on their side) ── */
+@media (orientation: landscape) and (max-height: 520px) {
+  /* Console housing: no brand strip / speaker grille, edge-to-edge screen. */
+  :root[data-skin='console'][data-shell] .device {
+    max-width: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border-width: 0;
+    padding: max(4px, var(--safe-t)) max(8px, var(--safe-r)) max(4px, var(--safe-b))
+      max(8px, var(--safe-l));
+    gap: 0;
+  }
+  :root[data-skin='console'][data-shell] .device::before,
+  :root[data-skin='console'][data-shell] .device::after,
+  :root[data-skin='console'] .device__brand,
+  :root[data-skin='console'] .device__grille {
+    display: none;
+  }
+  :root[data-skin='console'][data-shell] .screen {
+    border-radius: 8px;
+  }
+  .hud {
+    padding-top: max(4px, var(--safe-t));
+    padding-bottom: 4px;
+  }
+  .hud__score {
+    font-size: 22px;
+  }
+  .iconbtn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .touch {
+    padding-bottom: calc(8px + var(--safe-b));
+  }
+  /* Overlays: no room for a tall bottom sheet; centre a compact scrollable panel. */
+  .overlay {
+    align-items: center;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .panel {
+    max-height: calc(100dvh - 16px);
+    padding: 14px 16px 14px;
+    gap: 8px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* ── Large displays: let the console housing grow instead of floating tiny ── */
+@media (min-height: 1000px) and (min-width: 900px) {
+  :root[data-skin='console'] .device {
+    max-width: min(640px, 100vw);
+    max-height: min(1300px, 96dvh);
+  }
+}
+@media (min-height: 1400px) and (min-width: 1200px) {
+  :root[data-skin='console'] .device {
+    max-width: min(840px, 100vw);
+    max-height: min(1700px, 96dvh);
+  }
+}
+
+/* ── Phones: bottom nav must never cover content or the install banner ── */
+@media (max-width: 899px) {
+  :root[data-skin='console'] .scroll {
+    padding-bottom: calc(88px + var(--safe-b));
+  }
+  .install-banner {
+    bottom: calc(92px + var(--safe-b));
+  }
+}
+
+/* ── Console skin: tiles are ~100px wide, so show only what fits ── */
+:root[data-skin='console'] .tile {
+  /* The cover is absolutely positioned; the body (the only in-flow child) belongs at the bottom. */
+  justify-content: flex-end;
+}
+:root[data-skin='console'] .tile__stats,
+:root[data-skin='console'] .tile__meta,
+:root[data-skin='console'] .tile__custom,
+:root[data-skin='console'] .tile__play {
+  display: none;
+}
+
+/* ── Launcher stat grid: never force horizontal scroll ── */
+:root[data-skin='launcher'] .statgrid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+/* ── Game-over panel: the actions stay reachable however tall the stats get ── */
+.panel__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 -22px calc(-24px - var(--safe-b));
+  padding: 16px 22px calc(24px + var(--safe-b));
+  background: linear-gradient(transparent, var(--surface) 14px);
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .panel__actions {
+    margin: 0 -16px -14px;
+    padding: 14px 16px 14px;
+  }
+}
+
+/* ── Console tiles: one badge is plenty on a 100px card ── */
+:root[data-skin='console'] .tile__badges .tile__badge:nth-child(n + 2) {
+  display: none;
+}

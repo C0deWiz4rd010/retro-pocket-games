@@ -88,3 +88,37 @@
   align-items: center;
   gap: 8px;
 }
+
+/* Small text helpers (replace one-off inline styles) */
+.text-note {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+}
+.text-note-sm {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.text-ok {
+  color: var(--ok);
+  font-size: var(--fs-md);
+}
+.text-accent-sm {
+  color: var(--accent);
+  font-size: var(--fs-sm);
+}
+.text-accent-strong {
+  color: var(--accent);
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+.footnote {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  padding: 20px 0;
+}
+.overlay-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}

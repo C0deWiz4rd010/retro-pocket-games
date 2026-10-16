@@ -41,7 +41,7 @@ export function showTutorial(meta: GameMeta, onStart: () => void): HTMLElement {
   const panel = el('div', { class: 'panel' }, [
     el('div', { class: 'tut__glyph' }, [meta.glyph]),
     el('div', { class: 'panel__title' }, [meta.title.toUpperCase()]),
-    el('div', { style: 'color:var(--text-muted);font-size:13px' }, [meta.blurb]),
+    el('div', { class: 'text-note' }, [meta.blurb]),
     el(
       'div',
       { class: 'tut__steps' },

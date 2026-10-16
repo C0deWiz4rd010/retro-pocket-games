@@ -272,7 +272,7 @@ export class GameHost {
       pauseBtn,
     ]);
 
-    this.overlayHost = el('div', { style: 'position:absolute;inset:0;pointer-events:none' });
+    this.overlayHost = el('div', { class: 'overlay-host' });
 
     this.screenView.append(hud, this.buildControls(), this.buildAssist(), this.overlayHost);
     this.watchInsets();
@@ -589,9 +589,7 @@ export class GameHost {
         ),
       );
     } else {
-      rows.push(
-        el('div', { style: 'color:var(--text-muted);font-size:13px' }, [t('controls.tapHint')]),
-      );
+      rows.push(el('div', { class: 'text-note' }, [t('controls.tapHint')]));
     }
     rows.push(
       el('button', { class: 'btn btn--primary btn--block', onClick: () => this.showPauseMenu() }, [
@@ -837,7 +835,7 @@ export class GameHost {
     const rows: (Node | string)[] = [
       el('div', { class: 'panel__title' }, [title]),
       scoreEl,
-      el('div', { style: 'color:var(--text-muted);font-size:13px' }, [bestLine]),
+      el('div', { class: 'text-note' }, [bestLine]),
       el('div', { class: 'run-comment' }, [this.gameOverComment(ratio, isBest, practice)]),
       this.performanceGrid(score, prevBest, ratio, custom),
       el('div', { class: 'panel__xp' }, [
@@ -845,12 +843,7 @@ export class GameHost {
       ]),
       this.rewardBreakdown(reward.breakdown),
     ];
-    if (leveledUp)
-      rows.push(
-        el('div', { style: 'color:var(--ok);font-size:13px' }, [
-          t('game.levelUp', { n: newLevel }),
-        ]),
-      );
+    if (leveledUp) rows.push(el('div', { class: 'text-ok' }, [t('game.levelUp', { n: newLevel })]));
     if (this.opts.daily)
       rows.push(
         el('div', { class: 'daily-progress' }, [
@@ -867,9 +860,7 @@ export class GameHost {
     }
 
     if (mult !== 1) {
-      rows.push(
-        el('div', { style: 'color:var(--accent);font-size:12px' }, [`×${mult} ${t('game.bonus')}`]),
-      );
+      rows.push(el('div', { class: 'text-accent-sm' }, [`×${mult} ${t('game.bonus')}`]));
     }
 
     rows.push(
@@ -1040,9 +1031,7 @@ export class GameHost {
       value: playerName(),
     }) as HTMLInputElement;
     const wrap = el('div', { class: 'name-entry' }, [
-      el('div', { style: 'color:var(--accent);font-size:13px;font-weight:700' }, [
-        t('game.newRecord'),
-      ]),
+      el('div', { class: 'text-accent-strong' }, [t('game.newRecord')]),
       el('div', { class: 'name-entry__row' }, [
         input,
         el(
@@ -1054,7 +1043,7 @@ export class GameHost {
               setPlayerName(name);
               void addEntry(this.meta.id, name, score);
               audio.sfx('coin');
-              wrap.replaceChildren(el('div', { style: 'color:var(--ok);font-size:13px' }, ['✓']));
+              wrap.replaceChildren(el('div', { class: 'text-ok' }, ['✓']));
             },
           },
           [t('game.save')],

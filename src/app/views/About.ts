@@ -32,10 +32,6 @@ export function renderAbout(): HTMLElement {
     el('div', { class: 'section-title' }, [t('about.links')]),
     link(REPO, '⌨  GitHub'),
     link(`${REPO}/issues`, '🐞  ' + t('about.report')),
-    el(
-      'div',
-      { style: 'text-align:center;color:var(--text-muted);font-size:11px;padding:20px 0' },
-      [t('about.madeWith')],
-    ),
+    el('div', { class: 'footnote' }, [t('about.madeWith')]),
   ]);
 }

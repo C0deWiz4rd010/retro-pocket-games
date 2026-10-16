@@ -78,9 +78,7 @@ export function renderAchievements(): HTMLElement {
   const header = el('div', { class: 'ach-header' }, [
     count,
     el('div', { class: 'xpbar', style: 'margin:8px 0' }, [bar]),
-    el('div', { style: 'color:var(--text-muted);font-size:12px' }, [
-      t('ach.progress', { a: unlockedCount(), b: total }),
-    ]),
+    el('div', { class: 'text-note-sm' }, [t('ach.progress', { a: unlockedCount(), b: total })]),
   ]);
 
   container.append(header, tabs, grid);

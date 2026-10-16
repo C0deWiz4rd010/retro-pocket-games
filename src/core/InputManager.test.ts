@@ -20,11 +20,14 @@ describe('InputManager gating', () => {
   it('ignores game input while blocked but still lets pause through', () => {
     const im = new InputManager();
     const log = record(im);
+    let pauses = 0;
+    im.onPause(() => pauses++);
     im.setBlocked(true);
     im.press('a');
     im.press('pause');
     expect(im.isDown('a')).toBe(false);
-    expect(log.downs).toEqual(['pause']);
+    expect(log.downs).toEqual([]);
+    expect(pauses).toBe(1);
   });
 
   it('releases held actions when it becomes blocked so nothing sticks after resume', () => {
@@ -54,5 +57,52 @@ describe('InputManager gating', () => {
     im.press('a');
     im.press('a');
     expect(log.downs).toEqual(['a']);
+  });
+});
+
+describe('aim cursor for pointer-only games', () => {
+  const taps = (im: InputManager): { x: number; y: number }[] => {
+    const out: { x: number; y: number }[] = [];
+    im.on('tap', (p) => out.push(p));
+    return out;
+  };
+
+  it('arrow keys steer the cursor and A taps at its position', () => {
+    const im = new InputManager();
+    im.setVirtualBounds(200, 100);
+    const t = taps(im);
+    im.press('right');
+    im.tickCursor(0.1);
+    im.release('right');
+    im.press('a');
+    expect(t).toHaveLength(1);
+    expect(t[0]!.x).toBeGreaterThan(100); // moved right of the centre
+    expect(t[0]!.y).toBe(50);
+  });
+
+  it('clamps the cursor to the playfield', () => {
+    const im = new InputManager();
+    im.setVirtualBounds(100, 100);
+    const t = taps(im);
+    im.press('left');
+    for (let i = 0; i < 50; i++) im.tickCursor(0.1);
+    im.press('a');
+    expect(t[0]!.x).toBe(0);
+  });
+
+  it('is off when the game listens for key events itself', () => {
+    const im = new InputManager();
+    im.on('down', () => undefined);
+    const t = taps(im);
+    im.press('a');
+    expect(t).toHaveLength(0);
+  });
+
+  it('is off when the game polls held keys', () => {
+    const im = new InputManager();
+    const t = taps(im);
+    im.isDown('left'); // a game polling in update()
+    im.press('a');
+    expect(t).toHaveLength(0);
   });
 });

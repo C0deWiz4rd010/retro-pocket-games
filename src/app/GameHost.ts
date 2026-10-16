@@ -130,6 +130,8 @@ export class GameHost {
       keyMap: keyMapFromBindings(settings().keyBindings),
     });
     this.input.attach(pixi.canvas, pixi.screenToVirtual);
+    this.input.setVirtualBounds(this.meta.virtual.w, this.meta.virtual.h);
+    this.cleanups.push(this.input.on('cursor', ({ x, y }) => this.moveAimCursor(x, y)));
     // Identify the play surface for assistive tech (canvas content is otherwise opaque).
     pixi.canvas.setAttribute('role', 'img');
     pixi.canvas.setAttribute('aria-label', this.meta.title);
@@ -162,8 +164,7 @@ export class GameHost {
 
     // Pause on Esc/P (keyboard) or Start (gamepad). Enter stays a game action. Pressing it again
     // from the main pause menu resumes.
-    this.input.on('down', (a) => {
-      if (a !== 'pause') return;
+    this.input.onPause(() => {
       if (this.paused) this.resume();
       else this.pause();
     });
@@ -171,6 +172,7 @@ export class GameHost {
     const timeScale = opts.timeScale ?? 1;
     this.tickFn = (tk: Ticker) => {
       this.input.pollGamepad();
+      if (this.running) this.input.tickCursor(Math.min(tk.deltaMS / 1000, 0.05));
       const dt = Math.min(tk.deltaMS / 1000, 0.05);
       perf.tick(dt);
       this.fx.update(dt);
@@ -197,6 +199,18 @@ export class GameHost {
     } else {
       this.setRunning(true);
     }
+  }
+
+  /** Draw/move the keyboard aim cursor (only exists once the player first uses it). */
+  private moveAimCursor(x: number, y: number): void {
+    let node = this.screenView.querySelector<HTMLElement>('.aim-cursor');
+    if (!node) {
+      node = el('div', { class: 'aim-cursor', 'aria-hidden': 'true' });
+      this.screenView.append(node);
+    }
+    const p = pixi.virtualToClient(x, y);
+    const r = this.screenView.getBoundingClientRect();
+    node.style.transform = `translate(${p.x - r.left}px, ${p.y - r.top}px)`;
   }
 
   /** Pause from outside (e.g. tab blur). Safe to call repeatedly. */

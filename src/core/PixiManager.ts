@@ -198,6 +198,14 @@ export class PixiManager {
     });
   };
 
+  /** Inverse of screenToVirtual: virtual game coords → client (viewport) px. */
+  virtualToClient = (x: number, y: number): { x: number; y: number } => {
+    const rect = (this.rect ??= this.app.canvas.getBoundingClientRect());
+    const sx = this.rotated ? this.offsetX - this.scale * y : this.offsetX + this.scale * x;
+    const sy = this.rotated ? this.offsetY + this.scale * x : this.offsetY + this.scale * y;
+    return { x: rect.left + sx, y: rect.top + sy };
+  };
+
   clearWorld(): void {
     this.insets = NO_INSETS;
     for (const child of this.world.removeChildren()) child.destroy({ children: true });

@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { bootApp } from './helpers';
+import { bootApp, launchGame } from './helpers';
 import { seedApp } from './seed';
 
 const VIEWS = ['', 'settings', 'achievements', 'scores', 'profile', 'about'];
@@ -70,4 +70,32 @@ test('pinch zoom is not disabled', async ({ page }) => {
   await bootApp(page);
   const content = await page.locator('meta[name="viewport"]').getAttribute('content');
   expect(content).not.toMatch(/user-scalable=no|maximum-scale/);
+});
+
+test('pointer-only games get a keyboard aim cursor', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await seedApp(page, { skipIntro: true });
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await bootApp(page);
+  await launchGame(page, 'tictactoe');
+  await expect(page.locator('.aim-cursor')).toHaveCount(0);
+  await page.keyboard.down('ArrowRight');
+  await page.waitForTimeout(250);
+  await page.keyboard.up('ArrowRight');
+  await expect(page.locator('.aim-cursor')).toHaveCount(1);
+  await page.keyboard.press('Space');
+  await page.waitForTimeout(300);
+  expect(errors).toEqual([]);
+});
+
+test('German locale sets <html lang> and translates game text', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await seedApp(page, { settings: { locale: 'de' }, skipIntro: true });
+  await bootApp(page);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+  await page.evaluate(() => (location.hash = '#/play/pacman'));
+  await expect(page.locator('.start-card__sub')).toHaveText(
+    'Friss die Punkte, weiche den Geistern aus.',
+  );
 });

@@ -25,6 +25,7 @@ import { confettiBurst } from './confetti';
 import { GAMES } from '@core/Registry';
 import { t, hintLabel } from '@i18n/index';
 import { icon } from '@ui/icons';
+import { markAsDialog, trapFocus } from '@ui/dialog';
 import { enterPop } from '@ui/motion';
 import { announce } from '@ui/announce';
 import { attachTooltip } from '@ui/tooltip';
@@ -1028,6 +1029,7 @@ export class GameHost {
       class: 'name-input',
       maxlength: '8',
       placeholder: t('game.enterName'),
+      'aria-label': t('game.enterName'),
       value: playerName(),
     }) as HTMLInputElement;
     const wrap = el('div', { class: 'name-entry' }, [
@@ -1055,36 +1057,14 @@ export class GameHost {
 
   private showOverlay(panel: HTMLElement): void {
     this.clearOverlay();
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-modal', 'true');
+    markAsDialog(panel);
     const ov = el('div', { class: 'overlay' }, [panel]);
     ov.dataset.overlay = '1';
     // Remember what had focus so we can restore it when the dialog closes.
     this.overlayReturnFocus = document.activeElement as HTMLElement | null;
     this.screenView.append(ov);
     enterPop(panel);
-    const focusables = (): HTMLElement[] =>
-      [
-        ...panel.querySelectorAll<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])'),
-      ].filter((n) => !n.hasAttribute('disabled'));
-    focusables()[0]?.focus();
-    // Trap Tab within the modal dialog.
-    const trap = (e: KeyboardEvent): void => {
-      if (e.key !== 'Tab') return;
-      const items = focusables();
-      if (!items.length) return;
-      const first = items[0]!;
-      const last = items[items.length - 1]!;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    ov.addEventListener('keydown', trap);
-    this.overlayFocusCleanup = () => ov.removeEventListener('keydown', trap);
+    this.overlayFocusCleanup = trapFocus(ov, panel);
   }
   private clearOverlay(): void {
     this.overlayFocusCleanup?.();

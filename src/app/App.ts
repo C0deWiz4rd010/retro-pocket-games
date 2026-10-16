@@ -32,6 +32,7 @@ import { pickDailyGame, dailySeed, dailyModifier, nextDailyLabel } from './daily
 import { t, hintLabel } from '@i18n/index';
 import { icon } from '@ui/icons';
 import { emptyState } from '@ui/emptyState';
+import { openDialog, trapFocus } from '@ui/dialog';
 import { ACHIEVEMENTS, isUnlocked } from '@store/achievements';
 
 /** Games whose `custom` payload carries a meaningful secondary best worth showing on the tile. */
@@ -74,7 +75,7 @@ export class App {
     const screen = el('div', { class: 'screen' });
     this.view = el('div', { class: 'screen__view' });
     const crt = el('div', { class: 'screen__crt' });
-    this.nav = el('nav', { class: 'nav', 'aria-label': 'Games' });
+    this.nav = el('nav', { class: 'nav', 'aria-label': t('nav.games') });
     this.scrim = el('div', { class: 'nav__scrim', onClick: () => this.closeNav() });
     screen.append(crt, this.view, this.scrim, this.nav);
 
@@ -91,12 +92,16 @@ export class App {
       ),
     ]);
 
-    this.rail = el('aside', { class: 'rail', 'aria-label': 'Navigation' });
+    this.rail = el('aside', { class: 'rail', 'aria-label': t('nav.navigation') });
 
     mount(el('div', { class: 'frame' }, [this.rail, device]));
 
     this.screenEl = screen;
     this.buildNav();
+    this.nav.inert = true; // closed until opened
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.nav.classList.contains('open')) this.closeNav();
+    });
 
     window.addEventListener('hashchange', () => this.route());
     window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
@@ -149,27 +154,20 @@ export class App {
       ['Esc / P', t('kbd.pause')],
       ['?', t('kbd.help')],
     ];
-    const overlay = el('div', { class: 'overlay kbd-help', onClick: () => overlay.remove() }, [
-      el(
-        'div',
-        {
-          class: 'panel',
-          role: 'dialog',
-          'aria-modal': 'true',
-          onClick: (e: Event) => e.stopPropagation(),
-        },
-        [
-          el('div', { class: 'panel__title' }, [t('kbd.title')]),
-          ...rowsData.map(([k, v]) =>
-            el('div', { class: 'kbd-row' }, [el('kbd', {}, [k]), el('span', {}, [v])]),
-          ),
-          el('button', { class: 'btn btn--primary btn--block', onClick: () => overlay.remove() }, [
-            t('game.resume'),
-          ]),
-        ],
+    const panel = el('div', { class: 'panel' }, [
+      el('div', { class: 'panel__title' }, [t('kbd.title')]),
+      ...rowsData.map(([k, v]) =>
+        el('div', { class: 'kbd-row' }, [el('kbd', {}, [k]), el('span', {}, [v])]),
       ),
+      el('button', { class: 'btn btn--primary btn--block', onClick: () => dlg.close() }, [
+        t('game.resume'),
+      ]),
     ]);
-    document.querySelector('.screen__view')?.append(overlay);
+    const dlg = openDialog({
+      parent: document.querySelector<HTMLElement>('.screen__view') ?? document.body,
+      panel,
+      overlayClass: 'kbd-help',
+    });
   }
 
   /**
@@ -279,7 +277,12 @@ export class App {
     const topbar = el('div', { class: 'topbar' }, [
       el(
         'button',
-        { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+        {
+          class: 'iconbtn topbar__menu',
+          'aria-label': t('nav.menu'),
+          'aria-expanded': 'false',
+          onClick: () => this.openNav(),
+        },
         [icon('menu')],
       ),
       el('div', { class: 'topbar__title' }, ['RETRO POCKET']),
@@ -496,7 +499,7 @@ export class App {
     }
     if (streak > 0)
       children.push(el('div', { class: 'hero__streak' }, [t('home.streak', { n: streak })]));
-    return el('div', { class: 'hero', role: 'button', onClick: () => this.go('daily') }, children);
+    return el('a', { class: 'hero', href: '#/daily' }, children);
   }
 
   /** Surprise me: jump straight into a random available game. */
@@ -519,17 +522,13 @@ export class App {
         el('div', { class: 'statcard__label' }, [label]),
       ]);
     return el('div', { class: 'statgrid' }, [
-      el(
-        'div',
-        { class: 'statcard statcard--link', role: 'button', onClick: () => this.go('profile') },
-        [
-          el('div', { class: 'statcard__val' }, [`Lv.${p.level}`]),
-          el('div', { class: 'xpbar', style: 'margin-top:6px' }, [
-            el('i', { style: `width:${pct}%` }),
-          ]),
-          el('div', { class: 'statcard__label' }, [`${p.xp}/${need} XP`]),
-        ],
-      ),
+      el('a', { class: 'statcard statcard--link', href: '#/profile' }, [
+        el('div', { class: 'statcard__val' }, [`Lv.${p.level}`]),
+        el('div', { class: 'xpbar', style: 'margin-top:6px' }, [
+          el('i', { style: `width:${pct}%` }),
+        ]),
+        el('div', { class: 'statcard__label' }, [`${p.xp}/${need} XP`]),
+      ]),
       card(`🪙 ${p.tokens}`, t('home.tokens')),
       card(p.stats.gamesPlayed, t('home.played')),
       card(p.stats.totalScore.toLocaleString(), t('home.totalScore')),
@@ -539,11 +538,10 @@ export class App {
 
   private achievementsCard(): HTMLElement {
     return el(
-      'div',
+      'a',
       {
         class: 'statcard statcard--link',
-        role: 'button',
-        onClick: () => this.go('achievements'),
+        href: '#/achievements',
       },
       [
         el('div', { class: 'statcard__val' }, ['🏆']),
@@ -832,21 +830,23 @@ export class App {
       {
         class: `tile tile--rank-${rank}${g.available ? '' : ' tile--soon'}${mastery >= 3 ? ' is-mastered' : ''}`,
         style: `--tile-accent:${g.accent}`,
-        role: 'button',
-        tabindex: g.available ? 0 : -1,
-        onClick: () => {
-          if (g.available) this.go(`play/${g.id}`);
-        },
-        onKeydown: (event: Event) => {
-          const key = (event as KeyboardEvent).key;
-          if (g.available && (key === 'Enter' || key === ' ')) {
-            event.preventDefault();
-            this.go(`play/${g.id}`);
-          }
-        },
-        'aria-label': g.title,
       },
       [
+        // The whole card is one real link (keyboard + screen reader friendly); the favourite
+        // button is its sibling, so interactive elements are never nested.
+        el('a', {
+          class: 'tile__hit',
+          href: g.available ? `#/play/${g.id}` : undefined,
+          'aria-disabled': g.available ? undefined : 'true',
+          'aria-label': [
+            g.title,
+            g.available
+              ? best
+                ? t('tile.best', { n: best })
+                : t('tile.noScore')
+              : t('tile.comingSoon'),
+          ].join('. '),
+        }),
         el(
           'div',
           { class: 'tile__badges' },
@@ -863,12 +863,13 @@ export class App {
               'div',
               {
                 class: `mastery mastery--${mastery}`,
+                role: 'img',
                 'aria-label': t('tile.masteryAria', { n: mastery }),
               },
               [el('i', { style: `width:${(mastery / 3) * 100}%` })],
             )
           : '',
-        el('div', { class: 'tile__body' }, [
+        el('div', { class: 'tile__body', 'aria-hidden': 'true' }, [
           el('div', { class: 'tile__title' }, [g.title]),
           el('div', { class: 'tile__best' }, [
             g.available
@@ -1012,7 +1013,8 @@ export class App {
       'button',
       {
         class: `tile__fav${isFavorite(id) ? ' is-fav' : ''}`,
-        'aria-label': 'Favorite',
+        'aria-label': t('tile.favorite'),
+        'aria-pressed': String(isFavorite(id)),
         onClick: (e: Event) => {
           e.stopPropagation();
           toggleFavorite(id);
@@ -1112,15 +1114,34 @@ export class App {
     }
   }
 
+  private navReturnFocus: HTMLElement | null = null;
+  private navUntrap: (() => void) | null = null;
+
   private openNav(): void {
     audio.sfx('blip');
+    this.navReturnFocus = document.activeElement as HTMLElement | null;
+    this.nav.inert = false;
     this.nav.classList.add('open');
     this.scrim.classList.add('open');
+    this.syncMenuButtons(true);
+    // The drawer behaves like a modal on phones: keep Tab inside it until it closes.
+    this.navUntrap = trapFocus(this.nav, this.nav);
   }
-
   private closeNav(): void {
+    const wasOpen = this.nav.classList.contains('open');
     this.nav.classList.remove('open');
     this.scrim.classList.remove('open');
+    // Closed drawer items must not stay in the tab order or the accessibility tree.
+    this.nav.inert = true;
+    this.syncMenuButtons(false);
+    this.navUntrap?.();
+    this.navUntrap = null;
+    if (wasOpen && this.navReturnFocus?.isConnected) this.navReturnFocus.focus();
+    this.navReturnFocus = null;
+  }
+  private syncMenuButtons(expanded: boolean): void {
+    for (const b of document.querySelectorAll('.topbar__menu'))
+      b.setAttribute('aria-expanded', String(expanded));
   }
 
   // ───────────────────────────── settings / bios ─────────────────────────────
@@ -1153,12 +1174,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, ['SETTINGS']),
       ]),
       renderSettings(),
@@ -1174,12 +1202,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('ach.title')]),
       ]),
       renderAchievements(),
@@ -1196,10 +1231,17 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: back }, [icon('back')]),
+        el('button', { class: 'iconbtn', 'aria-label': t('game.back'), onClick: back }, [
+          icon('back'),
+        ]),
         el('div', { class: 'topbar__title' }, [t('nav.scores')]),
       ]),
       await renderScores(arg),
@@ -1215,12 +1257,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('nav.profile')]),
       ]),
       renderProfile(),
@@ -1236,12 +1285,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('nav.about')]),
       ]),
       renderAbout(),
@@ -1285,12 +1341,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('start.cartridge')]),
       ]),
       el('div', { class: 'scroll start-sheet' }, [

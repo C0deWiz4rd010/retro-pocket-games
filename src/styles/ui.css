@@ -182,3 +182,9 @@
 .a11y-reduced-motion .loader {
   animation-duration: 2.4s;
 }
+
+.btn--sm {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: var(--fs-md);
+}

@@ -1,6 +1,10 @@
 import type { Dict } from './index';
 
 export const de: Dict = {
+  'tile.favorite': 'Favorit',
+  'nav.menu': 'Menü',
+  'nav.games': 'Spiele',
+  'nav.navigation': 'Navigation',
   'nav.home': 'Start',
   'nav.daily': 'Tages-Challenge',
   'nav.scores': 'Bestenliste',

@@ -1,6 +1,7 @@
 import { el } from '@utils/dom';
 import { audio } from '@core/AudioManager';
 import { t } from '@i18n/index';
+import { markAsDialog, trapFocus } from '@ui/dialog';
 
 interface Screen {
   glyph: string;
@@ -63,16 +64,15 @@ export function showOnboarding(onDone: () => void): HTMLElement {
     t('onboard.skip'),
   ]);
 
-  const card = el('div', { class: 'onboard__card', role: 'dialog', 'aria-modal': 'true' }, [
-    skip,
-    glyph,
-    title,
-    body,
-    dots,
-    nextBtn,
-  ]);
+  const card = el('div', { class: 'onboard__card' }, [skip, glyph, title, body, dots, nextBtn]);
   const overlay = el('div', { class: 'overlay onboard' }, [card]);
   overlay.dataset.overlay = '1';
   render();
+  markAsDialog(card);
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') finish();
+  });
+  // Trap focus once the caller has attached the overlay (it does so right after we return).
+  queueMicrotask(() => trapFocus(overlay, card, nextBtn));
   return overlay;
 }

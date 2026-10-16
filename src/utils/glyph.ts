@@ -18,7 +18,7 @@ export function glyphEl(glyph: string, className = ''): HTMLElement {
   const src = emojiSrc(glyph);
   const cls = className ? ` ${className}` : '';
   if (src) {
-    return el('img', { class: `emoji${cls}`, src, alt: glyph, loading: 'lazy', draggable: false });
+    return el('img', { class: `emoji${cls}`, src, alt: '', loading: 'lazy', draggable: false });
   }
-  return el('span', { class: `emoji-mono${cls}` }, [glyph]);
+  return el('span', { class: `emoji-mono${cls}`, 'aria-hidden': 'true' }, [glyph]);
 }

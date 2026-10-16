@@ -1,5 +1,6 @@
 import type { GameMeta } from '@core/Registry';
 import { emojiSrc } from '@utils/glyph';
+import { t } from '@i18n/index';
 
 /** Load an image URL into an HTMLImageElement (for drawing emoji art onto the canvas). */
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -96,14 +97,14 @@ export async function shareScoreCard(
   // score
   ctx.fillStyle = muted;
   ctx.font = '600 40px Inter, system-ui, sans-serif';
-  ctx.fillText(isBest ? 'NEW PERSONAL BEST' : 'SCORE', W / 2, 720);
+  ctx.fillText(isBest ? t('share.newBest') : t('share.score'), W / 2, 720);
   ctx.fillStyle = isBest ? accent : primary;
   ctx.font = '900 200px Inter, system-ui, sans-serif';
   ctx.fillText(score.toLocaleString(), W / 2, 920);
 
   ctx.fillStyle = muted;
   ctx.font = '500 34px Inter, system-ui, sans-serif';
-  ctx.fillText('play it at the link below', W / 2, 1010);
+  ctx.fillText(t('share.playLink'), W / 2, 1010);
 
   const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
   if (!blob) return;
@@ -111,7 +112,7 @@ export async function shareScoreCard(
 
   const shareData: ShareData = {
     title: 'Retro Pocket',
-    text: `I scored ${score.toLocaleString()} in ${meta.title} on Retro Pocket!`,
+    text: t('share.text', { score: score.toLocaleString(), game: meta.title }),
     url: location.origin + location.pathname,
   };
   // Prefer native share with the image where supported.

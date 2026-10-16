@@ -42,7 +42,7 @@ export function initPwaUx(): void {
           'button',
           {
             class: 'iconbtn',
-            'aria-label': 'Dismiss',
+            'aria-label': t('common.dismiss'),
             onClick: () => {
               localStorage.setItem('rp:iosHintDismissed', '1');
               banner.remove();
@@ -78,7 +78,7 @@ export function initPwaUx(): void {
           'button',
           {
             class: 'iconbtn',
-            'aria-label': 'Dismiss',
+            'aria-label': t('common.dismiss'),
             onClick: () => {
               localStorage.setItem('rp:installDismissed', '1');
               banner.remove();
@@ -128,7 +128,7 @@ export function updateReadyBanner(reload: () => void): void {
         'button',
         {
           class: 'iconbtn',
-          'aria-label': 'Dismiss',
+          'aria-label': t('common.dismiss'),
           onClick: (e: Event) =>
             (e.currentTarget as HTMLElement).closest('.install-banner')?.remove(),
         },

@@ -23,7 +23,7 @@ import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
 import { confettiBurst } from './confetti';
 import { GAMES } from '@core/Registry';
-import { t, hintLabel } from '@i18n/index';
+import { t, hintLabel, gameBlurb, gameTutorialSteps } from '@i18n/index';
 import { icon } from '@ui/icons';
 import { markAsDialog, trapFocus } from '@ui/dialog';
 import { enterPop } from '@ui/motion';
@@ -603,10 +603,10 @@ export class GameHost {
 
   /** Pause sub-panel: a short rules / how-to-play blurb. */
   private showRulesPanel(): void {
-    const steps = this.meta.tutorialSteps ?? [];
+    const steps = gameTutorialSteps(this.meta).slice(1, 2);
     const rows: (Node | string)[] = [
       el('div', { class: 'panel__title' }, [t('game.rules')]),
-      el('div', { class: 'run-comment' }, [this.meta.blurb]),
+      el('div', { class: 'run-comment' }, [gameBlurb(this.meta)]),
     ];
     if (steps.length)
       rows.push(
@@ -840,7 +840,7 @@ export class GameHost {
       el('div', { class: 'run-comment' }, [this.gameOverComment(ratio, isBest, practice)]),
       this.performanceGrid(score, prevBest, ratio, custom),
       el('div', { class: 'panel__xp' }, [
-        practice ? t('go.rewardsPaused') : `+${xpGain} Pixel XP  +${reward.tokenGain} Pocket Chips`,
+        practice ? t('go.rewardsPaused') : t('go.rewards', { xp: xpGain, chips: reward.tokenGain }),
       ]),
       this.rewardBreakdown(reward.breakdown),
     ];

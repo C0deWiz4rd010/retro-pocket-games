@@ -1,5 +1,5 @@
 import { el } from '@utils/dom';
-import { t } from '@i18n/index';
+import { t, gameBlurb, hintLabel } from '@i18n/index';
 import type { GameMeta, Kit } from '@core/Registry';
 
 /** Generic control-hint i18n keys per engine-kit; shown once before first play. */
@@ -30,18 +30,17 @@ export function showTutorial(meta: GameMeta, onStart: () => void): HTMLElement {
   };
   window.addEventListener('keydown', onKey);
 
-  const hints = meta.tutorialSteps?.length
-    ? meta.tutorialSteps
-    : [
-        meta.blurb,
-        t(HINT_KEY[meta.kit]),
-        ...(meta.controls?.hints.length ? [`Controls: ${meta.controls.hints.join(' / ')}`] : []),
-      ];
+  const hints = [
+    t(HINT_KEY[meta.kit]),
+    ...(meta.controls?.hints.length
+      ? [`${t('tut.controls')}: ${meta.controls.hints.map(hintLabel).join(' / ')}`]
+      : []),
+  ];
 
   const panel = el('div', { class: 'panel' }, [
     el('div', { class: 'tut__glyph' }, [meta.glyph]),
     el('div', { class: 'panel__title' }, [meta.title.toUpperCase()]),
-    el('div', { class: 'text-note' }, [meta.blurb]),
+    el('div', { class: 'text-note' }, [gameBlurb(meta)]),
     el(
       'div',
       { class: 'tut__steps' },

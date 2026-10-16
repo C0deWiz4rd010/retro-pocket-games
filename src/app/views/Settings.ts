@@ -164,7 +164,7 @@ function rows(rerender: () => void): HTMLElement[] {
         [
           { value: 'off', label: t('settings.off') },
           { value: 'css', label: 'CRT' },
-          { value: 'full', label: 'Full' },
+          { value: 'full', label: t('settings.fxFull') },
         ],
         (mode) => patchScreenFx({ mode }),
       ),
@@ -254,7 +254,8 @@ function rows(rerender: () => void): HTMLElement[] {
     ),
 
     el('div', { class: 'section-title' }, [t('settings.keyBindings')]),
-    ...REBINDABLE.map(({ action, label, def }) => {
+    ...REBINDABLE.map(({ action, label: labelKey, def }) => {
+      const label = t(labelKey);
       const code = s.keyBindings[action] ?? def;
       const btn = el(
         'button',
@@ -346,12 +347,12 @@ function rows(rerender: () => void): HTMLElement[] {
 
 /** Rebindable gameplay actions and their default key codes (shown in the rebinding UI). */
 const REBINDABLE: { action: Action; label: string; def: string }[] = [
-  { action: 'up', label: '▲ Up', def: 'ArrowUp' },
-  { action: 'down', label: '▼ Down', def: 'ArrowDown' },
-  { action: 'left', label: '◀ Left', def: 'ArrowLeft' },
-  { action: 'right', label: '▶ Right', def: 'ArrowRight' },
-  { action: 'a', label: 'A · Action', def: 'Space' },
-  { action: 'b', label: 'B · Secondary', def: 'KeyX' },
+  { action: 'up', label: 'key.up', def: 'ArrowUp' },
+  { action: 'down', label: 'key.down', def: 'ArrowDown' },
+  { action: 'left', label: 'key.left', def: 'ArrowLeft' },
+  { action: 'right', label: 'key.right', def: 'ArrowRight' },
+  { action: 'a', label: 'key.a', def: 'Space' },
+  { action: 'b', label: 'key.b', def: 'KeyX' },
 ];
 
 /** Friendly label for a KeyboardEvent.code (e.g. KeyZ → Z, ArrowUp → ↑). */

@@ -49,6 +49,7 @@
 }
 .topbar__title {
   font-family: var(--font-pixel);
+  text-transform: uppercase; /* every screen title reads the same, whatever the i18n casing */
   font-size: 13px;
   color: var(--primary);
   text-shadow: 0 0 10px var(--glow);

@@ -31,6 +31,7 @@ import { renderAbout } from './views/About';
 import { pickDailyGame, dailySeed, dailyModifier, nextDailyLabel } from './daily';
 import { t, hintLabel } from '@i18n/index';
 import { icon } from '@ui/icons';
+import { emptyState } from '@ui/emptyState';
 import { ACHIEVEMENTS, isUnlocked } from '@store/achievements';
 
 /** Games whose `custom` payload carries a meaningful secondary best worth showing on the tile. */
@@ -59,6 +60,7 @@ export class App {
   private host: GameHost | null = null;
   private screenEl!: HTMLElement;
   private engine: Promise<typeof import('./GameHost')> | null = null;
+  private engineReady = false;
   /** Bumped on every navigation so a game launch that was still loading can abort. */
   private launchSeq = 0;
   private homeFilter: GameMeta['group'] | 'all' = 'all';
@@ -181,12 +183,28 @@ export class App {
         import('./GameHost'),
       ]);
       await pixi.init(this.screenEl);
+      this.engineReady = true;
       return hostModule;
     })().catch((err) => {
       this.engine = null; // allow a retry after a network failure
       throw err;
     });
     return this.engine;
+  }
+
+  /** On the first launch (engine not prefetched yet, e.g. slow network) show a loading state. */
+  private async loadEngineWithSpinner(): Promise<typeof import('./GameHost')> {
+    if (this.engineReady) return this.loadEngine();
+    const spinner = el('div', { class: 'overlay overlay--load', role: 'status' }, [
+      el('div', { class: 'loader' }),
+      el('div', { class: 'loader__text' }, [t('game.loading')]),
+    ]);
+    this.screenEl.append(spinner);
+    try {
+      return await this.loadEngine();
+    } finally {
+      spinner.remove();
+    }
   }
 
   private preloadEngineWhenIdle(): void {
@@ -711,8 +729,7 @@ export class App {
       );
       wrap.append(grid);
     }
-    if (!pool.length)
-      wrap.append(el('div', { class: 'search-empty' }, ['No cartridges match those filters']));
+    if (!pool.length) wrap.append(this.noMatches());
     return wrap;
   }
 
@@ -729,8 +746,27 @@ export class App {
             { class: 'tilegrid' },
             games.map((g) => this.tile(g)),
           )
-        : el('div', { class: 'search-empty' }, ['No cartridges match those filters']),
+        : this.noMatches(),
     ]);
+  }
+
+  /** Empty library result with a one-tap way back to the full list. */
+  private noMatches(): HTMLElement {
+    return emptyState({
+      icon: 'search',
+      title: t('empty.library.title'),
+      hint: t('empty.library.hint'),
+      action: {
+        label: t('empty.library.clear'),
+        onClick: () => {
+          this.libraryQuery = '';
+          this.libraryActive.clear();
+          this.homeFilter = 'all';
+          this.homeCollection = null;
+          void this.renderHome();
+        },
+      },
+    });
   }
 
   private filteredSortedGames(): GameMeta[] {
@@ -1409,7 +1445,7 @@ export class App {
     }
     this.markActiveNav(id);
     const seq = this.launchSeq;
-    const { GameHost } = await this.loadEngine();
+    const { GameHost } = await this.loadEngineWithSpinner();
     if (seq !== this.launchSeq) return; // navigated away while the engine was loading
     this.host = new GameHost(this.view, meta, () => this.go(''));
     await this.host.start({
@@ -1428,7 +1464,7 @@ export class App {
     this.markActiveNav('daily');
     const mod = dailyModifier(meta);
     const seq = this.launchSeq;
-    const { GameHost } = await this.loadEngine();
+    const { GameHost } = await this.loadEngineWithSpinner();
     if (seq !== this.launchSeq) return;
     this.host = new GameHost(this.view, meta, () => this.go(''));
     await this.host.start({

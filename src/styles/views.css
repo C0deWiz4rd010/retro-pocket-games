@@ -224,11 +224,6 @@
   outline: 2px solid var(--primary);
   border-color: var(--primary);
 }
-.search-empty {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 24px;
-}
 
 /* ── Favorite star on tiles ── */
 .tile__fav {
@@ -385,11 +380,6 @@
   font-family: var(--font-hud);
   font-size: 18px;
   color: var(--primary);
-}
-.lb-empty {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 30px 16px;
 }
 
 /* ── Profile ── */

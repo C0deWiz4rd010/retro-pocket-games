@@ -4,6 +4,7 @@ import { GAMES, getGame } from '@core/Registry';
 import { loadScores, getBest } from '@store/scores';
 import { loadLeaderboard, getEntries } from '@store/leaderboard';
 import { t } from '@i18n/index';
+import { emptyState } from '@ui/emptyState';
 
 /**
  * Scores hub. With no argument it lists every game's personal best (linking into detail);
@@ -24,7 +25,7 @@ async function renderAll(): Promise<HTMLElement> {
 
   const list =
     withScores.length === 0
-      ? el('div', { class: 'lb-empty' }, [t('lb.empty')])
+      ? emptyState({ icon: 'trophy', title: t('lb.empty') })
       : el(
           'div',
           { class: 'score-list' },
@@ -54,7 +55,7 @@ async function renderOne(gameId: string): Promise<HTMLElement> {
 
   const board =
     entries.length === 0
-      ? el('div', { class: 'lb-empty' }, [t('lb.empty')])
+      ? emptyState({ icon: 'trophy', title: t('lb.empty') })
       : el(
           'div',
           { class: 'lb-list' },

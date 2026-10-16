@@ -1,0 +1,145 @@
+/* Touch controls (overlay in launcher skin, hardware area in console skin) */
+.touch {
+  /* Button size: 64px × the user's size setting, but never so big that D-pad + action buttons
+     (≈ 4.4 button-widths + gaps) stop fitting the screen. cqw = width of the .screen container,
+     so the console housing's inner width is respected, not just the viewport. */
+  --btn: min(calc(64px * var(--touch-scale, 1)), calc((100cqw - 64px) / 4.4));
+  --cell: calc(var(--btn) * 0.78);
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 max(14px, var(--safe-r)) calc(16px + var(--safe-b)) max(14px, var(--safe-l));
+  z-index: 10;
+  opacity: var(--touch-opacity, 0.9);
+  /* Let taps in the empty gap between the pads reach the game field. */
+  pointer-events: none;
+}
+.touch .dpad,
+.touch .actionbtns {
+  pointer-events: auto;
+}
+/* Secondary assist button (tap games: minesweeper flag, puzzle hint) — kept reachable
+   even though the main .touch surface is hidden for tap presets. */
+.touch-assist {
+  position: absolute;
+  left: 50%;
+  bottom: calc(14px + var(--safe-b));
+  transform: translateX(-50%);
+  z-index: 11;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  color: var(--text);
+  font-family: var(--font-hud);
+  font-size: 14px;
+  opacity: var(--touch-opacity, 0.9);
+}
+.touch-assist:active {
+  background: var(--primary);
+  color: var(--on-primary);
+  transform: translateX(-50%) scale(0.94);
+}
+.touch--swipe,
+.touch--tap,
+.touch--none {
+  display: none;
+}
+.touch--drag .dpad {
+  display: none;
+}
+.touch--drag .actionbtns {
+  opacity: 0.82;
+}
+.touch--left {
+  flex-direction: row-reverse;
+}
+.touch-hint {
+  align-self: center;
+  margin: 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+  color: var(--text-muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+/* on-screen controls are shown during play in both skins (v1) */
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, var(--cell, 46px));
+  grid-template-rows: repeat(3, var(--cell, 46px));
+  gap: 4px;
+}
+.dpad button {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  border-radius: 10px;
+  font-size: 18px;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+}
+.dpad button:active {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.dpad .up {
+  grid-area: 1 / 2;
+}
+.dpad .left {
+  grid-area: 2 / 1;
+}
+.dpad .right {
+  grid-area: 2 / 3;
+}
+.dpad .down {
+  grid-area: 3 / 2;
+}
+.actionbtns {
+  display: flex;
+  gap: clamp(8px, 2.5cqw, 14px);
+  align-items: center;
+}
+.actionbtns button {
+  width: var(--btn, 64px);
+  height: var(--btn, 64px);
+  border-radius: 50%;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--on-primary);
+}
+.actionbtns .a {
+  background: var(--accent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.actionbtns .b {
+  background: var(--primary);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--glow) 60%, transparent);
+}
+.actionbtns button:active {
+  transform: scale(0.9);
+}
+
+/* Accessibility: enlarge the on-screen game controls for the large-targets option. */
+.a11y-large-targets .touch {
+  --btn: min(calc(76px * var(--touch-scale, 1)), calc((100cqw - 64px) / 4.4));
+}
+.a11y-large-targets .dpad button {
+  font-size: 21px;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--surface);
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}

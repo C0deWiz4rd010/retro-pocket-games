@@ -27,6 +27,12 @@ export async function shareScoreCard(
   score: number,
   isBest: boolean,
 ): Promise<void> {
+  // Canvas text uses whatever font is loaded *now*; make sure Inter's heavy weights are ready.
+  await Promise.all(
+    ['900 40px Inter', '800 40px Inter', '600 40px Inter'].map((f) =>
+      document.fonts.load(f).catch(() => undefined),
+    ),
+  );
   const W = 1080;
   const H = 1080;
   const canvas = document.createElement('canvas');

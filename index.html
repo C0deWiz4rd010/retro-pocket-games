@@ -51,11 +51,20 @@
     <link rel="icon" type="image/svg+xml" href="/retro-pocket-games/favicon.svg" />
     <link rel="apple-touch-icon" href="/retro-pocket-games/icons/icon-192.png" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Self-hosted fonts (see src/styles/fonts.css); preload the two used on first paint. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Press+Start+2P&family=VT323&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/retro-pocket-games/fonts/inter-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/retro-pocket-games/fonts/press-start-2p-latin-400-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
 
     <title>Retro Pocket — 85 retro games</title>

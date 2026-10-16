@@ -1,6 +1,13 @@
+@import './fonts.css';
 @import './tokens.css';
 @import './base.css';
 @import './shell.css';
-@import './components.css';
+@import './ui.css';
+@import './home.css';
+@import './overlay.css';
+@import './hud.css';
+@import './touch.css';
+@import './views.css';
+@import './launcher.css';
 @import './crt.css';
 @import './responsive.css';

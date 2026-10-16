@@ -326,11 +326,9 @@ function rows(rerender: () => void): HTMLElement[] {
         [`⟲ ${t('settings.reset')}`],
       ),
     ]),
-    el(
-      'div',
-      { style: 'text-align:center;color:var(--text-muted);font-size:11px;padding-bottom:20px' },
-      [`${t('settings.footer')} · v${import.meta.env.VITE_APP_VERSION ?? '0.0.0'}`],
-    ),
+    el('div', { class: 'footnote' }, [
+      `${t('settings.footer')} · v${import.meta.env.VITE_APP_VERSION ?? '0.0.0'}`,
+    ]),
   ];
 }
 
@@ -375,7 +373,7 @@ function doImport(): void {
   const input = el('input', {
     type: 'file',
     accept: 'application/json',
-    style: 'display:none',
+    hidden: true,
   }) as HTMLInputElement;
   input.addEventListener('change', () => {
     const file = input.files?.[0];

@@ -1,0 +1,184 @@
+/* Buttons, top bar and the scrolling body shared by every screen. */
+/* Shared UI components. See docs/01 §3 */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 15px;
+  transition:
+    transform 0.08s var(--ease),
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+.btn:active {
+  transform: scale(0.96);
+}
+.btn--primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 60%, transparent);
+}
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--surface-2);
+}
+.btn--danger {
+  background: color-mix(in srgb, var(--danger) 24%, var(--surface));
+  color: var(--danger);
+}
+.btn--block {
+  width: 100%;
+}
+
+/* Top bar (inside the screen) */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  padding-top: max(12px, var(--safe-t));
+}
+.topbar__title {
+  font-family: var(--font-pixel);
+  text-transform: uppercase; /* every screen title reads the same, whatever the i18n casing */
+  font-size: 13px;
+  color: var(--primary);
+  text-shadow: 0 0 10px var(--glow);
+  letter-spacing: 1px;
+  flex: 1;
+}
+.iconbtn {
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: var(--radius);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+.lucide-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+.iconbtn:active {
+  transform: scale(0.92);
+}
+
+/* Scroll body inside the screen */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 14px calc(20px + var(--safe-b));
+}
+
+/* Icon + label pairs (banners) */
+.install-banner__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Small text helpers (replace one-off inline styles) */
+.text-note {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+}
+.text-note-sm {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.text-ok {
+  color: var(--ok);
+  font-size: var(--fs-md);
+}
+.text-accent-sm {
+  color: var(--accent);
+  font-size: var(--fs-sm);
+}
+.text-accent-strong {
+  color: var(--accent);
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+.footnote {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  padding: 20px 0;
+}
+.overlay-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Empty states */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--text-muted);
+}
+.empty-state__icon .lucide-icon {
+  width: 40px;
+  height: 40px;
+  opacity: 0.6;
+}
+.empty-state__title {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--text);
+}
+.empty-state__hint {
+  font-size: var(--fs-md);
+  max-width: 280px;
+}
+.empty-state .btn {
+  margin-top: var(--space-2);
+}
+
+/* Loading state (engine download on first launch) */
+.overlay--load {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.loader {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--surface-2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.loader__text {
+  font-family: var(--font-pixel);
+  font-size: var(--fs-2xs);
+  color: var(--text-muted);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.a11y-reduced-motion .loader {
+  animation-duration: 2.4s;
+}

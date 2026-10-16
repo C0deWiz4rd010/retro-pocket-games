@@ -8,6 +8,7 @@ import {
 } from '@store/achievements';
 import { audio } from '@core/AudioManager';
 import { t } from '@i18n/index';
+import { emptyState } from '@ui/emptyState';
 
 type Filter = 'all' | 'unlocked' | 'locked';
 
@@ -69,7 +70,13 @@ export function renderAchievements(): HTMLElement {
     grid.replaceChildren(
       ...(visible.length
         ? visible.map((a) => card(a, unlockedAt[a.id]))
-        : [el('div', { class: 'lb-empty' }, ['—'])]),
+        : [
+            emptyState({
+              icon: 'trophy',
+              title: t(filter === 'unlocked' ? 'empty.ach.unlockedTitle' : 'empty.ach.lockedTitle'),
+              hint: t(filter === 'unlocked' ? 'empty.ach.unlockedHint' : 'empty.ach.lockedHint'),
+            }),
+          ]),
     );
   };
 
@@ -78,9 +85,7 @@ export function renderAchievements(): HTMLElement {
   const header = el('div', { class: 'ach-header' }, [
     count,
     el('div', { class: 'xpbar', style: 'margin:8px 0' }, [bar]),
-    el('div', { style: 'color:var(--text-muted);font-size:12px' }, [
-      t('ach.progress', { a: unlockedCount(), b: total }),
-    ]),
+    el('div', { class: 'text-note-sm' }, [t('ach.progress', { a: unlockedCount(), b: total })]),
   ]);
 
   container.append(header, tabs, grid);

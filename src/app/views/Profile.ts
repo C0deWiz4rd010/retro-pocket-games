@@ -45,7 +45,7 @@ export function renderProfile(): HTMLElement {
       el('div', { class: 'xpbar', style: 'margin:10px 0 4px' }, [
         el('i', { style: `width:${pct}%` }),
       ]),
-      el('div', { style: 'color:var(--text-muted);font-size:12px' }, [`${p.xp} / ${need} XP`]),
+      el('div', { class: 'text-note-sm' }, [`${p.xp} / ${need} XP`]),
     ]),
     el('div', { class: 'statgrid' }, [
       stat(`🪙 ${p.tokens}`, t('home.tokens')),

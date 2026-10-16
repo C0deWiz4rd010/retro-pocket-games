@@ -881,3 +881,41 @@
 .kbd-row span {
   color: var(--text-muted);
 }
+
+/* ── Tiles / hero / stat cards are real links ── */
+a.hero,
+a.statcard--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+:root[data-skin='launcher'] a.hero {
+  display: grid; /* the launcher hero is a two-column grid */
+}
+.tile__hit {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+}
+.tile__hit:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -3px;
+}
+/* Let clicks fall through the decorative layers to the stretched link beneath the badges/star. */
+.tile__badges,
+.tile__body,
+.tile__cover,
+.mastery {
+  pointer-events: none;
+}
+.tile__fav {
+  z-index: 4;
+  top: 0;
+  right: 0;
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}

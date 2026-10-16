@@ -29,24 +29,32 @@ import { renderScores } from './views/Scores';
 import { renderProfile } from './views/Profile';
 import { renderAbout } from './views/About';
 import { pickDailyGame, dailySeed, dailyModifier, nextDailyLabel } from './daily';
-import { t, hintLabel } from '@i18n/index';
+import {
+  t,
+  hintLabel,
+  gameBlurb,
+  collectionLabel as localCollectionLabel,
+  collectionBlurb as localCollectionBlurb,
+  gameTutorialSteps,
+} from '@i18n/index';
 import { icon } from '@ui/icons';
 import { emptyState } from '@ui/emptyState';
+import { openDialog, trapFocus } from '@ui/dialog';
 import { ACHIEVEMENTS, isUnlocked } from '@store/achievements';
 
 /** Games whose `custom` payload carries a meaningful secondary best worth showing on the tile. */
 const CUSTOM_BEST: Record<string, { key: string; label: string }> = {
-  snake: { key: 'length', label: 'len' },
-  tetris: { key: 'level', label: 'lvl' },
-  invaders: { key: 'wave', label: 'wave' },
-  asteroids: { key: 'wave', label: 'wave' },
-  galaga: { key: 'wave', label: 'wave' },
-  breakout: { key: 'level', label: 'lvl' },
-  stacker: { key: 'height', label: 'h' },
-  doodle: { key: 'height', label: 'h' },
-  simon: { key: 'len', label: 'seq' },
-  tron: { key: 'wins', label: 'wins' },
-  reversi: { key: 'discs', label: 'discs' },
+  snake: { key: 'length', label: 'cb.len' },
+  tetris: { key: 'level', label: 'cb.lvl' },
+  invaders: { key: 'wave', label: 'cb.wave' },
+  asteroids: { key: 'wave', label: 'cb.wave' },
+  galaga: { key: 'wave', label: 'cb.wave' },
+  breakout: { key: 'level', label: 'cb.lvl' },
+  stacker: { key: 'height', label: 'cb.h' },
+  doodle: { key: 'height', label: 'cb.h' },
+  simon: { key: 'len', label: 'cb.seq' },
+  tron: { key: 'wins', label: 'cb.wins' },
+  reversi: { key: 'discs', label: 'cb.discs' },
 };
 
 type LibrarySort = 'recommended' | 'recent' | 'popular' | 'score' | 'new' | 'az';
@@ -74,7 +82,7 @@ export class App {
     const screen = el('div', { class: 'screen' });
     this.view = el('div', { class: 'screen__view' });
     const crt = el('div', { class: 'screen__crt' });
-    this.nav = el('nav', { class: 'nav', 'aria-label': 'Games' });
+    this.nav = el('nav', { class: 'nav', 'aria-label': t('nav.games') });
     this.scrim = el('div', { class: 'nav__scrim', onClick: () => this.closeNav() });
     screen.append(crt, this.view, this.scrim, this.nav);
 
@@ -91,12 +99,16 @@ export class App {
       ),
     ]);
 
-    this.rail = el('aside', { class: 'rail', 'aria-label': 'Navigation' });
+    this.rail = el('aside', { class: 'rail', 'aria-label': t('nav.navigation') });
 
     mount(el('div', { class: 'frame' }, [this.rail, device]));
 
     this.screenEl = screen;
     this.buildNav();
+    this.nav.inert = true; // closed until opened
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.nav.classList.contains('open')) this.closeNav();
+    });
 
     window.addEventListener('hashchange', () => this.route());
     window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
@@ -149,27 +161,20 @@ export class App {
       ['Esc / P', t('kbd.pause')],
       ['?', t('kbd.help')],
     ];
-    const overlay = el('div', { class: 'overlay kbd-help', onClick: () => overlay.remove() }, [
-      el(
-        'div',
-        {
-          class: 'panel',
-          role: 'dialog',
-          'aria-modal': 'true',
-          onClick: (e: Event) => e.stopPropagation(),
-        },
-        [
-          el('div', { class: 'panel__title' }, [t('kbd.title')]),
-          ...rowsData.map(([k, v]) =>
-            el('div', { class: 'kbd-row' }, [el('kbd', {}, [k]), el('span', {}, [v])]),
-          ),
-          el('button', { class: 'btn btn--primary btn--block', onClick: () => overlay.remove() }, [
-            t('game.resume'),
-          ]),
-        ],
+    const panel = el('div', { class: 'panel' }, [
+      el('div', { class: 'panel__title' }, [t('kbd.title')]),
+      ...rowsData.map(([k, v]) =>
+        el('div', { class: 'kbd-row' }, [el('kbd', {}, [k]), el('span', {}, [v])]),
       ),
+      el('button', { class: 'btn btn--primary btn--block', onClick: () => dlg.close() }, [
+        t('game.resume'),
+      ]),
     ]);
-    document.querySelector('.screen__view')?.append(overlay);
+    const dlg = openDialog({
+      parent: document.querySelector<HTMLElement>('.screen__view') ?? document.body,
+      panel,
+      overlayClass: 'kbd-help',
+    });
   }
 
   /**
@@ -279,7 +284,12 @@ export class App {
     const topbar = el('div', { class: 'topbar' }, [
       el(
         'button',
-        { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+        {
+          class: 'iconbtn topbar__menu',
+          'aria-label': t('nav.menu'),
+          'aria-expanded': 'false',
+          onClick: () => this.openNav(),
+        },
         [icon('menu')],
       ),
       el('div', { class: 'topbar__title' }, ['RETRO POCKET']),
@@ -385,6 +395,7 @@ export class App {
     return [
       g.title,
       g.blurb,
+      gameBlurb(g),
       g.group,
       g.kit,
       g.orientation,
@@ -460,9 +471,9 @@ export class App {
               },
             },
             [
-              el('div', { class: 'collection-card__label' }, [c.label]),
-              el('div', { class: 'collection-card__blurb' }, [c.blurb]),
-              el('div', { class: 'collection-card__count' }, [`${count} games`]),
+              el('div', { class: 'collection-card__label' }, [localCollectionLabel(c)]),
+              el('div', { class: 'collection-card__blurb' }, [localCollectionBlurb(c)]),
+              el('div', { class: 'collection-card__count' }, [t('home.gamesCount', { n: count })]),
             ],
           );
         }),
@@ -482,7 +493,7 @@ export class App {
       el('div', { class: 'hero__content' }, [
         el('div', { class: 'hero__tag' }, [t('home.daily')]),
         el('div', { class: 'hero__title' }, [meta.title]),
-        el('div', { class: 'hero__sub' }, [meta.blurb]),
+        el('div', { class: 'hero__sub' }, [gameBlurb(meta)]),
         el('div', { class: 'hero__mod' }, [t(mod.label)]),
         el('button', { class: 'btn btn--primary' }, [
           icon('play'),
@@ -496,7 +507,7 @@ export class App {
     }
     if (streak > 0)
       children.push(el('div', { class: 'hero__streak' }, [t('home.streak', { n: streak })]));
-    return el('div', { class: 'hero', role: 'button', onClick: () => this.go('daily') }, children);
+    return el('a', { class: 'hero', href: '#/daily' }, children);
   }
 
   /** Surprise me: jump straight into a random available game. */
@@ -519,17 +530,13 @@ export class App {
         el('div', { class: 'statcard__label' }, [label]),
       ]);
     return el('div', { class: 'statgrid' }, [
-      el(
-        'div',
-        { class: 'statcard statcard--link', role: 'button', onClick: () => this.go('profile') },
-        [
-          el('div', { class: 'statcard__val' }, [`Lv.${p.level}`]),
-          el('div', { class: 'xpbar', style: 'margin-top:6px' }, [
-            el('i', { style: `width:${pct}%` }),
-          ]),
-          el('div', { class: 'statcard__label' }, [`${p.xp}/${need} XP`]),
-        ],
-      ),
+      el('a', { class: 'statcard statcard--link', href: '#/profile' }, [
+        el('div', { class: 'statcard__val' }, [`Lv.${p.level}`]),
+        el('div', { class: 'xpbar', style: 'margin-top:6px' }, [
+          el('i', { style: `width:${pct}%` }),
+        ]),
+        el('div', { class: 'statcard__label' }, [`${p.xp}/${need} XP`]),
+      ]),
       card(`🪙 ${p.tokens}`, t('home.tokens')),
       card(p.stats.gamesPlayed, t('home.played')),
       card(p.stats.totalScore.toLocaleString(), t('home.totalScore')),
@@ -539,11 +546,10 @@ export class App {
 
   private achievementsCard(): HTMLElement {
     return el(
-      'div',
+      'a',
       {
         class: 'statcard statcard--link',
-        role: 'button',
-        onClick: () => this.go('achievements'),
+        href: '#/achievements',
       },
       [
         el('div', { class: 'statcard__val' }, ['🏆']),
@@ -832,21 +838,23 @@ export class App {
       {
         class: `tile tile--rank-${rank}${g.available ? '' : ' tile--soon'}${mastery >= 3 ? ' is-mastered' : ''}`,
         style: `--tile-accent:${g.accent}`,
-        role: 'button',
-        tabindex: g.available ? 0 : -1,
-        onClick: () => {
-          if (g.available) this.go(`play/${g.id}`);
-        },
-        onKeydown: (event: Event) => {
-          const key = (event as KeyboardEvent).key;
-          if (g.available && (key === 'Enter' || key === ' ')) {
-            event.preventDefault();
-            this.go(`play/${g.id}`);
-          }
-        },
-        'aria-label': g.title,
       },
       [
+        // The whole card is one real link (keyboard + screen reader friendly); the favourite
+        // button is its sibling, so interactive elements are never nested.
+        el('a', {
+          class: 'tile__hit',
+          href: g.available ? `#/play/${g.id}` : undefined,
+          'aria-disabled': g.available ? undefined : 'true',
+          'aria-label': [
+            g.title,
+            g.available
+              ? best
+                ? t('tile.best', { n: best })
+                : t('tile.noScore')
+              : t('tile.comingSoon'),
+          ].join('. '),
+        }),
         el(
           'div',
           { class: 'tile__badges' },
@@ -863,12 +871,13 @@ export class App {
               'div',
               {
                 class: `mastery mastery--${mastery}`,
+                role: 'img',
                 'aria-label': t('tile.masteryAria', { n: mastery }),
               },
               [el('i', { style: `width:${(mastery / 3) * 100}%` })],
             )
           : '',
-        el('div', { class: 'tile__body' }, [
+        el('div', { class: 'tile__body', 'aria-hidden': 'true' }, [
           el('div', { class: 'tile__title' }, [g.title]),
           el('div', { class: 'tile__best' }, [
             g.available
@@ -961,11 +970,13 @@ export class App {
   }
 
   private collectionLabel(id: GameCollection): string {
-    return COLLECTIONS.find((c) => c.id === id)?.label ?? 'Collection';
+    const c = COLLECTIONS.find((x) => x.id === id);
+    return c ? localCollectionLabel(c) : t('home.collection');
   }
 
   private collectionBlurb(id: GameCollection): string {
-    return COLLECTIONS.find((c) => c.id === id)?.blurb ?? '';
+    const c = COLLECTIONS.find((x) => x.id === id);
+    return c ? localCollectionBlurb(c) : '';
   }
 
   private tileCover(g: GameMeta): HTMLElement {
@@ -1004,7 +1015,7 @@ export class App {
     if (!spec) return '';
     const v = getCustomBest(id, spec.key);
     if (v <= 0) return '';
-    return el('div', { class: 'tile__custom' }, [`${spec.label} ${v}`]);
+    return el('div', { class: 'tile__custom' }, [`${t(spec.label)} ${v}`]);
   }
 
   private favStar(id: string): HTMLElement {
@@ -1012,7 +1023,8 @@ export class App {
       'button',
       {
         class: `tile__fav${isFavorite(id) ? ' is-fav' : ''}`,
-        'aria-label': 'Favorite',
+        'aria-label': t('tile.favorite'),
+        'aria-pressed': String(isFavorite(id)),
         onClick: (e: Event) => {
           e.stopPropagation();
           toggleFavorite(id);
@@ -1047,8 +1059,8 @@ export class App {
     items.splice(
       2,
       0,
-      this.navItem(icon('play'), 'Continue', () => this.goLastPlayed(), 'continue'),
-      this.navItem(icon('star'), 'Pocket Shelf', () => this.scrollHomeShelf(), 'shelf'),
+      this.navItem(icon('play'), t('nav.continue'), () => this.goLastPlayed(), 'continue'),
+      this.navItem(icon('star'), t('nav.pocketShelf'), () => this.scrollHomeShelf(), 'shelf'),
     );
     items.push(el('div', { class: 'nav__group' }, [t('home.cabinets')]));
     for (const c of COLLECTIONS) {
@@ -1112,15 +1124,34 @@ export class App {
     }
   }
 
+  private navReturnFocus: HTMLElement | null = null;
+  private navUntrap: (() => void) | null = null;
+
   private openNav(): void {
     audio.sfx('blip');
+    this.navReturnFocus = document.activeElement as HTMLElement | null;
+    this.nav.inert = false;
     this.nav.classList.add('open');
     this.scrim.classList.add('open');
+    this.syncMenuButtons(true);
+    // The drawer behaves like a modal on phones: keep Tab inside it until it closes.
+    this.navUntrap = trapFocus(this.nav, this.nav);
   }
-
   private closeNav(): void {
+    const wasOpen = this.nav.classList.contains('open');
     this.nav.classList.remove('open');
     this.scrim.classList.remove('open');
+    // Closed drawer items must not stay in the tab order or the accessibility tree.
+    this.nav.inert = true;
+    this.syncMenuButtons(false);
+    this.navUntrap?.();
+    this.navUntrap = null;
+    if (wasOpen && this.navReturnFocus?.isConnected) this.navReturnFocus.focus();
+    this.navReturnFocus = null;
+  }
+  private syncMenuButtons(expanded: boolean): void {
+    for (const b of document.querySelectorAll('.topbar__menu'))
+      b.setAttribute('aria-expanded', String(expanded));
   }
 
   // ───────────────────────────── settings / bios ─────────────────────────────
@@ -1135,12 +1166,12 @@ export class App {
         icon(iconName),
         el('span', {}, [label]),
       ]);
-    return el('nav', { class: 'bottom-nav', 'aria-label': 'Primary navigation' }, [
+    return el('nav', { class: 'bottom-nav', 'aria-label': t('nav.primary') }, [
       item('home', 'home', t('nav.home'), () => this.go('')),
-      item('daily', 'daily', 'Daily', () => this.go('daily')),
-      item('shelf', 'star', 'Shelf', () => this.scrollHomeShelf()),
-      item('scores', 'leaderboard', 'Scores', () => this.go('scores')),
-      item('profile', 'profile', 'Profile', () => this.go('profile')),
+      item('daily', 'daily', t('nav.dailyShort'), () => this.go('daily')),
+      item('shelf', 'star', t('nav.shelf'), () => this.scrollHomeShelf()),
+      item('scores', 'leaderboard', t('nav.scores'), () => this.go('scores')),
+      item('profile', 'profile', t('nav.profile'), () => this.go('profile')),
     ]);
   }
 
@@ -1153,12 +1184,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, ['SETTINGS']),
       ]),
       renderSettings(),
@@ -1174,12 +1212,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('ach.title')]),
       ]),
       renderAchievements(),
@@ -1196,10 +1241,17 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: back }, [icon('back')]),
+        el('button', { class: 'iconbtn', 'aria-label': t('game.back'), onClick: back }, [
+          icon('back'),
+        ]),
         el('div', { class: 'topbar__title' }, [t('nav.scores')]),
       ]),
       await renderScores(arg),
@@ -1215,12 +1267,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('nav.profile')]),
       ]),
       renderProfile(),
@@ -1236,12 +1295,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('nav.about')]),
       ]),
       renderAbout(),
@@ -1285,12 +1351,19 @@ export class App {
       el('div', { class: 'topbar' }, [
         el(
           'button',
-          { class: 'iconbtn topbar__menu', 'aria-label': 'Menu', onClick: () => this.openNav() },
+          {
+            class: 'iconbtn topbar__menu',
+            'aria-label': t('nav.menu'),
+            'aria-expanded': 'false',
+            onClick: () => this.openNav(),
+          },
           [icon('menu')],
         ),
-        el('button', { class: 'iconbtn', 'aria-label': 'Back', onClick: () => this.go('') }, [
-          icon('back'),
-        ]),
+        el(
+          'button',
+          { class: 'iconbtn', 'aria-label': t('game.back'), onClick: () => this.go('') },
+          [icon('back')],
+        ),
         el('div', { class: 'topbar__title' }, [t('start.cartridge')]),
       ]),
       el('div', { class: 'scroll start-sheet' }, [
@@ -1301,7 +1374,7 @@ export class App {
               this.collectionLabel(meta.collections?.[0] ?? 'quick'),
             ]),
             el('h1', { class: 'start-card__title' }, [meta.title]),
-            el('p', { class: 'start-card__sub' }, [meta.blurb]),
+            el('p', { class: 'start-card__sub' }, [gameBlurb(meta)]),
             el('div', { class: 'start-stats' }, [
               this.startStat(best ? String(best) : '0', t('start.best')),
               this.startStat(`${mastery}/3`, t('start.mastery')),
@@ -1316,7 +1389,10 @@ export class App {
               ]),
               el('div', { class: 'start-reward__item' }, [
                 el('b', {}, [
-                  `${meta.reward?.sessionMin ?? 1}-${meta.reward?.sessionMax ?? 2} min`,
+                  t('start.minutes', {
+                    a: meta.reward?.sessionMin ?? 1,
+                    b: meta.reward?.sessionMax ?? 2,
+                  }),
                 ]),
                 el('span', {}, [t('start.pocketRun')]),
               ]),
@@ -1349,9 +1425,11 @@ export class App {
                     void this.renderGameStart(meta.id);
                   },
                 },
-                [icon('star'), isFavorite(meta.id) ? 'Saved' : 'Favorite'],
+                [icon('star'), isFavorite(meta.id) ? t('tile.saved') : t('tile.favorite')],
               ),
-              el('button', { class: 'btn btn--ghost', onClick: () => this.go('') }, ['Back']),
+              el('button', { class: 'btn btn--ghost', onClick: () => this.go('') }, [
+                t('game.back'),
+              ]),
             ]),
           ]),
         ]),
@@ -1370,7 +1448,7 @@ export class App {
     const modes = meta.polish?.modes ?? ['challenge'];
     return el(
       'div',
-      { class: 'mode-picker', role: 'group', 'aria-label': 'Game mode' },
+      { class: 'mode-picker', role: 'group', 'aria-label': t('mode.label') },
       modes.map((mode) =>
         el(
           'button',
@@ -1389,30 +1467,30 @@ export class App {
   }
 
   private modeLabel(mode: GameMode): string {
-    if (mode === 'practice') return 'Practice';
-    if (mode === 'endless') return 'Endless';
-    return 'Challenge';
+    if (mode === 'practice') return t('mode.practice');
+    if (mode === 'endless') return t('mode.endless');
+    return t('mode.challenge');
   }
 
   private modeCopy(mode: GameMode): string {
-    if (mode === 'practice') return 'Learn controls, no saved score';
-    if (mode === 'endless') return 'Stay in flow and chase distance';
-    return 'Score, rewards, achievements';
+    if (mode === 'practice') return t('mode.practiceCopy');
+    if (mode === 'endless') return t('mode.endlessCopy');
+    return t('mode.challengeCopy');
   }
 
   private startButtonLabel(mode: GameMode): string {
-    if (mode === 'practice') return 'Start Practice';
-    if (mode === 'endless') return 'Start Endless';
-    return 'Start Challenge';
+    if (mode === 'practice') return t('start.practice');
+    if (mode === 'endless') return t('start.endless');
+    return t('start.challenge');
   }
 
   private tipFor(meta: GameMeta): string {
-    const tips = meta.polish?.tips ?? meta.tutorialSteps ?? [meta.blurb];
+    const tips = meta.polish?.tips ?? gameTutorialSteps(meta);
     const index =
       Math.abs(
         [...meta.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) + new Date().getDate(),
       ) % tips.length;
-    const key = tips[index] ?? meta.blurb;
+    const key = tips[index] ?? gameBlurb(meta);
     // tips are i18n keys (see Registry.tipsFor); non-key fallbacks pass through t() unchanged.
     return t(key, { group: t(`group.${meta.group.toLowerCase()}`) });
   }
@@ -1469,7 +1547,7 @@ export class App {
     this.host = new GameHost(this.view, meta, () => this.go(''));
     await this.host.start({
       seed: dailySeed(),
-      label: 'DAILY',
+      label: t('home.dailyLabel'),
       daily: true,
       timeScale: mod.timeScale,
       scoreMult: mod.scoreMult,

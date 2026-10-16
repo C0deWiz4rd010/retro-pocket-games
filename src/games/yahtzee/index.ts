@@ -41,14 +41,27 @@ export default function createGame(ctx: GameContext): Game {
     text: '',
     style: { fontFamily: 'VT323, monospace', fontSize: 19, fill: 0xffffff, align: 'center' },
   });
+  const mkBtnLabel = (): Text => {
+    const t = new Text({
+      text: '',
+      style: { fontFamily: 'VT323, monospace', fontSize: 24, fill: 0xffffff, align: 'center' },
+    });
+    t.anchor.set(0.5);
+    return t;
+  };
+  const rollLabel = mkBtnLabel();
+  const bankLabel = mkBtnLabel();
+  rollLabel.position.set(W / 2, H * 0.68 + 21);
+  bankLabel.position.set(W / 2, H * 0.8 + 21);
   label.anchor.set(0.5);
   hint.anchor.set(0.5);
   label.position.set(W / 2, 58);
   hint.position.set(W / 2, H - 52);
-  layer.addChild(g, label, hint);
+  layer.addChild(g, label, hint, rollLabel, bankLabel);
 
   let dice = [1, 1, 1, 1, 1];
   const held = new Set<number>();
+  let focus = 0; // keyboard / gamepad die cursor
   let rolls = 3;
   let round = 1;
   let score = 0;
@@ -109,15 +122,27 @@ export default function createGame(ctx: GameContext): Game {
     else if (y > H * 0.8 && y < H * 0.9) bank();
   });
   const offDown = ctx.input.on('down', (a) => {
+    if (over) return;
     if (a === 'a') roll();
-    if (a === 'b') bank();
+    else if (a === 'b') bank();
+    else if (a === 'left') focus = (focus + 4) % 5;
+    else if (a === 'right') focus = (focus + 1) % 5;
+    else if (a === 'up' || a === 'down' || a === 'select' || a === 'start') {
+      // toggle hold on the focused die
+      if (held.has(focus)) held.delete(focus);
+      else held.add(focus);
+      ctx.audio.sfx('blip');
+    } else return;
+    draw();
   });
 
   function draw(): void {
     g.clear();
     const c = comboScore(dice);
     label.text = `${c.label} — ${c.points}`; // Feature: live score preview
-    hint.text = `ROLLS ${rolls}  |  A ROLL  B BANK`;
+    hint.text = `ROLLS ${rolls}  |  A ROLL  B BANK  ◀▶ DIE  ▲ HOLD`;
+    rollLabel.text = rolls > 0 ? `ROLL (${rolls})` : 'NO ROLLS LEFT';
+    bankLabel.text = 'BANK SCORE';
     const dieSize = W * 0.16;
     const startX = (W - dieSize * 5 - 8 * 4) / 2;
     const dieY = H * 0.36;
@@ -127,6 +152,11 @@ export default function createGame(ctx: GameContext): Game {
       g.roundRect(x, dieY, dieSize, dieSize, 10)
         .fill({ color: heldDie ? 0xfacc15 : 0xf8fafc })
         .stroke({ width: 2, color: 0x0f172a });
+      if (i === focus)
+        g.roundRect(x - 4, dieY - 4, dieSize + 8, dieSize + 8, 13).stroke({
+          width: 3,
+          color: 0x00f7ff,
+        });
       const pip = (px: number, py: number): void => {
         g.circle(x + px * dieSize, dieY + py * dieSize, dieSize * 0.06).fill({ color: 0x111827 });
       };

@@ -23,8 +23,9 @@ import { showTutorial } from './tutorial';
 import { shareScoreCard } from './shareCard';
 import { confettiBurst } from './confetti';
 import { GAMES } from '@core/Registry';
-import { t, hintLabel } from '@i18n/index';
+import { t, hintLabel, gameBlurb, gameTutorialSteps } from '@i18n/index';
 import { icon } from '@ui/icons';
+import { markAsDialog, trapFocus } from '@ui/dialog';
 import { enterPop } from '@ui/motion';
 import { announce } from '@ui/announce';
 import { attachTooltip } from '@ui/tooltip';
@@ -129,6 +130,8 @@ export class GameHost {
       keyMap: keyMapFromBindings(settings().keyBindings),
     });
     this.input.attach(pixi.canvas, pixi.screenToVirtual);
+    this.input.setVirtualBounds(this.meta.virtual.w, this.meta.virtual.h);
+    this.cleanups.push(this.input.on('cursor', ({ x, y }) => this.moveAimCursor(x, y)));
     // Identify the play surface for assistive tech (canvas content is otherwise opaque).
     pixi.canvas.setAttribute('role', 'img');
     pixi.canvas.setAttribute('aria-label', this.meta.title);
@@ -161,8 +164,7 @@ export class GameHost {
 
     // Pause on Esc/P (keyboard) or Start (gamepad). Enter stays a game action. Pressing it again
     // from the main pause menu resumes.
-    this.input.on('down', (a) => {
-      if (a !== 'pause') return;
+    this.input.onPause(() => {
       if (this.paused) this.resume();
       else this.pause();
     });
@@ -170,6 +172,7 @@ export class GameHost {
     const timeScale = opts.timeScale ?? 1;
     this.tickFn = (tk: Ticker) => {
       this.input.pollGamepad();
+      if (this.running) this.input.tickCursor(Math.min(tk.deltaMS / 1000, 0.05));
       const dt = Math.min(tk.deltaMS / 1000, 0.05);
       perf.tick(dt);
       this.fx.update(dt);
@@ -196,6 +199,18 @@ export class GameHost {
     } else {
       this.setRunning(true);
     }
+  }
+
+  /** Draw/move the keyboard aim cursor (only exists once the player first uses it). */
+  private moveAimCursor(x: number, y: number): void {
+    let node = this.screenView.querySelector<HTMLElement>('.aim-cursor');
+    if (!node) {
+      node = el('div', { class: 'aim-cursor', 'aria-hidden': 'true' });
+      this.screenView.append(node);
+    }
+    const p = pixi.virtualToClient(x, y);
+    const r = this.screenView.getBoundingClientRect();
+    node.style.transform = `translate(${p.x - r.left}px, ${p.y - r.top}px)`;
   }
 
   /** Pause from outside (e.g. tab blur). Safe to call repeatedly. */
@@ -602,10 +617,10 @@ export class GameHost {
 
   /** Pause sub-panel: a short rules / how-to-play blurb. */
   private showRulesPanel(): void {
-    const steps = this.meta.tutorialSteps ?? [];
+    const steps = gameTutorialSteps(this.meta).slice(1, 2);
     const rows: (Node | string)[] = [
       el('div', { class: 'panel__title' }, [t('game.rules')]),
-      el('div', { class: 'run-comment' }, [this.meta.blurb]),
+      el('div', { class: 'run-comment' }, [gameBlurb(this.meta)]),
     ];
     if (steps.length)
       rows.push(
@@ -839,7 +854,7 @@ export class GameHost {
       el('div', { class: 'run-comment' }, [this.gameOverComment(ratio, isBest, practice)]),
       this.performanceGrid(score, prevBest, ratio, custom),
       el('div', { class: 'panel__xp' }, [
-        practice ? t('go.rewardsPaused') : `+${xpGain} Pixel XP  +${reward.tokenGain} Pocket Chips`,
+        practice ? t('go.rewardsPaused') : t('go.rewards', { xp: xpGain, chips: reward.tokenGain }),
       ]),
       this.rewardBreakdown(reward.breakdown),
     ];
@@ -1028,6 +1043,7 @@ export class GameHost {
       class: 'name-input',
       maxlength: '8',
       placeholder: t('game.enterName'),
+      'aria-label': t('game.enterName'),
       value: playerName(),
     }) as HTMLInputElement;
     const wrap = el('div', { class: 'name-entry' }, [
@@ -1055,36 +1071,14 @@ export class GameHost {
 
   private showOverlay(panel: HTMLElement): void {
     this.clearOverlay();
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-modal', 'true');
+    markAsDialog(panel);
     const ov = el('div', { class: 'overlay' }, [panel]);
     ov.dataset.overlay = '1';
     // Remember what had focus so we can restore it when the dialog closes.
     this.overlayReturnFocus = document.activeElement as HTMLElement | null;
     this.screenView.append(ov);
     enterPop(panel);
-    const focusables = (): HTMLElement[] =>
-      [
-        ...panel.querySelectorAll<HTMLElement>('button, input, [tabindex]:not([tabindex="-1"])'),
-      ].filter((n) => !n.hasAttribute('disabled'));
-    focusables()[0]?.focus();
-    // Trap Tab within the modal dialog.
-    const trap = (e: KeyboardEvent): void => {
-      if (e.key !== 'Tab') return;
-      const items = focusables();
-      if (!items.length) return;
-      const first = items[0]!;
-      const last = items[items.length - 1]!;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    ov.addEventListener('keydown', trap);
-    this.overlayFocusCleanup = () => ov.removeEventListener('keydown', trap);
+    this.overlayFocusCleanup = trapFocus(ov, panel);
   }
   private clearOverlay(): void {
     this.overlayFocusCleanup?.();

@@ -24,6 +24,11 @@ export class Emitter<Events extends Record<string, unknown>> {
     for (const fn of set) (fn as Listener<Events[K]>)(payload);
   }
 
+  /** Number of listeners currently registered for `event`. */
+  listenerCount<K extends keyof Events>(event: K): number {
+    return this.map.get(event)?.size ?? 0;
+  }
+
   clear(): void {
     this.map.clear();
   }

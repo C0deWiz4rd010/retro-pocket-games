@@ -133,3 +133,32 @@
 :root[data-skin='console'] .tile__badges .tile__badge:nth-child(n + 2) {
   display: none;
 }
+
+/* ── Touch: every tappable control reaches the 44px comfort size ── */
+@media (pointer: coarse) {
+  .seg button {
+    min-height: 40px;
+    min-width: 44px;
+  }
+  .cat-chip {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .theme-swatch {
+    height: 44px;
+  }
+  .onboard__skip {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+  }
+  .section-title__action {
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: var(--fs-sm);
+  }
+  .btn--sm {
+    min-height: 44px;
+  }
+}

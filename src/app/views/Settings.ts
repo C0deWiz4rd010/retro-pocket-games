@@ -5,6 +5,7 @@ import { haptics } from '@core/Haptics';
 import { exportAll, importAll, wipeAll } from '@data/db';
 import type { Action } from '@core/InputManager';
 import { t } from '@i18n/index';
+import { openDialog } from '@ui/dialog';
 import type { Settings } from '@data/schemas';
 
 type Opt<T> = { value: T; label: string };
@@ -30,6 +31,7 @@ function rows(rerender: () => void): HTMLElement[] {
           'button',
           {
             class: o.value === current ? 'on' : '',
+            'aria-pressed': String(o.value === current),
             onClick: () => {
               audio.sfx('blip');
               onPick(o.value);
@@ -52,8 +54,19 @@ function rows(rerender: () => void): HTMLElement[] {
       },
     });
 
-  const row = (label: string, control: Node): HTMLElement =>
-    el('div', { class: 'setting' }, [el('span', {}, [label]), control as HTMLElement]);
+  let rowId = 0;
+  const row = (label: string, control: Node): HTMLElement => {
+    // Name the control by its visible label so screen readers announce "Sound effects, switch".
+    const id = `setting-label-${++rowId}`;
+    const c = control as HTMLElement;
+    const inner = c.matches?.('.switch, input') ? c : c.querySelector?.('.switch, input');
+    if (inner) inner.setAttribute('aria-labelledby', id);
+    else if (c.classList?.contains('seg')) {
+      c.setAttribute('role', 'group');
+      c.setAttribute('aria-labelledby', id);
+    }
+    return el('div', { class: 'setting' }, [el('span', { id }, [label]), c]);
+  };
 
   const slider = (value: number, onChange: (v: number) => void): HTMLElement =>
     el('input', {
@@ -151,7 +164,7 @@ function rows(rerender: () => void): HTMLElement[] {
         [
           { value: 'off', label: t('settings.off') },
           { value: 'css', label: 'CRT' },
-          { value: 'full', label: 'Full' },
+          { value: 'full', label: t('settings.fxFull') },
         ],
         (mode) => patchScreenFx({ mode }),
       ),
@@ -201,8 +214,7 @@ function rows(rerender: () => void): HTMLElement[] {
           ? el(
               'button',
               {
-                class: 'btn btn--ghost',
-                style: 'min-height:36px;padding:0 12px',
+                class: 'btn btn--ghost btn--sm',
                 onClick: () => haptics.pattern([0, 20, 40, 30]),
               },
               [t('settings.test')],
@@ -242,7 +254,8 @@ function rows(rerender: () => void): HTMLElement[] {
     ),
 
     el('div', { class: 'section-title' }, [t('settings.keyBindings')]),
-    ...REBINDABLE.map(({ action, label, def }) => {
+    ...REBINDABLE.map(({ action, label: labelKey, def }) => {
+      const label = t(labelKey);
       const code = s.keyBindings[action] ?? def;
       const btn = el(
         'button',
@@ -334,12 +347,12 @@ function rows(rerender: () => void): HTMLElement[] {
 
 /** Rebindable gameplay actions and their default key codes (shown in the rebinding UI). */
 const REBINDABLE: { action: Action; label: string; def: string }[] = [
-  { action: 'up', label: '▲ Up', def: 'ArrowUp' },
-  { action: 'down', label: '▼ Down', def: 'ArrowDown' },
-  { action: 'left', label: '◀ Left', def: 'ArrowLeft' },
-  { action: 'right', label: '▶ Right', def: 'ArrowRight' },
-  { action: 'a', label: 'A · Action', def: 'Space' },
-  { action: 'b', label: 'B · Secondary', def: 'KeyX' },
+  { action: 'up', label: 'key.up', def: 'ArrowUp' },
+  { action: 'down', label: 'key.down', def: 'ArrowDown' },
+  { action: 'left', label: 'key.left', def: 'ArrowLeft' },
+  { action: 'right', label: 'key.right', def: 'ArrowRight' },
+  { action: 'a', label: 'key.a', def: 'Space' },
+  { action: 'b', label: 'key.b', def: 'KeyX' },
 ];
 
 /** Friendly label for a KeyboardEvent.code (e.g. KeyZ → Z, ArrowUp → ↑). */
@@ -402,10 +415,13 @@ function doImport(): void {
 
 /** Two-step confirmation overlay so progress can't be wiped by accident. */
 function confirmReset(): void {
-  const overlay = el('div', { class: 'overlay' });
-  overlay.dataset.overlay = '1';
-  const panel = el('div', { class: 'panel', role: 'dialog', 'aria-modal': 'true' }, [
-    el('div', { class: 'panel__title' }, ['⚠']),
+  const cancelBtn = el(
+    'button',
+    { class: 'btn btn--ghost btn--block', onClick: () => dlg.close() },
+    [t('settings.cancel')],
+  );
+  const panel = el('div', { class: 'panel' }, [
+    el('div', { class: 'panel__title' }, [t('settings.reset')]),
     el('div', { style: 'font-size:15px' }, [t('settings.resetConfirm')]),
     el(
       'button',
@@ -415,11 +431,11 @@ function confirmReset(): void {
       },
       [t('settings.resetYes')],
     ),
-    el('button', { class: 'btn btn--ghost btn--block', onClick: () => overlay.remove() }, [
-      t('settings.cancel'),
-    ]),
+    cancelBtn,
   ]);
-  overlay.append(panel);
-  (document.querySelector('.screen__view') ?? document.body).append(overlay);
-  panel.querySelector<HTMLElement>('.btn--ghost')?.focus(); // default to the safe action
+  const dlg = openDialog({
+    parent: document.querySelector<HTMLElement>('.screen__view') ?? document.body,
+    panel,
+    initialFocus: cancelBtn, // default to the safe action
+  });
 }

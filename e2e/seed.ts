@@ -13,6 +13,8 @@ export interface Seed {
  */
 export async function seedApp(page: Page, seed: Seed): Promise<void> {
   await page.addInitScript((s) => {
+    // Seeded settings must win over first-run locale auto-detection.
+    if (s.settings) localStorage.setItem('rp:localeSet', '1');
     const open = indexedDB.open('keyval-store');
     open.onupgradeneeded = () => open.result.createObjectStore('keyval');
     open.onsuccess = () => {

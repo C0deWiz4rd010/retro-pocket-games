@@ -4,6 +4,8 @@ export type Action = 'up' | 'down' | 'left' | 'right' | 'a' | 'b' | 'start' | 's
 export type Dir = 'up' | 'down' | 'left' | 'right';
 
 type InputEvents = {
+  /** Keyboard-driven aim cursor for pointer-only games (visible once first used). */
+  cursor: { x: number; y: number };
   down: Action;
   up: Action;
   swipe: Dir;
@@ -73,6 +75,14 @@ export class InputManager extends Emitter<InputEvents> {
   private pDown = false;
   /** While blocked (paused / overlay / countdown) only the 'pause' action reaches listeners. */
   private blocked = false;
+
+  // Pause is handled by the host, outside the game's own 'down' listeners (see onPause()).
+  private pauseHandlers: (() => void)[] = [];
+  // Set when a game reads held keys directly (isDown/axis) instead of listening for events.
+  private polled = false;
+  private cursor = { x: 180, y: 320 };
+  private cursorUsed = false;
+  private bounds = { w: 360, h: 640 };
 
   private onKeyDown = (e: KeyboardEvent): void => {
     const a = this.keyMap[e.code];
@@ -157,25 +167,78 @@ export class InputManager extends Emitter<InputEvents> {
     this.gpDirPrev.clear();
   }
 
+  /** Register the host's pause handler (fires for Esc/P/gamepad Start even while blocked). */
+  onPause(fn: () => void): void {
+    this.pauseHandlers.push(fn);
+  }
+
+  /** Tell the cursor the playfield size (virtual px) and re-centre it. */
+  setVirtualBounds(w: number, h: number): void {
+    this.bounds = { w, h };
+    this.cursor = { x: w / 2, y: h / 2 };
+    this.cursorUsed = false;
+  }
+
+  /**
+   * A game with no 'down' listeners that never polls held keys can only be played by pointer.
+   * For those, direction keys steer an on-screen aim cursor and A / Enter "tap" it, so the game
+   * stays playable with a keyboard or gamepad.
+   */
+  private cursorMode(): boolean {
+    return !this.polled && this.listenerCount('down') === 0;
+  }
+
   press(a: Action): void {
-    if (this.blocked && a !== 'pause') return;
+    if (a === 'pause') {
+      if (!this.pressed.has(a)) {
+        this.pressed.add(a);
+        for (const fn of this.pauseHandlers) fn();
+      }
+      return;
+    }
+    if (this.blocked) return;
     if (this.pressed.has(a)) return;
     this.pressed.add(a);
     this.emit('down', a);
+    if ((a === 'a' || a === 'start') && this.cursorMode()) {
+      this.cursorUsed = true;
+      this.emit('cursor', { ...this.cursor });
+      this.emit('pointermove', { ...this.cursor, down: true });
+      this.emit('tap', { ...this.cursor });
+    }
   }
 
   release(a: Action): void {
     if (!this.pressed.has(a)) return;
     this.pressed.delete(a);
+    if (a === 'pause') return;
     this.emit('up', a);
+    if ((a === 'a' || a === 'start') && this.cursorUsed && this.cursorMode())
+      this.emit('pointermove', { ...this.cursor, down: false });
+  }
+
+  /** Advance the aim cursor while a direction is held. Call once per frame from the host. */
+  tickCursor(dt: number): void {
+    if (this.blocked || !this.cursorMode()) return;
+    const dx = (this.pressed.has('right') ? 1 : 0) - (this.pressed.has('left') ? 1 : 0);
+    const dy = (this.pressed.has('down') ? 1 : 0) - (this.pressed.has('up') ? 1 : 0);
+    if (!dx && !dy) return;
+    const speed = Math.max(this.bounds.w, this.bounds.h) * 0.55;
+    this.cursor.x = Math.min(this.bounds.w, Math.max(0, this.cursor.x + dx * speed * dt));
+    this.cursor.y = Math.min(this.bounds.h, Math.max(0, this.cursor.y + dy * speed * dt));
+    this.cursorUsed = true;
+    this.emit('cursor', { ...this.cursor });
+    this.emit('pointermove', { ...this.cursor, down: false });
   }
 
   isDown(a: Action): boolean {
+    this.polled = true;
     return this.pressed.has(a);
   }
 
   /** Directional axis from held actions, range -1..1 each. */
   axis(): { x: number; y: number } {
+    this.polled = true;
     const x = (this.isDown('right') ? 1 : 0) - (this.isDown('left') ? 1 : 0);
     const y = (this.isDown('down') ? 1 : 0) - (this.isDown('up') ? 1 : 0);
     return { x, y };
@@ -213,6 +276,7 @@ export class InputManager extends Emitter<InputEvents> {
 
   private onPointerDown = (e: PointerEvent): void => {
     if (this.blocked) return;
+    this.cursorUsed = false; // the player is using a pointer again
     this.pDown = true;
     this.pStart = { x: e.clientX, y: e.clientY, t: performance.now() };
     const v = this.toVirtual(e.clientX, e.clientY);

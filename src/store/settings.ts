@@ -67,6 +67,7 @@ let lastPaletteKey = '';
 
 function applyToDom(s: Settings): void {
   const root = document.documentElement;
+  root.lang = s.locale; // screen readers pick the right voice/pronunciation
   root.dataset.theme = s.theme;
   root.dataset.skin = s.skin;
   root.dataset.shell = s.shell;

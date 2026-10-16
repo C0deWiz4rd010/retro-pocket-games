@@ -46,7 +46,14 @@ export async function launchGame(page: Page, id: string): Promise<void> {
   await play.click();
   await expect(page.locator('.hud')).toBeVisible({ timeout: 15_000 });
   const tut = page.locator('.overlay .btn--primary');
-  if (await tut.isVisible().catch(() => false)) await tut.click();
+  // the tutorial card can appear a beat after the HUD (font wait), so give it a moment
+  if (
+    await tut.waitFor({ state: 'visible', timeout: 1500 }).then(
+      () => true,
+      () => false,
+    )
+  )
+    await tut.click();
 }
 
 export async function leaveGame(page: Page): Promise<void> {

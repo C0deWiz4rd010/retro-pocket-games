@@ -19,7 +19,7 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent 34%),
     color-mix(in srgb, var(--surface) 92%, #000);
   border-right: 1px solid color-mix(in srgb, var(--primary) 18%, var(--surface-2));
-  padding: max(18px, var(--safe-t)) 12px calc(16px + var(--safe-b));
+  padding: max(18px, var(--safe-t)) 12px calc(16px + var(--safe-b)) max(12px, var(--safe-l));
   overflow-y: auto;
   box-shadow: 18px 0 54px rgba(0, 0, 0, 0.34);
 }
@@ -45,14 +45,16 @@
     0 0 0 1px rgba(0, 0, 0, 0.5),
     0 20px 60px rgba(0, 0, 0, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  padding: calc(10px + var(--safe-t)) 14px calc(10px + var(--safe-b));
+  padding: calc(10px + var(--safe-t)) max(14px, var(--safe-r)) calc(10px + var(--safe-b))
+    max(14px, var(--safe-l));
   gap: 8px;
 }
 @media (min-width: 520px) {
   :root[data-skin='console'] .device {
     margin: auto;
     max-height: min(900px, 96dvh);
-    padding: 18px 16px 20px;
+    padding: max(18px, var(--safe-t)) max(16px, var(--safe-r)) max(20px, var(--safe-b))
+      max(16px, var(--safe-l));
   }
 }
 
@@ -185,6 +187,8 @@
   border-radius: 8px;
   overflow: hidden;
   background: #000;
+  /* Lets HUD/controls size themselves from the screen's own width (cqw), not the viewport's. */
+  container: screen / inline-size;
 }
 :root[data-skin='console'] .screen {
   border: 3px solid #05050a;

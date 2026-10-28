@@ -2,12 +2,14 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
+import { fxRandom } from '@utils/rng';
 
 interface Alien {
   x: number;
   y: number;
   alive: boolean;
   row: number;
+  col: number;
 }
 interface BunkerCell {
   x: number;
@@ -81,7 +83,14 @@ export default function createGame(ctx: GameContext): Game {
     aliens = [];
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
-        aliens.push({ x: 24 + c * alienGapX, y: 70 + r * 32, alive: true, row: r });
+        aliens.push({
+          x: 24 + c * alienGapX,
+          // later waves start lower, so the formation reaches you sooner
+          y: 70 + Math.min(wave - 1, 4) * 12 + r * 32,
+          alive: true,
+          row: r,
+          col: c,
+        });
   };
 
   const buildBunkers = (): void => {
@@ -106,13 +115,11 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setLives(lives);
   ctx.hud.setLabel('WAVE 1');
 
-  const burst = (x: number, y: number, color: number, n = 10): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 50 + ctx.rng.next() * 150;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
-    }
-  };
+  // cosmetic sparks must not consume the seeded game RNG (daily runs would diverge)
+  const burst = (x: number, y: number, color: number, n = 10): void =>
+    particles.burst(x, y, color, n, 150, 1);
+
+  let invuln = 0; // seconds of grace after being hit
 
   const fire = (): void => {
     if (over || fireCd > 0) return;
@@ -202,8 +209,14 @@ export default function createGame(ctx: GameContext): Game {
     // player + shield
     if (shield)
       g.circle(player.x, player.y + 4, 24).stroke({ width: 2.5, color: 0x3ddc84, alpha: 0.7 });
-    g.roundRect(player.x - player.w / 2, player.y, player.w, player.h, 3).fill({ color: 0x00f7ff });
-    g.rect(player.x - 2, player.y - 6, 4, 6).fill({ color: 0x00f7ff });
+    // blink while invulnerable after a hit
+    const blink = invuln > 0 && Math.floor(invuln * 12) % 2 === 0;
+    if (!blink) {
+      g.roundRect(player.x - player.w / 2, player.y, player.w, player.h, 3).fill({
+        color: 0x00f7ff,
+      });
+      g.rect(player.x - 2, player.y - 6, 4, 6).fill({ color: 0x00f7ff });
+    }
     pBullets.forEach((b) =>
       g.rect(b.x - 2, b.y, 4, 12).fill({ color: spreadT > 0 ? 0x00f7ff : 0xffffff }),
     );
@@ -226,7 +239,7 @@ export default function createGame(ctx: GameContext): Game {
         s.y += s.s * 8 * dt;
         if (s.y > H) {
           s.y = 0;
-          s.x = ctx.rng.next() * W;
+          s.x = fxRandom() * W;
         }
       }
 
@@ -241,7 +254,9 @@ export default function createGame(ctx: GameContext): Game {
         if (ufo.x < -30 || ufo.x > W + 30) ufo = null;
       }
 
-      const interval = clamp(0.5 * (aliveCount() / (COLS * ROWS)) + 0.08, 0.08, 0.6);
+      if (invuln > 0) invuln -= dt;
+      const waveSpeed = 1 + Math.min(wave - 1, 6) * 0.07;
+      const interval = clamp((0.5 * (aliveCount() / (COLS * ROWS)) + 0.08) / waveSpeed, 0.07, 0.6);
       stepAcc += dt;
       if (stepAcc >= interval) {
         stepAcc = 0;
@@ -275,9 +290,12 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       eFireAcc += dt;
-      if (eFireAcc > 0.8) {
+      if (eFireAcc > Math.max(0.35, 0.8 - (wave - 1) * 0.06)) {
         eFireAcc = 0;
-        const shooters = aliens.filter((a) => a.alive);
+        // only the lowest living alien of each column can shoot (classic rule, readable threat)
+        const shooters = aliens.filter(
+          (a) => a.alive && !aliens.some((o) => o.alive && o.col === a.col && o.row > a.row),
+        );
         if (shooters.length) {
           const s = ctx.rng.pick(shooters);
           eBullets.push({ x: s.x + alienW / 2, y: s.y + 24 });
@@ -336,7 +354,7 @@ export default function createGame(ctx: GameContext): Game {
       // enemy bullets
       for (let i = eBullets.length - 1; i >= 0; i--) {
         const b = eBullets[i]!;
-        b.y += 300 * dt;
+        b.y += Math.min(400, 300 + (wave - 1) * 15) * dt;
         if (b.y > H) {
           eBullets.splice(i, 1);
           continue;
@@ -346,6 +364,7 @@ export default function createGame(ctx: GameContext): Game {
           continue;
         }
         if (
+          invuln <= 0 &&
           Math.abs(b.x - player.x) < player.w / 2 &&
           b.y > player.y &&
           b.y < player.y + player.h
@@ -360,6 +379,7 @@ export default function createGame(ctx: GameContext): Game {
             continue;
           }
           lives--;
+          invuln = 1.4;
           ctx.fx.screenShake(8, 0.25);
           burst(player.x, player.y, 0x00f7ff, 14);
           ctx.hud.setLives(lives);

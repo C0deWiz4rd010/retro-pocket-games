@@ -3,6 +3,7 @@ import type { Game, GameContext } from '@core/types';
 import { TAU, wrap } from '@utils/math';
 import type { RNG } from '@utils/rng';
 import { Particles } from '@kits/arcade/particles';
+import { fxRandom } from '@utils/rng';
 
 interface Roid {
   x: number;
@@ -71,19 +72,26 @@ export default function createGame(ctx: GameContext): Game {
   let eBullets: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
 
   const invincible = (): boolean => ship.inv > 0 || shieldT > 0;
-  const burst = (x: number, y: number, color: number, n = 10): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * TAU;
-      const sp = 40 + ctx.rng.next() * 140;
-      particles.emit({
-        x,
-        y,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp,
-        life: 0.6 + ctx.rng.next() * 0.4,
-        color,
-      });
+  // cosmetic only: fx RNG, so sparks never shift the seeded gameplay rolls
+  const burst = (x: number, y: number, color: number, n = 10): void =>
+    particles.burst(x, y, color, n, 140, 0.8);
+  let clock = 0; // game time (pauses with the game, unlike performance.now)
+  let thrustSfx = 0;
+
+  /** Ship destroyed. Returns true when that was the last life (game over). */
+  const loseLife = (): boolean => {
+    lives--;
+    ctx.hud.setLives(lives);
+    ctx.audio.sfx('hit');
+    ctx.fx.screenShake(8, 0.25);
+    burst(ship.x, ship.y, 0xa8a0ff, 16);
+    if (lives <= 0) {
+      over = true;
+      ctx.gameOver(score, { wave });
+      return true;
     }
+    respawn();
+    return false;
   };
   const setLabel = (): void => {
     const buffs = [shieldT > 0 ? '🛡' : '', tripleT > 0 ? '⋔' : ''].join('');
@@ -105,7 +113,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const spawnWave = (): void => {
     roids = [];
-    const count = 3 + wave;
+    const count = Math.min(3 + wave, 9); // cap so late waves stay readable
     for (let i = 0; i < count; i++) {
       const edge = ctx.rng.next();
       roids.push(makeRoid(edge * W, ctx.rng.next() < 0.5 ? 0 : H, 3, ctx.rng));
@@ -127,7 +135,7 @@ export default function createGame(ctx: GameContext): Game {
     });
   };
   const fire = (): void => {
-    if (over) return;
+    if (over || bullets.length >= 9) return;
     if (tripleT > 0) {
       shoot(ship.a);
       shoot(ship.a - 0.22);
@@ -147,11 +155,12 @@ export default function createGame(ctx: GameContext): Game {
     ship.inv = 1.2;
     burst(ship.x, ship.y, 0xa8a0ff, 12);
     ctx.audio.sfx('powerup');
-    // ~12% chance to rematerialize on top of a rock
+    // ~12% chance the jump fails and the ship blows up
     if (ctx.rng.next() < 0.12) {
-      for (const r of roids) {
-        if (Math.hypot(ship.x - r.x, ship.y - r.y) < r.r + 6) ctx.hud.toast('HYPERSPACE MISFIRE!');
-      }
+      ctx.hud.toast('HYPERSPACE MISFIRE!');
+      ship.inv = 0;
+      shieldT = 0;
+      loseLife();
     }
   };
   const offDown = ctx.input.on('down', (a) => {
@@ -197,7 +206,7 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(ship.x, ship.y, 18).stroke({
         width: 2,
         color: 0x00f7ff,
-        alpha: 0.4 + 0.3 * Math.sin(performance.now() / 100),
+        alpha: 0.4 + 0.3 * Math.sin(clock * 10),
       });
     // ship
     if (!(ship.inv > 0 && Math.floor(ship.inv * 10) % 2 === 0)) {
@@ -232,6 +241,7 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update(dt) {
       if (over) return;
+      clock += dt;
       // controls
       const ax = ctx.input.axis().x;
       ship.a += ax * 3.4 * dt;
@@ -239,15 +249,19 @@ export default function createGame(ctx: GameContext): Game {
       if (ship.thrust) {
         ship.vx += Math.cos(ship.a) * 240 * dt;
         ship.vy += Math.sin(ship.a) * 240 * dt;
-        if (ctx.rng.next() < 0.3) ctx.audio.sfx('blip');
+        thrustSfx -= dt;
+        if (thrustSfx <= 0) {
+          thrustSfx = 0.14;
+          ctx.audio.sfx('blip');
+        }
         // thruster particles
         const bx = ship.x - Math.cos(ship.a) * 12;
         const by = ship.y - Math.sin(ship.a) * 12;
         particles.emit({
           x: bx,
           y: by,
-          vx: -Math.cos(ship.a) * 80 + (ctx.rng.next() - 0.5) * 40,
-          vy: -Math.sin(ship.a) * 80 + (ctx.rng.next() - 0.5) * 40,
+          vx: -Math.cos(ship.a) * 80 + (fxRandom() - 0.5) * 40,
+          vy: -Math.sin(ship.a) * 80 + (fxRandom() - 0.5) * 40,
           life: 0.3,
           color: 0xff7b00,
         });
@@ -300,7 +314,7 @@ export default function createGame(ctx: GameContext): Game {
       }
       if (saucer) {
         saucer.x += saucer.dir * 90 * dt;
-        saucer.y += Math.sin(performance.now() / 400) * 20 * dt;
+        saucer.y += Math.sin(clock * 2.5) * 20 * dt;
         if (saucer.x < -20 || saucer.x > W + 20) saucer = null;
       }
       if (saucer) {
@@ -345,17 +359,8 @@ export default function createGame(ctx: GameContext): Game {
       if (!invincible()) {
         for (const b of eBullets) {
           if (Math.hypot(b.x - ship.x, b.y - ship.y) < 9) {
-            lives--;
-            ctx.hud.setLives(lives);
-            ctx.audio.sfx('hit');
-            burst(ship.x, ship.y, 0xa8a0ff, 16);
             eBullets = [];
-            if (lives <= 0) {
-              over = true;
-              ctx.gameOver(score, { wave });
-              return;
-            }
-            respawn();
+            if (loseLife()) return;
             break;
           }
         }
@@ -389,16 +394,7 @@ export default function createGame(ctx: GameContext): Game {
       if (!invincible()) {
         for (const r of roids) {
           if (Math.hypot(ship.x - r.x, ship.y - r.y) < r.r + 8) {
-            lives--;
-            ctx.hud.setLives(lives);
-            ctx.audio.sfx('hit');
-            burst(ship.x, ship.y, 0xa8a0ff, 16);
-            if (lives <= 0) {
-              over = true;
-              ctx.gameOver(score, { wave });
-              return;
-            }
-            respawn();
+            if (loseLife()) return;
             break;
           }
         }

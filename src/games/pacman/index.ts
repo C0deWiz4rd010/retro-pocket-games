@@ -303,7 +303,7 @@ export default function createGame(ctx: GameContext): Game {
           ghostCombo = 0;
           ctx.hud.setScore(score);
           ctx.audio.sfx('powerup');
-          ghosts.forEach((gh) => (gh.frightened = 6 + level * 0.4));
+          ghosts.forEach((gh) => (gh.frightened = Math.max(2.5, 7 - level * 0.6)));
         }
         // Feature: bonus fruit pickup
         if (fruit && rx === fruit.c && ry === fruit.r) {

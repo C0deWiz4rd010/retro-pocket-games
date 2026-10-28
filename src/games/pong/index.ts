@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { Particles } from '@kits/arcade/particles';
 
 type PowerKind = 'grow' | 'shrinkcpu' | 'slow';
 interface Capsule {
@@ -8,14 +9,6 @@ interface Capsule {
   y: number;
   kind: PowerKind;
   vy: number;
-}
-interface Spark {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
 }
 
 export default function createGame(ctx: GameContext): Game {
@@ -41,9 +34,10 @@ export default function createGame(ctx: GameContext): Game {
   let shrinkT = 0;
   let slowT = 0;
   let capsuleTimer = 3;
+  let cpuAim = 0; // per-rally aiming error in px, re-rolled on every return
   const trail: { x: number; y: number }[] = [];
   const capsules: Capsule[] = [];
-  const sparks: Spark[] = [];
+  const sparks = new Particles({ decay: 2, fade: 1 });
   const WIN = 11;
 
   const POWER: Record<PowerKind, { color: number; label: string }> = {
@@ -70,13 +64,9 @@ export default function createGame(ctx: GameContext): Game {
     player.y = clamp(y - player.h / 2, 0, H - player.h);
   });
 
-  const burst = (x: number, y: number, color: number, n = 8): void => {
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + ctx.rng.next();
-      const s = 60 + ctx.rng.next() * 120;
-      sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
-    }
-  };
+  // cosmetic only: uses the fx RNG so rallies stay identical for the same daily seed
+  const burst = (x: number, y: number, color: number, n = 8): void =>
+    sparks.burst(x, y, color, n, 120, 1);
 
   const draw = (): void => {
     g.clear();
@@ -120,7 +110,7 @@ export default function createGame(ctx: GameContext): Game {
     if (overdrive) g.circle(ball.x, ball.y, ball.r + 4).fill({ color: 0xff4d4d, alpha: 0.4 });
     g.circle(ball.x, ball.y, ball.r).fill({ color: overdrive ? 0xffd6d6 : 0xffffff });
     // sparks
-    for (const s of sparks) g.circle(s.x, s.y, 3 * s.life).fill({ color: s.color, alpha: s.life });
+    sparks.draw(g);
   };
 
   const point = (player1: boolean): void => {
@@ -177,8 +167,10 @@ export default function createGame(ctx: GameContext): Game {
       player.prevY = player.y;
 
       // CPU AI: track ball with capped speed + slight lag; faster as player scores more
-      const target = ball.y - cpu.h / 2;
-      const cpuSpeed = 200 + Math.min(pScore, 8) * 15;
+      // only chase once the ball is coming; otherwise drift back to the centre
+      const chase = ball.vx > 0;
+      const target = (chase ? ball.y : H / 2) - cpu.h / 2 + (chase ? cpuAim : 0);
+      const cpuSpeed = 190 + Math.min(pScore, 8) * 14;
       cpu.y += clamp(target - cpu.y, -cpuSpeed * dt, cpuSpeed * dt);
       cpu.y = clamp(cpu.y, 0, H - cpu.h);
 
@@ -232,6 +224,7 @@ export default function createGame(ctx: GameContext): Game {
         ball.vx = dir * Math.abs(sp * 0.8);
         ball.vy = hit * sp * 0.7 + paddleVy * 0.22; // Feature: spin from paddle motion
         rally++;
+        cpuAim = (ctx.rng.next() * 2 - 1) * cpu.h * 0.32;
         if (rally >= 6 && !overdrive) {
           overdrive = true;
           ctx.hud.toast('OVERDRIVE!');
@@ -263,13 +256,7 @@ export default function createGame(ctx: GameContext): Game {
       else if (ball.x > W + 20) point(true);
 
       // sparks
-      for (let i = sparks.length - 1; i >= 0; i--) {
-        const s = sparks[i]!;
-        s.x += s.vx * dt;
-        s.y += s.vy * dt;
-        s.life -= dt * 2;
-        if (s.life <= 0) sparks.splice(i, 1);
-      }
+      sparks.update(dt);
 
       draw();
     },

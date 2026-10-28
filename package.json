@@ -12,6 +12,7 @@
     "url": "https://github.com/C0deWiz4rd010/retro-pocket-games.git"
   },
   "scripts": {
+    "emoji:sprite": "node scripts/build-emoji-sprite.mjs",
     "dev": "vite",
     "gen:icons": "node scripts/gen-icons.mjs",
     "prebuild": "node scripts/gen-icons.mjs",

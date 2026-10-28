@@ -6,7 +6,7 @@ import { loadProfile } from '@store/profile';
 import { loadAchievements } from '@store/achievements';
 import { loadDaily } from '@store/dailyStore';
 import { loadPrefs } from '@store/prefs';
-import { detectLocale } from '@i18n/index';
+import { detectLocale, ensureLocale } from '@i18n/index';
 import { initPwaUx, offlineReadyToast, updateReadyBanner } from '@app/pwa';
 import { showErrorScreen } from '@app/errorScreen';
 import { App } from '@app/App';
@@ -22,6 +22,9 @@ async function boot(): Promise<void> {
     }
     localStorage.setItem('rp:localeSet', '1');
   }
+
+  // German is a lazy chunk: fetch it before the first render so no English text flashes.
+  await ensureLocale(settings().locale);
 
   // Count sessions (drives the delayed install banner).
   localStorage.setItem(

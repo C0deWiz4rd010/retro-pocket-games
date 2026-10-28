@@ -48,6 +48,14 @@ export class Starfield {
     }
   }
 
+  /** Parallax scroll driven by a camera position (e.g. a vertical scroller). */
+  setScroll(y: number): void {
+    this.layers.forEach((l, i) => {
+      const k = i === 0 ? 0.15 : 0.35;
+      l.g.y = (((y * k) % this.h) + this.h) % this.h;
+    });
+  }
+
   update(dt: number): void {
     for (const l of this.layers) l.g.y = (l.g.y + l.speed * dt) % this.h;
   }

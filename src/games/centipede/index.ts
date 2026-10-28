@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { stepSegment } from './core';
 import { Particles } from '@kits/arcade/particles';
 import { glowRect } from '@kits/arcade/glow';
 
@@ -99,18 +100,7 @@ export default function createGame(ctx: GameContext): Game {
   const offTap = ctx.input.on('tap', fire);
 
   const stepCentipede = (): void => {
-    for (const s of segments) {
-      let nc = s.col + s.dir;
-      // segments still queued off-screen on the left are walking in, not hitting a wall
-      const entering = s.col < 0 && s.dir > 0;
-      const blockedMush = nc >= 0 && nc < cols && mushrooms[mIdx(nc, s.row)]! > 0;
-      if (!entering && (nc < 0 || nc >= cols || blockedMush)) {
-        s.dir *= -1;
-        s.row = Math.min(rows - 1, s.row + 1);
-        nc = s.col + s.dir;
-      }
-      s.col = entering ? nc : clamp(nc, 0, cols - 1);
-    }
+    for (const s of segments) stepSegment(s, cols, rows, (c, r) => mushrooms[mIdx(c, r)]! > 0);
     if (segments.some((s) => s.row >= rows - 1)) loseLife();
   };
 

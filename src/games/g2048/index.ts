@@ -1,5 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { Particles } from '@kits/arcade/particles';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 import type { Action, Dir } from '@core/InputManager';
 
 const N = 4;
@@ -46,9 +48,9 @@ export default function createGame(ctx: GameContext): Game {
     const t = new Text({
       text: '',
       style: {
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: PIXEL_FONT,
         fontWeight: '800',
-        fontSize: cell * 0.32,
+        fontSize: cell * 0.46,
         fill: 0x101018,
         align: 'center',
       },
@@ -68,19 +70,11 @@ export default function createGame(ctx: GameContext): Game {
   let hammerArmed = false;
   // per-cell scale for merge bounce animation [0,1] => 1 when idle
   const cellScale: number[] = new Array(N * N).fill(1);
-  interface Particle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    life: number;
-    color: number;
-  }
   interface Popup {
     life: number;
     t: Text;
   }
-  const particles: Particle[] = [];
+  const particles = new Particles({ decay: 1.8, fade: 1 });
   const popups: Popup[] = [];
 
   const cellCenter = (i: number): { x: number; y: number } => ({
@@ -89,11 +83,8 @@ export default function createGame(ctx: GameContext): Game {
   });
   const burst = (i: number, color: number, n = 8): void => {
     const c = cellCenter(i);
-    for (let k = 0; k < n; k++) {
-      const a = (k / n) * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 80;
-      particles.push({ x: c.x, y: c.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
-    }
+    // cosmetic only: fx RNG so tile spawns stay identical for a given daily seed
+    particles.burst(c.x, c.y, color, n, 80, 1);
   };
   const popup = (i: number, text: string, color: number): void => {
     const c = cellCenter(i);
@@ -263,6 +254,14 @@ export default function createGame(ctx: GameContext): Game {
       tilesG
         .roundRect(px - off, py - off, cell * sc, cell * sc, 8)
         .fill({ color: COLORS[v] ?? 0xedc22e });
+      // soft top gloss; the biggest tiles glow
+      tilesG
+        .roundRect(px - off + 3, py - off + 3, cell * sc - 6, cell * sc * 0.28, 6)
+        .fill({ color: 0xffffff, alpha: 0.14 });
+      if (v >= 128)
+        tilesG
+          .roundRect(px - off - 3, py - off - 3, cell * sc + 6, cell * sc + 6, 11)
+          .fill({ color: COLORS[v] ?? 0xedc22e, alpha: 0.18 });
       label.text = String(v);
       label.style.fill = v <= 4 ? 0xcadc9f : 0x101018;
       label.position.set(px + cell / 2, py + cell / 2);
@@ -274,8 +273,7 @@ export default function createGame(ctx: GameContext): Game {
         .stroke({ width: 3, color: 0xff4d4d, alpha: 0.6 });
     }
     // particles
-    for (const p of particles)
-      fxG.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life });
+    particles.draw(fxG);
   };
 
   const smash = (i: number): void => {
@@ -339,12 +337,8 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt * 1.8;
-        if (p.life <= 0) particles.splice(i, 1);
+      if (particles.count > 0) {
+        particles.update(dt);
         needRedraw = true;
       }
       // popups float up and fade

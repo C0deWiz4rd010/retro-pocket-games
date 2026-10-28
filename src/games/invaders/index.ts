@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { shooters as pickShooters, waveParams } from './core';
 import { Particles } from '@kits/arcade/particles';
 import { Starfield } from '@kits/arcade/starfield';
 import { glowRect } from '@kits/arcade/glow';
@@ -78,7 +79,7 @@ export default function createGame(ctx: GameContext): Game {
         aliens.push({
           x: 24 + c * alienGapX,
           // later waves start lower, so the formation reaches you sooner
-          y: 70 + Math.min(wave - 1, 4) * 12 + r * 32,
+          y: 70 + waveParams(wave).startOffset + r * 32,
           alive: true,
           row: r,
           col: c,
@@ -258,8 +259,8 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       if (invuln > 0) invuln -= dt;
-      const waveSpeed = 1 + Math.min(wave - 1, 6) * 0.07;
-      const interval = clamp((0.5 * (aliveCount() / (COLS * ROWS)) + 0.08) / waveSpeed, 0.07, 0.6);
+      const params = waveParams(wave);
+      const interval = params.stepInterval(aliveCount() / (COLS * ROWS));
       stepAcc += dt;
       if (stepAcc >= interval) {
         stepAcc = 0;
@@ -294,12 +295,10 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       eFireAcc += dt;
-      if (eFireAcc > Math.max(0.35, 0.8 - (wave - 1) * 0.06)) {
+      if (eFireAcc > waveParams(wave).fireInterval) {
         eFireAcc = 0;
         // only the lowest living alien of each column can shoot (classic rule, readable threat)
-        const shooters = aliens.filter(
-          (a) => a.alive && !aliens.some((o) => o.alive && o.col === a.col && o.row > a.row),
-        );
+        const shooters = pickShooters(aliens);
         if (shooters.length) {
           const s = ctx.rng.pick(shooters);
           eBullets.push({ x: s.x + alienW / 2, y: s.y + 24 });
@@ -358,7 +357,7 @@ export default function createGame(ctx: GameContext): Game {
       // enemy bullets
       for (let i = eBullets.length - 1; i >= 0; i--) {
         const b = eBullets[i]!;
-        b.y += Math.min(400, 300 + (wave - 1) * 15) * dt;
+        b.y += waveParams(wave).bulletSpeed * dt;
         if (b.y > H) {
           eBullets.splice(i, 1);
           continue;

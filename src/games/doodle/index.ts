@@ -1,5 +1,8 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { Starfield } from '@kits/arcade/starfield';
+import { glowCircle } from '@kits/arcade/glow';
+import { fxRandom } from '@utils/rng';
 import { wrap } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
 
@@ -31,9 +34,9 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   ctx.stage.addChild(layer);
-  const bgG = new Graphics();
+  const starfield = new Starfield(W, H, { bg: 0x0a0a18, count: 44 });
   const g = new Graphics();
-  layer.addChild(bgG, g);
+  layer.addChild(starfield.view, g);
 
   const GRAV = 1400;
   const JUMP = -620;
@@ -48,9 +51,6 @@ export default function createGame(ctx: GameContext): Game {
   let jetpacks: { x: number; y: number }[] = [];
   const bullets: Bullet[] = [];
   const particles = new Particles();
-  const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 40; i++)
-    stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
   let height = 0;
   let camY = 0;
   let over = false;
@@ -60,8 +60,10 @@ export default function createGame(ctx: GameContext): Game {
 
   const addPlatform = (y: number): void => {
     const kindRoll = ctx.rng.next();
+    // more breakable / moving platforms the higher you climb
+    const hard = Math.min(0.2, height / 2000);
     const kind: Platform['kind'] =
-      kindRoll < 0.15 ? 'break' : kindRoll < 0.35 ? 'moving' : 'normal';
+      kindRoll < 0.15 + hard ? 'break' : kindRoll < 0.35 + hard * 1.5 ? 'moving' : 'normal';
     const x = ctx.rng.next() * (W - PW);
     const p: Platform = {
       x,
@@ -87,13 +89,9 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setScore(0);
   ctx.hud.setLabel('TILT / ◀ ▶ · TAP=SHOOT');
 
-  const burst = (x: number, y: number, color: number, n = 8): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 90;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps platform / monster generation independent of effects
+  const burst = (x: number, y: number, color: number, n = 8): void =>
+    particles.burst(x, y, color, n, 90, 0.5);
 
   const shoot = (): void => {
     if (over) return;
@@ -108,19 +106,18 @@ export default function createGame(ctx: GameContext): Game {
   const updateScore = (): void => ctx.hud.setScore(Math.max(0, height) + coinScore);
 
   const draw = (): void => {
-    bgG.clear();
-    bgG.rect(0, 0, W, H).fill({ color: 0x0a0a18 });
-    for (const s of stars) {
-      const sy = (s.y - camY * 0.3) % H;
-      bgG.circle(s.x, (sy + H) % H, s.s).fill({ color: 0xffffff, alpha: 0.1 + s.s * 0.15 });
-    }
+    starfield.setScroll(-camY);
     g.clear();
     platforms.forEach((p) => {
       const col = p.kind === 'break' ? 0xff7b00 : p.kind === 'moving' ? 0x00f7ff : 0x3ddc84;
-      g.roundRect(p.x, p.y - camY, p.w, 12, 4).fill({
-        color: col,
-        alpha: p.used && p.kind === 'break' ? 0.2 : 1,
+      const a = p.used && p.kind === 'break' ? 0.2 : 1;
+      g.roundRect(p.x, p.y - camY, p.w, 12, 4).fill({ color: col, alpha: a });
+      g.roundRect(p.x + 2, p.y - camY + 1, p.w - 4, 3, 2).fill({
+        color: 0xffffff,
+        alpha: 0.35 * a,
       });
+      if (p.kind === 'break')
+        g.rect(p.x + p.w / 2 - 1, p.y - camY, 2, 12).fill({ color: 0x3a1a00, alpha: 0.6 * a });
     });
     springs.forEach((s) => g.rect(s.x - 6, s.y - camY - 6, 12, 8).fill({ color: 0xffd200 }));
     jetpacks.forEach((j) => {
@@ -153,10 +150,20 @@ export default function createGame(ctx: GameContext): Game {
         player.x,
         player.y - camY + player.r + 18,
       ]).fill({ color: 0xff7b00, alpha: 0.8 });
+    glowCircle(g, player.x, player.y - camY, player.r * 0.8, 0x9bffce, 0.1);
+    // legs fold with the squash, then body, snout and eyes
+    g.rect(player.x - 7, player.y - camY + player.r - 2, 4, 6 * (1 - sq * 0.5)).fill({
+      color: 0x5fd9a0,
+    });
+    g.rect(player.x + 3, player.y - camY + player.r - 2, 4, 6 * (1 - sq * 0.5)).fill({
+      color: 0x5fd9a0,
+    });
     g.ellipse(player.x, player.y - camY, player.r * (1 - sq * 0.3), player.r * (1 + sq * 0.3)).fill(
       { color: 0x9bffce },
     );
-    g.circle(player.x + 4, player.y - camY - 4, 3).fill({ color: 0x101018 });
+    g.roundRect(player.x + 3, player.y - camY - 1, 12, 5, 2).fill({ color: 0x7ceab5 });
+    g.circle(player.x + 3, player.y - camY - 5, 3.5).fill({ color: 0xffffff });
+    g.circle(player.x + 4, player.y - camY - 5, 1.7).fill({ color: 0x101018 });
   };
 
   return {
@@ -167,11 +174,11 @@ export default function createGame(ctx: GameContext): Game {
       if (jetT > 0) {
         jetT -= dt;
         player.vy = -780;
-        if (ctx.rng.next() < 0.6)
+        if (fxRandom() < 0.6)
           particles.emit({
             x: player.x,
             y: player.y + player.r,
-            vx: (ctx.rng.next() - 0.5) * 40,
+            vx: (fxRandom() - 0.5) * 40,
             vy: 120,
             life: 0.4,
             color: 0xff7b00,
@@ -296,7 +303,7 @@ export default function createGame(ctx: GameContext): Game {
       jetpacks = jetpacks.filter((j) => j.y - camY < H + 40);
       monsters = monsters.filter((m) => m.y - camY < H + 40);
       const topMost = Math.min(...platforms.map((p) => p.y));
-      if (topMost - camY > -40) addPlatform(topMost - 70);
+      if (topMost - camY > -40) addPlatform(topMost - Math.min(112, 70 + height * 0.12));
 
       // death: fall off the bottom
       if (player.y - camY > H + 30) {

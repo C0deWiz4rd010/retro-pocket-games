@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { glowCircle } from '@kits/arcade/glow';
 import type { Action } from '@core/InputManager';
 import { Particles } from '@kits/arcade/particles';
 
@@ -60,18 +61,8 @@ export default function createGame(ctx: GameContext): Game {
   };
   const sparkle = (q: number, color: number): void => {
     const p = padCenter(q);
-    for (let i = 0; i < 10; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 90;
-      particles.emit({
-        x: p.x,
-        y: p.y,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s,
-        life: 0.5,
-        color,
-      });
-    }
+    // cosmetic only: the sequence uses ctx.rng, sparkles must not shift it
+    particles.burst(p.x, p.y, color, 10, 90, 0.5);
   };
 
   const flash = (pad: number, dur = 0.42): void => {
@@ -133,12 +124,29 @@ export default function createGame(ctx: GameContext): Game {
     g.clear();
     PADS.forEach((p) => {
       const start = [Math.PI, -Math.PI / 2, Math.PI / 2, 0][p.q]!;
-      g.moveTo(cx, cy);
-      g.arc(cx, cy, R, start, start + Math.PI / 2);
-      g.fill({ color: lit === p.q ? p.color : p.dim });
+      const on = lit === p.q;
+      // small inset so the four pads read as separate buttons
+      const mid = start + Math.PI / 4;
+      const ox = Math.cos(mid) * 4;
+      const oy = Math.sin(mid) * 4;
+      if (on) {
+        g.moveTo(cx + ox, cy + oy);
+        g.arc(cx + ox, cy + oy, R + 8, start, start + Math.PI / 2);
+        g.fill({ color: p.color, alpha: 0.25 });
+      }
+      g.moveTo(cx + ox, cy + oy);
+      g.arc(cx + ox, cy + oy, R, start, start + Math.PI / 2);
+      g.fill({ color: on ? p.color : p.dim });
+      // gloss highlight near the rim
+      g.arc(cx + ox, cy + oy, R * 0.92, start + 0.15, start + Math.PI / 2 - 0.15).stroke({
+        width: 3,
+        color: 0xffffff,
+        alpha: on ? 0.55 : 0.12,
+      });
     });
     // particles
     particles.draw(g);
+    glowCircle(g, cx, cy, R * 0.3, 0x2b2b40, 0.1);
     g.circle(cx, cy, R * 0.32).fill({ color: 0x14141f });
     g.circle(cx, cy, R * 0.32).stroke({ width: 3, color: 0x2b2b40 });
     // input time ring

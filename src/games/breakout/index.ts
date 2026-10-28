@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { brickReflect, levelSpeed as coreLevelSpeed, paddleBounce } from './core';
 import { Particles } from '@kits/arcade/particles';
 import { glowCircle, glowRect, mix } from '@kits/arcade/glow';
 import { Starfield } from '@kits/arcade/starfield';
@@ -107,7 +108,7 @@ export default function createGame(ctx: GameContext): Game {
     balls = [{ x: pad.x + pad.w / 2, y: pad.y - 8, vx: 0, vy: 0, trail: [] }];
   };
 
-  const levelSpeed = (): number => Math.min(280 + level * 18, 520);
+  const levelSpeed = (): number => coreLevelSpeed(level);
 
   const launch = (): void => {
     if (!stuck) return;
@@ -322,9 +323,9 @@ export default function createGame(ctx: GameContext): Game {
           // bounce angle follows where the paddle was hit (±60°), speed is preserved
           const hit = clamp((ball.x - (pad.x + pad.w / 2)) / (pad.w / 2), -1, 1);
           const speed = Math.max(Math.hypot(ball.vx, ball.vy), levelSpeed() * 0.9);
-          const angle = hit * (Math.PI / 3);
-          ball.vx = Math.sin(angle) * speed;
-          ball.vy = -Math.cos(angle) * speed;
+          const v = paddleBounce(hit, speed);
+          ball.vx = v.vx;
+          ball.vy = v.vy;
           ball.y = pad.y - 6;
           combo = 0; // paddle touch breaks the combo chain
           ctx.audio.sfx('blip');
@@ -333,18 +334,11 @@ export default function createGame(ctx: GameContext): Game {
         if (ball.trail.length > 7) ball.trail.shift();
         for (let i = 0; i < bricks.length; i++) {
           const b = bricks[i]!;
-          if (
-            ball.x + 6 > b.x &&
-            ball.x - 6 < b.x + brickW - 4 &&
-            ball.y + 6 > b.y &&
-            ball.y - 6 < b.y + brickH
-          ) {
-            // reflect on the axis with the smaller penetration (side hits no longer flip vy)
-            const overlapX = Math.min(ball.x + 6 - b.x, b.x + brickW - 4 - (ball.x - 6));
-            const overlapY = Math.min(ball.y + 6 - b.y, b.y + brickH - (ball.y - 6));
-            if (overlapX < overlapY)
-              ball.vx = ball.x < b.x + (brickW - 4) / 2 ? -Math.abs(ball.vx) : Math.abs(ball.vx);
-            else ball.vy = ball.y < b.y + brickH / 2 ? -Math.abs(ball.vy) : Math.abs(ball.vy);
+          // reflect on the axis with the smaller penetration (side hits no longer flip vy)
+          const r = brickReflect(ball, 6, { x: b.x, y: b.y, w: brickW - 4, h: brickH });
+          if (r) {
+            ball.vx = r.vx;
+            ball.vy = r.vy;
             hitBrick(i);
             break;
           }

@@ -1,5 +1,8 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { Particles } from '@kits/arcade/particles';
+import { cellAt } from '@kits/arcade/grid';
+import { bevelBlock } from '@kits/arcade/glow';
 
 const NUM_COLORS = [
   0x000000, 0x4a7bff, 0x3ddc84, 0xff4d4d, 0x9a5bff, 0xff7b00, 0x00c2c7, 0xeeeeee, 0x9aa0ff,
@@ -26,15 +29,7 @@ export default function createGame(ctx: GameContext): Game {
   const revealed = new Array(COLS * ROWS).fill(false);
   const flagged = new Array(COLS * ROWS).fill(false);
   const adj = new Array(COLS * ROWS).fill(0);
-  interface Particle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    life: number;
-    color: number;
-  }
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let level = 1;
   let hints = 2; // Feature: safe-cell hints
   let score = 0;
@@ -83,13 +78,8 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const pop = (x: number, y: number, color: number, n = 5): void => {
-    const cx = x * cell + cell / 2;
-    const cy = y * cell + cell / 2;
-    for (let k = 0; k < n; k++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 30 + ctx.rng.next() * 70;
-      particles.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
-    }
+    // cosmetic only: the mine layout uses ctx.rng, popping tiles must not shift it
+    particles.burst(x * cell + cell / 2, y * cell + cell / 2, color, n, 70, 0.5);
   };
 
   const reveal = (x: number, y: number): void => {
@@ -170,9 +160,10 @@ export default function createGame(ctx: GameContext): Game {
 
   const click = (vx: number, vy: number): void => {
     if (over) return;
-    const x = Math.floor((vx - ox) / cell);
-    const y = Math.floor((vy - oy) / cell);
-    if (!inB(x, y)) return;
+    const hit = cellAt({ x: ox, y: oy, cell, cols: COLS, rows: ROWS }, vx, vy);
+    if (!hit) return;
+    const x = hit.c;
+    const y = hit.r;
     started = true;
     const i = idx(x, y);
     if (flagMode) {
@@ -209,13 +200,40 @@ export default function createGame(ctx: GameContext): Game {
     updateLabel();
   };
 
-  const offTap = ctx.input.on('tap', ({ x, y }) => click(x, y));
+  const cursor = { x: Math.floor(COLS / 2), y: Math.floor(ROWS / 2) };
+  let cursorOn = false; // appears on the first arrow press; touch users never see it
+  const clickCell = (cx: number, cy: number): void =>
+    click(ox + cx * cell + cell / 2, oy + cy * cell + cell / 2);
+  const offTap = ctx.input.on('tap', ({ x, y }) => {
+    cursorOn = false;
+    click(x, y);
+  });
   const offDown = ctx.input.on('down', (a) => {
-    if (a === 'a' || a === 'b') {
+    if (a === 'up' || a === 'down' || a === 'left' || a === 'right') {
+      cursorOn = true;
+      cursor.x = Math.max(
+        0,
+        Math.min(COLS - 1, cursor.x + (a === 'right' ? 1 : a === 'left' ? -1 : 0)),
+      );
+      cursor.y = Math.max(
+        0,
+        Math.min(ROWS - 1, cursor.y + (a === 'down' ? 1 : a === 'up' ? -1 : 0)),
+      );
+      draw();
+    } else if (cursorOn && a === 'a') {
+      clickCell(cursor.x, cursor.y); // dig / chord (or flag, if flag mode is on)
+    } else if (cursorOn && a === 'b') {
+      const was = flagMode;
+      flagMode = true;
+      clickCell(cursor.x, cursor.y); // quick flag toggle
+      flagMode = was;
+      updateLabel();
+    } else if (a === 'a' || a === 'b') {
       setMode(!flagMode);
       ctx.audio.sfx('select');
     } else if (a === 'start' || a === 'select') {
-      useHint();
+      if (cursorOn && a === 'start') setMode(!flagMode);
+      else useHint();
     }
   });
 
@@ -242,7 +260,7 @@ export default function createGame(ctx: GameContext): Game {
             lbl.visible = true;
           }
         } else {
-          g.roundRect(px + 1, py + 1, cell - 2, cell - 2, 3).fill({ color: 0x2b2b40 });
+          bevelBlock(g, px + 1, py + 1, cell - 2, 0x2b2b40);
           if (flagged[i]) {
             lbl.text = '🚩';
             lbl.style.fontSize = cell * 0.5;
@@ -252,10 +270,13 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
     fxG.clear();
-    for (const p of particles)
+    particles.draw(fxG);
+    // keyboard cursor
+    if (cursorOn) {
       fxG
-        .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
-        .fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+        .roundRect(cursor.x * cell + 1, cursor.y * cell + 1, cell - 2, cell - 2, 3)
+        .stroke({ width: 3, color: 0x00f7ff });
+    }
   };
 
   setMode(false);
@@ -267,21 +288,14 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update(dt) {
       // particles always animate
-      let dirty = false;
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-        dirty = true;
-      }
-      if (dirty) {
+      if (particles.count > 0) {
+        particles.update(dt);
         fxG.clear();
-        for (const p of particles)
+        particles.draw(fxG);
+        if (cursorOn)
           fxG
-            .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
-            .fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+            .roundRect(cursor.x * cell + 1, cursor.y * cell + 1, cell - 2, cell - 2, 3)
+            .stroke({ width: 3, color: 0x00f7ff });
       }
       if (over || !started) return;
       elapsed += dt;

@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
+import { Combo } from '@kits/arcade/combo';
 import { Starfield } from '@kits/arcade/starfield';
 import { glowCircle } from '@kits/arcade/glow';
 
@@ -54,8 +55,7 @@ export default function createGame(ctx: GameContext): Game {
   let dualT = 0; // Feature: dual fighter
   let rapidT = 0; // Feature: rapid fire
   let shield = false; // Feature: shield
-  let streak = 0;
-  let streakTimer = 0;
+  const streak = new Combo(2.5, 99); // kill streak: resets after 2.5 s without a kill or on a hit
 
   // cosmetic only: fx RNG keeps the seeded gameplay rolls independent of effects
   const burst = (x: number, y: number, color: number, n = 10): void =>
@@ -209,7 +209,7 @@ export default function createGame(ctx: GameContext): Game {
           fire();
         }
       }
-      if (streakTimer > 0 && (streakTimer -= dt) <= 0) streak = 0;
+      streak.update(dt);
       if (invuln > 0) invuln -= dt;
 
       starfield.update(dt);
@@ -284,12 +284,12 @@ export default function createGame(ctx: GameContext): Game {
           if (Math.abs(b.x - e.x) < 13 && Math.abs(b.y - e.y) < 12) {
             e.alive = false;
             bullets.splice(j, 1);
-            streak++;
-            streakTimer = 2.5;
+            streak.hit();
             const base = e.boss ? 150 : e.diving ? 100 : 50;
-            score += base + (streak >= 3 ? streak * 10 : 0);
+            score += base + (streak.count >= 3 ? streak.count * 10 : 0);
             ctx.hud.setScore(score);
-            if (streak >= 3 && streak % 3 === 0) ctx.hud.toast(`STREAK x${streak}`);
+            if (streak.count >= 3 && streak.count % 3 === 0)
+              ctx.hud.toast(`STREAK x${streak.count}`);
             burst(e.x, e.y, e.boss ? 0xff2e97 : 0x42a5f5, e.boss ? 16 : 10);
             ctx.fx.screenShake((e.boss ? 0.35 : 0.15) * 16, (e.boss ? 0.35 : 0.15) / 2);
             ctx.audio.sfx('explosion');
@@ -327,7 +327,7 @@ export default function createGame(ctx: GameContext): Game {
           }
           lives--;
           invuln = 1.3;
-          streak = 0;
+          streak.reset();
           ctx.fx.screenShake(8, 0.25);
           ctx.fx.hitStop(0.07);
           burst(player.x, player.y, 0x00f7ff, 14);
@@ -359,7 +359,7 @@ export default function createGame(ctx: GameContext): Game {
           }
           lives--;
           invuln = 1.3;
-          streak = 0;
+          streak.reset();
           ctx.fx.screenShake(8, 0.25);
           ctx.hud.setLives(lives);
           ctx.audio.sfx('hit');

@@ -2,6 +2,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { fxRandom } from '@utils/rng';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle } from '@kits/arcade/glow';
 import { PIXEL_FONT } from '@kits/arcade/constants';
 
 export default function createGame(ctx: GameContext): Game {
@@ -84,13 +85,11 @@ export default function createGame(ctx: GameContext): Game {
     ship.fuel = Math.min(100, 60 + level * 5);
   };
 
-  const burst = (x: number, y: number, color: number, n = 14): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 140;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps terrain/wind/fuel rolls independent of effects
+  const burst = (x: number, y: number, color: number, n = 14): void =>
+    particles.burst(x, y, color, n, 140, 0.6);
+  let thrustSfx = 0;
+  let infoAcc = 0;
 
   const terrainY = (x: number): number => {
     for (let i = 0; i < points.length - 1; i++) {
@@ -112,6 +111,10 @@ export default function createGame(ctx: GameContext): Game {
     points.forEach((p) => path.push(p.x, p.y));
     path.push(W, H, 0, H);
     terrainG.poly(path).fill({ color: 0x1a1a2e });
+    // lighter ridge band under the surface for depth
+    terrainG
+      .poly(points.flatMap((p) => [p.x, p.y]))
+      .stroke({ width: 10, color: 0x2a2a44, alpha: 0.7 });
     terrainG.poly(points.flatMap((p) => [p.x, p.y])).stroke({ width: 2, color: 0x8a8aa3 });
     terrainG.rect(padX1, padY - 2, padX2 - padX1, 4).fill({ color: 0x3ddc84 });
     const flag = new Text({
@@ -137,7 +140,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const nextMission = (): void => {
     level++;
-    windStrength = (ctx.rng.next() - 0.5) * (14 + level * 3);
+    windStrength = (ctx.rng.next() - 0.5) * (14 + Math.min(level, 12) * 3);
     ctx.hud.setLabel(`LAND SOFTLY · L${level}`);
     ctx.hud.toast(`MISSION ${level}`);
     genTerrain();
@@ -160,7 +163,14 @@ export default function createGame(ctx: GameContext): Game {
     const [ax, ay] = tx(0, -10);
     const [bx, by] = tx(-7, 7);
     const [cx, cy] = tx(7, 7);
+    // landing legs, hull, cockpit
+    const [l1x, l1y] = tx(-9, 11);
+    const [l2x, l2y] = tx(9, 11);
+    g.moveTo(bx, by).lineTo(l1x, l1y).stroke({ width: 2, color: 0x8a98a0 });
+    g.moveTo(cx, cy).lineTo(l2x, l2y).stroke({ width: 2, color: 0x8a98a0 });
+    glowCircle(g, ship.x, ship.y, 8, 0x9bffce, 0.1);
     g.poly([ax, ay, bx, by, cx, cy]).fill({ color: 0xb0bec5 });
+    g.circle(...tx(0, 0), 2.5).fill({ color: 0x00f7ff });
     if ((ctx.input.isDown('a') || ctx.input.isDown('up')) && ship.fuel > 0) {
       const [fx, fy] = tx(0, 9);
       const [f2x, f2y] = tx(-4, 16 + fxRandom() * 6);
@@ -185,15 +195,19 @@ export default function createGame(ctx: GameContext): Game {
         ship.vx += Math.sin(ship.a) * THRUST * dt;
         ship.vy -= Math.cos(ship.a) * THRUST * dt;
         ship.fuel -= 18 * dt;
-        if (ctx.rng.next() < 0.3) ctx.audio.sfx('blip');
+        thrustSfx -= dt;
+        if (thrustSfx <= 0) {
+          thrustSfx = 0.14;
+          ctx.audio.sfx('blip');
+        }
         // thruster particles
         const fx = ship.x - Math.sin(ship.a) * 12;
         const fy = ship.y + Math.cos(ship.a) * 12;
         particles.emit({
           x: fx,
           y: fy,
-          vx: ship.vx * 0.3 + (ctx.rng.next() - 0.5) * 30,
-          vy: 60 + ctx.rng.next() * 40,
+          vx: ship.vx * 0.3 + (fxRandom() - 0.5) * 30,
+          vy: 60 + fxRandom() * 40,
           life: 0.3,
           color: 0xff7b00,
         });
@@ -218,7 +232,12 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
 
-      info.text = `FUEL ${Math.max(0, Math.round(ship.fuel))}  VY ${ship.vy.toFixed(0)}  WIND ${windGust > 0 ? '>' : '<'}${Math.abs(windGust).toFixed(0)}`;
+      // re-rasterising the readout every frame is wasteful: ~8 updates per second is plenty
+      infoAcc += dt;
+      if (infoAcc >= 0.12) {
+        infoAcc = 0;
+        info.text = `FUEL ${Math.max(0, Math.round(ship.fuel))}  VY ${ship.vy.toFixed(0)}  WIND ${windGust > 0 ? '>' : '<'}${Math.abs(windGust).toFixed(0)}`;
+      }
 
       const ground = terrainY(ship.x);
       if (ship.y + 8 >= ground) {

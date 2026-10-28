@@ -106,7 +106,7 @@ export default function createGame(ctx: GameContext): Game {
       let space = 0;
       let tx = cpu.x;
       let ty = cpu.y;
-      while (space < 12 && !blocked(tx + d.x, ty + d.y)) {
+      while (space < Math.min(24, 10 + wins * 2) && !blocked(tx + d.x, ty + d.y)) {
         tx += d.x;
         ty += d.y;
         space++;
@@ -131,15 +131,10 @@ export default function createGame(ctx: GameContext): Game {
     }
   };
 
-  const burst = (gx: number, gy: number, color: number, n = 20): void => {
-    const cx = gx * cell + cell / 2;
-    const cy = gy * cell + cell / 2;
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 160;
-      particles.emit({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.7, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps pickup placement / CPU tie-breaks independent of effects
+  const burst = (gx: number, gy: number, color: number, n = 20): void =>
+    particles.burst(gx * cell + cell / 2, gy * cell + cell / 2, color, n, 160, 0.7);
+  let clock = 0;
 
   const drawHeads = (): void => {
     headG.clear();
@@ -153,7 +148,7 @@ export default function createGame(ctx: GameContext): Game {
     if (pickup) {
       const px = pickup.x * cell + cell / 2;
       const py = pickup.y * cell + cell / 2;
-      const r = cell * (0.4 + 0.15 * Math.sin(performance.now() / 120));
+      const r = cell * (0.4 + 0.15 * Math.sin(clock * 8.3));
       headG.circle(px, py, r).fill({ color: 0x3ddc84 });
       headG.circle(px, py, r * 0.5).fill({ color: 0xccffe0 });
     }
@@ -209,7 +204,15 @@ export default function createGame(ctx: GameContext): Game {
     const pny = player.y + player.dy;
     const cnx = cpu.x + cpu.dx;
     const cny = cpu.y + cpu.dy;
-    const pDead = blocked(pnx, pny) || (pnx === cnx && pny === cny);
+    if (pnx === cnx && pny === cny) {
+      // head-on: nobody wins, replay the round
+      burst(pnx, pny, 0xffffff, 24);
+      ctx.audio.sfx('hit');
+      ctx.hud.toast('DRAW');
+      reset();
+      return;
+    }
+    const pDead = blocked(pnx, pny);
     const cDead = blocked(cnx, cny);
     if (pDead) return endRound(false);
     if (cDead) return endRound(true);
@@ -241,6 +244,7 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update(dt) {
       if (over) return;
+      clock += dt;
 
       // boost meter
       if (boostT > 0) {

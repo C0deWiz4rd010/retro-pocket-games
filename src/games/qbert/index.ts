@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle } from '@kits/arcade/glow';
 
 /**
  * Q*bert-lite: hop down an isometric pyramid of cubes, flipping each to the target
@@ -68,18 +69,8 @@ export default function createGame(ctx: GameContext): Game {
 
   const burst = (r: number, c: number, color: number, n = 8): void => {
     const p = pos(r, c);
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 90;
-      particles.emit({
-        x: p.x,
-        y: p.y + cubeH * 0.4,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s,
-        life: 0.5,
-        color,
-      });
-    }
+    // cosmetic only: fx RNG keeps enemy hops / orb timing independent of effects
+    particles.burst(p.x, p.y + cubeH * 0.4, color, n, 90, 0.5);
   };
 
   // Four diagonal hops mapped to the d-pad:
@@ -183,6 +174,19 @@ export default function createGame(ctx: GameContext): Game {
       color: top,
     });
     g.poly([
+      x,
+      y + 2,
+      x + hw * 0.6,
+      y + cubeH * 0.4,
+      x,
+      y + cubeH * 0.2,
+      x - hw * 0.6,
+      y + cubeH * 0.4,
+    ]).fill({
+      color: 0xffffff,
+      alpha: 0.22,
+    });
+    g.poly([
       x - hw,
       y + cubeH * 0.4,
       x,
@@ -216,20 +220,38 @@ export default function createGame(ctx: GameContext): Game {
     // bonus orb
     if (orb) {
       const p = pos(orb.row, orb.col);
+      glowCircle(g, p.x, p.y, tile * 0.26, 0x00f7ff, 0.25);
       g.circle(p.x, p.y, tile * 0.26).fill({ color: 0x00f7ff });
       g.circle(p.x, p.y, tile * 0.13).fill({ color: 0xccffff });
     }
     // enemies
     enemies.forEach((e) => {
       const p = pos(e.row, e.col);
-      g.circle(p.x, p.y, tile * 0.28).fill({ color: freeze > 0 ? 0x6a9fd6 : 0xb14cff });
+      const ec = freeze > 0 ? 0x6a9fd6 : 0xb14cff;
+      g.ellipse(p.x, p.y + cubeH * 0.45, tile * 0.22, tile * 0.07).fill({
+        color: 0x000000,
+        alpha: 0.25,
+      });
+      g.circle(p.x, p.y, tile * 0.28).fill({ color: ec });
+      g.circle(p.x - 4, p.y - 3, 3).fill({ color: 0xffffff });
+      g.circle(p.x + 4, p.y - 3, 3).fill({ color: 0xffffff });
+      g.circle(p.x - 4, p.y - 3, 1.4).fill({ color: 0x101018 });
+      g.circle(p.x + 4, p.y - 3, 1.4).fill({ color: 0x101018 });
     });
     // q*bert
     const qp = pos(q.row, q.col);
     const oy = q.fall ? 30 : -cubeH * 0.5;
+    g.ellipse(qp.x, qp.y + cubeH * 0.45, tile * 0.24, tile * 0.07).fill({
+      color: 0x000000,
+      alpha: 0.28,
+    });
     g.circle(qp.x, qp.y + oy, tile * 0.3).fill({ color: 0xff7b00 });
-    g.circle(qp.x - 4, qp.y + oy - 3, 2).fill({ color: 0x101018 });
-    g.circle(qp.x + 4, qp.y + oy - 3, 2).fill({ color: 0x101018 });
+    g.circle(qp.x - 5, qp.y + oy - 3, 3.2).fill({ color: 0xffffff });
+    g.circle(qp.x + 5, qp.y + oy - 3, 3.2).fill({ color: 0xffffff });
+    g.circle(qp.x - 5, qp.y + oy - 3, 1.5).fill({ color: 0x101018 });
+    g.circle(qp.x + 5, qp.y + oy - 3, 1.5).fill({ color: 0x101018 });
+    // the long snout
+    g.roundRect(qp.x - 3, qp.y + oy + 2, tile * 0.32, 6, 3).fill({ color: 0xffa040 });
   };
 
   return {
@@ -241,7 +263,7 @@ export default function createGame(ctx: GameContext): Game {
 
       // spawn enemies
       enemyTimer -= dt;
-      if (enemyTimer <= 0 && enemies.length < 1 + level) {
+      if (enemyTimer <= 0 && enemies.length < Math.min(4, 1 + level)) {
         enemyTimer = Math.max(1.5, 3.5 - level * 0.2);
         enemies.push({ row: 0, col: 0, t: 0 });
       }

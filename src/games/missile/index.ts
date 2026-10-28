@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle, glowRect } from '@kits/arcade/glow';
 
 interface Incoming {
   x: number;
@@ -69,13 +70,9 @@ export default function createGame(ctx: GameContext): Game {
   let spawnAcc = 0;
   let toSpawn = 6;
 
-  const burst = (x: number, y: number, color: number, n = 8): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 100;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps the seeded missile rolls independent of effects
+  const burst = (x: number, y: number, color: number, n = 8): void =>
+    particles.burst(x, y, color, n, 100, 0.5);
 
   ctx.hud.setScore(0);
   ctx.hud.setLabel('WAVE 1 • AMMO 10');
@@ -105,7 +102,7 @@ export default function createGame(ctx: GameContext): Game {
     const tx = ctx.rng.pick(targets);
     const ty = groundY;
     const ang = Math.atan2(ty - y, tx - x);
-    const sp = 40 + wave * 6;
+    const sp = Math.min(150, 40 + wave * 7); // capped: late waves stay dodge-able
     incoming.push({
       x,
       y,
@@ -128,19 +125,30 @@ export default function createGame(ctx: GameContext): Game {
     g.rect(0, groundY, W, H - groundY).fill({ color: 0x2a1a0a });
     cities.forEach((c) => {
       if (c.alive) {
+        glowRect(g, c.x - 14, groundY - 16, 28, 16, 3, 0x42a5f5, 0.25);
         g.roundRect(c.x - 14, groundY - 16, 28, 16, 3).fill({ color: 0x42a5f5 });
-        g.rect(c.x - 10, groundY - 24, 6, 8).fill({ color: 0x42a5f5 });
-        g.rect(c.x + 4, groundY - 24, 6, 8).fill({ color: 0x42a5f5 });
+        g.rect(c.x - 10, groundY - 24, 6, 8).fill({ color: 0x5fb6ff });
+        g.rect(c.x + 4, groundY - 24, 6, 8).fill({ color: 0x5fb6ff });
+        // lit windows
+        for (let k = 0; k < 3; k++)
+          g.rect(c.x - 10 + k * 8, groundY - 12, 4, 4).fill({ color: 0xfff6b0, alpha: 0.85 });
+      } else {
+        g.roundRect(c.x - 12, groundY - 6, 24, 6, 2).fill({ color: 0x3a2a1a }); // rubble
       }
     });
+    glowCircle(g, battery.x, battery.y - 4, 12, 0x3ddc84, 0.15);
     g.poly([battery.x, battery.y - 18, battery.x - 12, battery.y, battery.x + 12, battery.y]).fill({
-      color: 0x3ddc84,
+      color: battery.ammo > 0 ? 0x3ddc84 : 0x556655,
     });
+    g.rect(battery.x - 2, battery.y - 22, 4, 8).fill({ color: 0xd9ffe9 });
     incoming.forEach((m) => {
+      g.moveTo(m.x - m.vx * 0.5, m.y - m.vy * 0.5)
+        .lineTo(m.x, m.y)
+        .stroke({ width: 1.5, color: 0xff4d4d, alpha: 0.45 });
       g.moveTo(m.x - m.vx * 0.06, m.y - m.vy * 0.06)
         .lineTo(m.x, m.y)
         .stroke({ width: 2, color: 0xff4d4d });
-      g.circle(m.x, m.y, 3).fill({ color: 0xffd200 });
+      glowCircle(g, m.x, m.y, 3, 0xffd200, 0.2);
     });
     counters.forEach((m) => {
       g.moveTo(battery.x, battery.y)
@@ -148,9 +156,12 @@ export default function createGame(ctx: GameContext): Game {
         .stroke({ width: 1, color: 0x00f7ff, alpha: 0.25 });
       g.circle(m.x, m.y, 2.5).fill({ color: 0x00f7ff });
     });
-    blasts.forEach((b) =>
-      g.circle(b.x, b.y, b.r).fill({ color: b.kills >= 2 ? 0xfff6b0 : 0xffd27f, alpha: 0.6 }),
-    );
+    blasts.forEach((b) => {
+      const hot = b.kills >= 2 ? 0xfff6b0 : 0xffd27f;
+      g.circle(b.x, b.y, b.r * 1.25).fill({ color: 0xff7b00, alpha: 0.18 });
+      g.circle(b.x, b.y, b.r).fill({ color: hot, alpha: 0.6 });
+      g.circle(b.x, b.y, b.r * 0.5).fill({ color: 0xffffff, alpha: 0.5 });
+    });
     if (crate) {
       g.roundRect(crate.x - 9, crate.y - 7, 18, 14, 2).fill({ color: 0x3ddc84 });
       g.roundRect(crate.x - 9, crate.y - 7, 18, 14, 2).stroke({
@@ -166,7 +177,7 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       spawnAcc += dt;
-      if (spawnAcc > 1.2 && toSpawn > 0) {
+      if (spawnAcc > Math.max(0.55, 1.2 - (wave - 1) * 0.05) && toSpawn > 0) {
         spawnAcc = 0;
         toSpawn--;
         spawnIncoming();
@@ -237,7 +248,15 @@ export default function createGame(ctx: GameContext): Game {
           ctx.audio.sfx('hit');
           // destroy nearest city / battery
           const city = cities.find((c) => c.alive && Math.abs(c.x - m.x) < 18);
-          if (city) city.alive = false;
+          if (city) {
+            city.alive = false;
+            ctx.fx.hitStop(0.06);
+          } else if (Math.abs(battery.x - m.x) < 20 && battery.ammo > 0) {
+            // a hit on the battery wrecks part of the ammo store
+            battery.ammo = Math.max(0, battery.ammo - 5);
+            ctx.hud.toast('BATTERY HIT -5 AMMO');
+            updateLabel();
+          }
         }
       }
       blasts = blasts.filter((b) => b.r > 0);

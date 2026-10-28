@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle, glowRect } from '@kits/arcade/glow';
 
 type PowerKind = 'grow' | 'shrinkcpu' | 'slow';
 interface Capsule {
@@ -70,9 +71,12 @@ export default function createGame(ctx: GameContext): Game {
 
   const draw = (): void => {
     g.clear();
-    // net
+    // net + court lines
     for (let y = 0; y < H; y += 24)
       g.rect(W / 2 - 1, y, 2, 12).fill({ color: 0xffffff, alpha: 0.3 });
+    g.rect(0, 0, W, 2).fill({ color: 0xffffff, alpha: 0.12 });
+    g.rect(0, H - 2, W, 2).fill({ color: 0xffffff, alpha: 0.12 });
+    g.circle(W / 2, H / 2, 46).stroke({ width: 2, color: 0xffffff, alpha: 0.08 });
     // score pips
     for (let i = 0; i < WIN; i++) {
       g.circle(W / 2 - 90 + i * 8, 14, 3).fill({
@@ -98,16 +102,20 @@ export default function createGame(ctx: GameContext): Game {
     );
     // paddles (glow if buffed)
     const pGlow = growT > 0;
+    glowRect(g, 14, player.y, padW, player.h, 4, pGlow ? 0x3ddc84 : 0x00f7ff, 0.5);
     g.roundRect(14, player.y, padW, player.h, 4).fill({ color: pGlow ? 0x9bffce : 0x00f7ff });
+    g.rect(16, player.y + 3, 2, player.h - 6).fill({ color: 0xffffff, alpha: 0.4 });
     if (pGlow)
       g.roundRect(12, player.y - 2, padW + 4, player.h + 4, 5).stroke({
         width: 2,
         color: 0x3ddc84,
         alpha: 0.6,
       });
+    glowRect(g, W - 14 - padW, cpu.y, padW, cpu.h, 4, 0xff2e97, 0.5);
     g.roundRect(W - 14 - padW, cpu.y, padW, cpu.h, 4).fill({ color: 0xff2e97 });
+    g.rect(W - 14 - padW + 2, cpu.y + 3, 2, cpu.h - 6).fill({ color: 0xffffff, alpha: 0.4 });
     // ball
-    if (overdrive) g.circle(ball.x, ball.y, ball.r + 4).fill({ color: 0xff4d4d, alpha: 0.4 });
+    glowCircle(g, ball.x, ball.y, ball.r, overdrive ? 0xff4d4d : 0x00f7ff, overdrive ? 0.5 : 0.3);
     g.circle(ball.x, ball.y, ball.r).fill({ color: overdrive ? 0xffd6d6 : 0xffffff });
     // sparks
     sparks.draw(g);
@@ -123,6 +131,7 @@ export default function createGame(ctx: GameContext): Game {
     growT = shrinkT = slowT = 0;
     player.h = cpu.h = basePadH;
     ctx.fx.screenShake(6.4, 0.2);
+    ctx.fx.hitStop(0.08);
     burst(player1 ? W - 20 : 20, ball.y, player1 ? 0x00f7ff : 0xff2e97, 14);
     ctx.hud.setScore(pScore);
     setLabel();

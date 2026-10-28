@@ -210,8 +210,25 @@
   justify-content: center;
   font-size: 34px;
   line-height: 1;
-  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tile-accent) 75%, transparent));
   pointer-events: none;
+}
+/* The neon halo is a painted radial gradient instead of filter: drop-shadow — a blur filter per
+   tile (85 of them) is one of the most expensive things a phone GPU can be asked to do. */
+.tile__cover-art::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.9em;
+  height: 1.9em;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--tile-accent) 55%, transparent),
+    transparent
+  );
+  z-index: -1;
 }
 /* OpenMoji SVG glyphs — sized to the parent's font-size via 1em, so every existing glyph
    style (cover, cards, scores, hero) keeps working and inherits its neon drop-shadow. */

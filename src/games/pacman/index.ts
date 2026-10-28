@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action, Dir } from '@core/InputManager';
 import { DIRS } from '@kits/arcade/constants';
+import { glowCircle } from '@kits/arcade/glow';
 
 /**
  * Pac-Man-lite: a procedurally built, guaranteed-connected maze, dots + power pellets,
@@ -166,10 +167,20 @@ export default function createGame(ctx: GameContext): Game {
     mazeG.clear();
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++)
-        if (wall[r]![c])
+        if (wall[r]![c]) {
           mazeG
             .roundRect(c * cell + 1, r * cell + 1, cell - 2, cell - 2, 3)
-            .fill({ color: 0x1d1d6e });
+            .fill({ color: 0x13135a });
+          // neon rim only on the sides that face a corridor
+          const open = (dc: number, dr: number): boolean => !isWall(c + dc, r + dr);
+          const x0 = c * cell + 1,
+            y0 = r * cell + 1,
+            s = cell - 2;
+          if (open(0, -1)) mazeG.rect(x0 + 2, y0, s - 4, 2).fill({ color: 0x4a6bff });
+          if (open(0, 1)) mazeG.rect(x0 + 2, y0 + s - 2, s - 4, 2).fill({ color: 0x4a6bff });
+          if (open(-1, 0)) mazeG.rect(x0, y0 + 2, 2, s - 4).fill({ color: 0x4a6bff });
+          if (open(1, 0)) mazeG.rect(x0 + s - 2, y0 + 2, 2, s - 4).fill({ color: 0x4a6bff });
+        }
   };
   drawMaze();
 
@@ -381,6 +392,8 @@ export default function createGame(ctx: GameContext): Game {
               r * cell + cell / 2,
               cell * (0.2 + 0.06 * Math.sin(modeTimer * 6)),
             ).fill({ color: 0xffd27f });
+          if (pellet[r]![c])
+            glowCircle(g, c * cell + cell / 2, r * cell + cell / 2, cell * 0.2, 0xffd27f, 0.15);
         }
       // bonus fruit (cherry)
       if (fruit) {
@@ -397,6 +410,7 @@ export default function createGame(ctx: GameContext): Game {
       const py = pac.y * cell + cell / 2;
       const facing = pac.dir.x === 0 && pac.dir.y === 0 ? 0 : Math.atan2(pac.dir.y, pac.dir.x);
       const m = pac.mouth;
+      glowCircle(g, px, py, cell * 0.45, 0xffd200, 0.12);
       g.moveTo(px, py)
         .arc(px, py, cell * 0.45, facing + m, facing - m + Math.PI * 2)
         .fill({ color: 0xffd200 });
@@ -404,11 +418,35 @@ export default function createGame(ctx: GameContext): Game {
         const gx = gh.x * cell + cell / 2;
         const gy = gh.y * cell + cell / 2;
         const col = gh.frightened > 0 ? (gh.frightened < 2 ? 0xffffff : 0x4a7bff) : gh.color;
-        g.roundRect(gx - cell * 0.4, gy - cell * 0.45, cell * 0.8, cell * 0.85, cell * 0.3).fill({
-          color: col,
-        });
-        g.circle(gx - cell * 0.15, gy - cell * 0.12, cell * 0.1).fill({ color: 0xffffff });
-        g.circle(gx + cell * 0.15, gy - cell * 0.12, cell * 0.1).fill({ color: 0xffffff });
+        // dome head + skirt with a wavy hem
+        g.circle(gx, gy - cell * 0.1, cell * 0.4).fill({ color: col });
+        g.rect(gx - cell * 0.4, gy - cell * 0.1, cell * 0.8, cell * 0.45).fill({ color: col });
+        const wave = Math.floor(modeTimer * 8) % 2;
+        for (let k = 0; k < 4; k++)
+          g.circle(
+            gx - cell * 0.3 + k * cell * 0.2,
+            gy + cell * 0.35 + ((k + wave) % 2) * 0.5,
+            cell * 0.1,
+          ).fill({ color: col });
+        const ex = Math.sign(gh.dir.x) * cell * 0.05;
+        const ey = Math.sign(gh.dir.y) * cell * 0.05;
+        if (gh.frightened > 0) {
+          g.rect(gx - cell * 0.2, gy - cell * 0.15, cell * 0.1, cell * 0.1).fill({
+            color: 0xffd6ec,
+          });
+          g.rect(gx + cell * 0.1, gy - cell * 0.15, cell * 0.1, cell * 0.1).fill({
+            color: 0xffd6ec,
+          });
+        } else {
+          g.circle(gx - cell * 0.15, gy - cell * 0.12, cell * 0.12).fill({ color: 0xffffff });
+          g.circle(gx + cell * 0.15, gy - cell * 0.12, cell * 0.12).fill({ color: 0xffffff });
+          g.circle(gx - cell * 0.15 + ex, gy - cell * 0.12 + ey, cell * 0.06).fill({
+            color: 0x1d2bff,
+          });
+          g.circle(gx + cell * 0.15 + ex, gy - cell * 0.12 + ey, cell * 0.06).fill({
+            color: 0x1d2bff,
+          });
+        }
       });
     },
     destroy() {

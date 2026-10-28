@@ -1,7 +1,9 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { stepSegment } from './core';
 import { Particles } from '@kits/arcade/particles';
+import { glowRect } from '@kits/arcade/glow';
 
 interface Segment {
   col: number;
@@ -98,18 +100,7 @@ export default function createGame(ctx: GameContext): Game {
   const offTap = ctx.input.on('tap', fire);
 
   const stepCentipede = (): void => {
-    for (const s of segments) {
-      let nc = s.col + s.dir;
-      // segments still queued off-screen on the left are walking in, not hitting a wall
-      const entering = s.col < 0 && s.dir > 0;
-      const blockedMush = nc >= 0 && nc < cols && mushrooms[mIdx(nc, s.row)]! > 0;
-      if (!entering && (nc < 0 || nc >= cols || blockedMush)) {
-        s.dir *= -1;
-        s.row = Math.min(rows - 1, s.row + 1);
-        nc = s.col + s.dir;
-      }
-      s.col = entering ? nc : clamp(nc, 0, cols - 1);
-    }
+    for (const s of segments) stepSegment(s, cols, rows, (c, r) => mushrooms[mIdx(c, r)]! > 0);
     if (segments.some((s) => s.row >= rows - 1)) loseLife();
   };
 
@@ -118,11 +109,27 @@ export default function createGame(ctx: GameContext): Game {
     for (let r = 0; r < rows; r++)
       for (let c = 0; c < cols; c++) {
         const hp = mushrooms[mIdx(c, r)]!;
-        if (hp > 0)
-          g.roundRect(c * cell + 2, r * cell + 2, cell - 4, cell - 4, 4).fill({
-            color: 0x8bc34a,
-            alpha: 0.4 + hp * 0.15,
+        if (hp > 0) {
+          const x0 = c * cell;
+          const y0 = r * cell;
+          // mushroom: cap with spots shrinks as it takes damage, stem stays
+          g.rect(x0 + cell * 0.38, y0 + cell * 0.55, cell * 0.24, cell * 0.38).fill({
+            color: 0xe8e2c8,
           });
+          const cap = cell * (0.28 + hp * 0.07);
+          g.ellipse(x0 + cell / 2, y0 + cell * 0.52, cap + 2, cap).fill({
+            color: 0x8bc34a,
+            alpha: 0.55 + hp * 0.15,
+          });
+          g.circle(x0 + cell * 0.38, y0 + cell * 0.45, cell * 0.06).fill({
+            color: 0xffffff,
+            alpha: 0.6,
+          });
+          g.circle(x0 + cell * 0.62, y0 + cell * 0.5, cell * 0.05).fill({
+            color: 0xffffff,
+            alpha: 0.6,
+          });
+        }
       }
     // particles
     particles.draw(g);
@@ -137,9 +144,23 @@ export default function createGame(ctx: GameContext): Game {
     }
     segments.forEach((s) => {
       if (s.col < 0) return; // not on the board yet
-      g.circle(s.col * cell + cell / 2, s.row * cell + cell / 2, cell * 0.4).fill({
-        color: s.head ? 0xff2e97 : 0xffd200,
+      const sx = s.col * cell + cell / 2;
+      const sy = s.row * cell + cell / 2;
+      // little legs wiggle with time, then a shaded body and highlight
+      const wig = Math.sin(moveAcc * 40 + s.col) * 2;
+      g.rect(sx - cell * 0.1, sy - cell * 0.5 + wig, 2, cell * 0.2).fill({ color: 0x9a8a00 });
+      g.rect(sx - cell * 0.1, sy + cell * 0.3 - wig, 2, cell * 0.2).fill({ color: 0x9a8a00 });
+      g.circle(sx, sy, cell * 0.4).fill({ color: s.head ? 0xff2e97 : 0xffd200 });
+      g.circle(sx - cell * 0.1, sy - cell * 0.12, cell * 0.14).fill({
+        color: 0xffffff,
+        alpha: 0.28,
       });
+      if (s.head) {
+        g.circle(sx - cell * 0.14, sy - cell * 0.05, cell * 0.09).fill({ color: 0xffffff });
+        g.circle(sx + cell * 0.14, sy - cell * 0.05, cell * 0.09).fill({ color: 0xffffff });
+        g.circle(sx - cell * 0.14, sy - cell * 0.03, cell * 0.04).fill({ color: 0x1a0010 });
+        g.circle(sx + cell * 0.14, sy - cell * 0.03, cell * 0.04).fill({ color: 0x1a0010 });
+      }
     });
     // spider
     if (spider) {
@@ -153,9 +174,24 @@ export default function createGame(ctx: GameContext): Game {
           .stroke({ width: 2, color: 0xb14cff });
       }
     }
-    g.roundRect(player.col * cell + 3, player.row * cell + 3, cell - 6, cell - 6, 4).fill({
-      color: 0x00f7ff,
-    });
+    glowRect(
+      g,
+      player.col * cell + 3,
+      player.row * cell + 3,
+      cell - 6,
+      cell - 6,
+      4,
+      0x00f7ff,
+      0.35,
+    );
+    g.poly([
+      player.col * cell + cell / 2,
+      player.row * cell + 2,
+      player.col * cell + cell - 3,
+      player.row * cell + cell - 3,
+      player.col * cell + 3,
+      player.row * cell + cell - 3,
+    ]).fill({ color: 0x00f7ff });
     bullets.forEach((b) => g.rect(b.x - 2, b.y, 4, 10).fill({ color: 0xffffff }));
   };
 

@@ -4,7 +4,7 @@ import { audio } from '@core/AudioManager';
 import { haptics } from '@core/Haptics';
 import { exportAll, importAll, wipeAll } from '@data/db';
 import type { Action } from '@core/InputManager';
-import { t } from '@i18n/index';
+import { ensureLocale, t } from '@i18n/index';
 import { openDialog } from '@ui/dialog';
 import type { Settings } from '@data/schemas';
 
@@ -182,8 +182,11 @@ function rows(rerender: () => void): HTMLElement[] {
           { value: 'de', label: 'DE' },
         ],
         (locale) => {
-          updateSettings({ locale });
-          rerender();
+          // load the dictionary first so the re-render already shows the new language
+          void ensureLocale(locale).then(() => {
+            updateSettings({ locale });
+            rerender();
+          });
         },
       ),
     ),

@@ -2,7 +2,9 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
-import { fxRandom } from '@utils/rng';
+import { Combo } from '@kits/arcade/combo';
+import { Starfield } from '@kits/arcade/starfield';
+import { glowCircle } from '@kits/arcade/glow';
 
 interface Enemy {
   x: number;
@@ -32,13 +34,9 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   ctx.stage.addChild(layer);
-  const bgG = new Graphics();
+  const starfield = new Starfield(W, H, { bg: 0x05060f, count: 50 });
   const g = new Graphics();
-  layer.addChild(bgG, g);
-
-  const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 45; i++)
-    stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
+  layer.addChild(starfield.view, g);
 
   const player = { x: W / 2, w: 30, y: H - 40 };
   let bullets: { x: number; y: number }[] = [];
@@ -57,8 +55,7 @@ export default function createGame(ctx: GameContext): Game {
   let dualT = 0; // Feature: dual fighter
   let rapidT = 0; // Feature: rapid fire
   let shield = false; // Feature: shield
-  let streak = 0;
-  let streakTimer = 0;
+  const streak = new Combo(2.5, 99); // kill streak: resets after 2.5 s without a kill or on a hit
 
   // cosmetic only: fx RNG keeps the seeded gameplay rolls independent of effects
   const burst = (x: number, y: number, color: number, n = 10): void =>
@@ -123,14 +120,6 @@ export default function createGame(ctx: GameContext): Game {
 
   const aliveCount = (): number => enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
 
-  const drawBg = (): void => {
-    bgG.clear();
-    bgG.rect(0, 0, W, H).fill({ color: 0x05060f });
-    for (const s of stars)
-      bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.1 + s.s * 0.2 });
-  };
-  drawBg();
-
   const draw = (): void => {
     g.clear();
     // particles
@@ -143,13 +132,47 @@ export default function createGame(ctx: GameContext): Game {
     enemies.forEach((e) => {
       if (!e.alive) return;
       const col = e.boss ? 0xff2e97 : 0x42a5f5;
-      g.roundRect(e.x - 11, e.y - 9, 22, 18, 4).fill({ color: col });
-      g.rect(e.x - 7, e.y - 13, 4, 5).fill({ color: col });
-      g.rect(e.x + 3, e.y - 13, 4, 5).fill({ color: col });
+      const wing = Math.sin(swayT * 14 + e.hx) * 3; // flapping wings
+      // wings behind the body
+      g.poly([
+        e.x - 10,
+        e.y - 2,
+        e.x - 18,
+        e.y - 6 - wing,
+        e.x - 16,
+        e.y + 6,
+        e.x - 10,
+        e.y + 4,
+      ]).fill({
+        color: col,
+        alpha: 0.75,
+      });
+      g.poly([
+        e.x + 10,
+        e.y - 2,
+        e.x + 18,
+        e.y - 6 - wing,
+        e.x + 16,
+        e.y + 6,
+        e.x + 10,
+        e.y + 4,
+      ]).fill({
+        color: col,
+        alpha: 0.75,
+      });
+      g.roundRect(e.x - 11, e.y - 9, 22, 18, 5).fill({ color: col });
+      g.rect(e.x - 8, e.y - 7, 16, 2).fill({ color: 0xffffff, alpha: 0.3 });
+      g.circle(e.x - 4, e.y - 1, 2.5).fill({ color: 0x05060f });
+      g.circle(e.x + 4, e.y - 1, 2.5).fill({ color: 0x05060f });
+      g.rect(e.x - 7, e.y - 13, 3, 5).fill({ color: col });
+      g.rect(e.x + 4, e.y - 13, 3, 5).fill({ color: col });
+      if (e.boss) g.roundRect(e.x - 6, e.y + 4, 12, 3, 1).fill({ color: 0xffd200 });
+      if (e.diving) g.rect(e.x - 2, e.y - 22, 4, 8).fill({ color: 0xff7b00, alpha: 0.5 });
     });
     if (shield)
       g.circle(player.x, player.y - 2, 22).stroke({ width: 2, color: 0x3ddc84, alpha: 0.6 });
     const drawShip = (sx: number): void => {
+      glowCircle(g, sx, player.y + 2, 10, 0x00f7ff, 0.18);
       g.poly([
         sx,
         player.y - 12,
@@ -186,17 +209,10 @@ export default function createGame(ctx: GameContext): Game {
           fire();
         }
       }
-      if (streakTimer > 0 && (streakTimer -= dt) <= 0) streak = 0;
+      streak.update(dt);
       if (invuln > 0) invuln -= dt;
 
-      // starfield drift
-      for (const s of stars) {
-        s.y += s.s * 12 * dt;
-        if (s.y > H) {
-          s.y = 0;
-          s.x = fxRandom() * W;
-        }
-      }
+      starfield.update(dt);
       // particles
       particles.update(dt);
       // drops fall + pickup
@@ -268,12 +284,12 @@ export default function createGame(ctx: GameContext): Game {
           if (Math.abs(b.x - e.x) < 13 && Math.abs(b.y - e.y) < 12) {
             e.alive = false;
             bullets.splice(j, 1);
-            streak++;
-            streakTimer = 2.5;
+            streak.hit();
             const base = e.boss ? 150 : e.diving ? 100 : 50;
-            score += base + (streak >= 3 ? streak * 10 : 0);
+            score += base + (streak.count >= 3 ? streak.count * 10 : 0);
             ctx.hud.setScore(score);
-            if (streak >= 3 && streak % 3 === 0) ctx.hud.toast(`STREAK x${streak}`);
+            if (streak.count >= 3 && streak.count % 3 === 0)
+              ctx.hud.toast(`STREAK x${streak.count}`);
             burst(e.x, e.y, e.boss ? 0xff2e97 : 0x42a5f5, e.boss ? 16 : 10);
             ctx.fx.screenShake((e.boss ? 0.35 : 0.15) * 16, (e.boss ? 0.35 : 0.15) / 2);
             ctx.audio.sfx('explosion');
@@ -311,8 +327,9 @@ export default function createGame(ctx: GameContext): Game {
           }
           lives--;
           invuln = 1.3;
-          streak = 0;
+          streak.reset();
           ctx.fx.screenShake(8, 0.25);
+          ctx.fx.hitStop(0.07);
           burst(player.x, player.y, 0x00f7ff, 14);
           ctx.hud.setLives(lives);
           ctx.audio.sfx('hit');
@@ -342,7 +359,7 @@ export default function createGame(ctx: GameContext): Game {
           }
           lives--;
           invuln = 1.3;
-          streak = 0;
+          streak.reset();
           ctx.fx.screenShake(8, 0.25);
           ctx.hud.setLives(lives);
           ctx.audio.sfx('hit');

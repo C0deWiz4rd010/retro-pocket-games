@@ -1,5 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { Particles } from '@kits/arcade/particles';
+import { bevelBlock, glowCircle } from '@kits/arcade/glow';
 import type { Action, Dir } from '@core/InputManager';
 import { DIRS } from '@kits/arcade/constants';
 
@@ -44,8 +46,9 @@ export default function createGame(ctx: GameContext): Game {
   let bombs: Bomb[] = [];
   let blasts: { c: number; r: number; t: number }[] = [];
   let enemies: Enemy[] = [];
-  const particles: { x: number; y: number; vx: number; vy: number; life: number; color: number }[] =
-    [];
+  const particles = new Particles();
+  let moveCd = 0; // held direction repeats every ~0.15 s
+  let invuln = 0;
   let range = 1;
   let maxBombs = 1;
   let pierce = false; // Feature: blasts pass through soft blocks
@@ -67,13 +70,8 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const burst = (c: number, r: number, color: number, n = 8): void => {
-    const cx = c * cell + cell / 2;
-    const cy = r * cell + cell / 2;
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 110;
-      particles.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
-    }
+    // cosmetic only: fx RNG keeps the seeded maze/powerup rolls independent of effects
+    particles.burst(c * cell + cell / 2, r * cell + cell / 2, color, n, 110, 0.5);
   };
 
   const setLabel = (): void =>
@@ -114,6 +112,8 @@ export default function createGame(ctx: GameContext): Game {
     if (grid[gi(nc, nr)] === 0 && !bombs.some((b) => b.c === nc && b.r === nr)) {
       player.c = nc;
       player.r = nr;
+      // walking into an enemy is lethal too (it used to only count when the enemy moved)
+      if (enemies.some((e) => e.c === nc && e.r === nr)) loseLife();
     }
   };
   const offDown = ctx.input.on('down', (a) => {
@@ -169,6 +169,7 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const loseLife = (): void => {
+    if (invuln > 0) return;
     if (shield) {
       shield = false;
       ctx.fx.screenShake(8, 0.25);
@@ -179,7 +180,9 @@ export default function createGame(ctx: GameContext): Game {
       return;
     }
     lives--;
+    invuln = 1.2;
     ctx.fx.screenShake(8, 0.25);
+    ctx.fx.hitStop(0.07);
     burst(player.c, player.r, 0x3ddc84, 12);
     ctx.hud.setLives(lives);
     ctx.audio.sfx('hit');
@@ -199,10 +202,16 @@ export default function createGame(ctx: GameContext): Game {
         const v = grid[gi(c, r)]!;
         const x = c * cell;
         const y = r * cell;
-        if (v === 1) g.rect(x, y, cell, cell).fill({ color: 0x4a4a5a });
-        else if (v === 2)
-          g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: 0x8a5a2b });
-        else g.rect(x, y, cell, cell).fill({ color: 0x14141f });
+        if (v === 1) bevelBlock(g, x, y, cell, 0x4a4a5a);
+        else if (v === 2) {
+          bevelBlock(g, x + 1, y + 1, cell - 2, 0x8a5a2b);
+          g.rect(x + cell * 0.25, y + cell * 0.45, cell * 0.5, 1).fill({
+            color: 0x4a2f12,
+            alpha: 0.7,
+          });
+        } else {
+          g.rect(x, y, cell, cell).fill({ color: (r + c) % 2 ? 0x14141f : 0x171724 });
+        }
         if (v === 3) g.circle(x + cell / 2, y + cell / 2, cell * 0.2).fill({ color: 0xff7b00 });
         if (v === 4) g.circle(x + cell / 2, y + cell / 2, cell * 0.2).fill({ color: 0x00f7ff });
         if (v === 5)
@@ -225,17 +234,46 @@ export default function createGame(ctx: GameContext): Game {
     );
     bombs.forEach((b) => {
       const sc = 0.3 + 0.06 * Math.sin(pulse * 12) * (b.t < 1 ? 2 : 1);
-      g.circle(b.c * cell + cell / 2, b.r * cell + cell / 2, cell * sc).fill({ color: 0x101018 });
-      g.circle(b.c * cell + cell / 2, b.r * cell + cell / 2, cell * sc * 0.4).fill({
-        color: b.t < 0.6 ? 0xff4d4d : 0xff7b00,
+      const bx = b.c * cell + cell / 2;
+      const by = b.r * cell + cell / 2;
+      g.circle(bx, by, cell * sc).fill({ color: 0x101018 });
+      g.circle(bx - cell * 0.1, by - cell * 0.1, cell * sc * 0.25).fill({
+        color: 0xffffff,
+        alpha: 0.25,
       });
+      g.circle(bx, by, cell * sc * 0.4).fill({ color: b.t < 0.6 ? 0xff4d4d : 0xff7b00 });
+      // burning fuse
+      g.moveTo(bx + cell * 0.1, by - cell * sc)
+        .lineTo(bx + cell * 0.22, by - cell * 0.55)
+        .stroke({ width: 2, color: 0xc9b37e });
+      glowCircle(g, bx + cell * 0.22, by - cell * 0.55, 2.5, 0xffd200, 0.4);
     });
-    enemies.forEach((e) =>
-      g.roundRect(e.c * cell + 3, e.r * cell + 3, cell - 6, cell - 6, 4).fill({ color: 0xff4d4d }),
-    );
-    g.roundRect(player.c * cell + 3, player.r * cell + 3, cell - 6, cell - 6, 5).fill({
-      color: shield ? 0x9bffce : 0x3ddc84,
+    enemies.forEach((e) => {
+      const ex = e.c * cell;
+      const ey = e.r * cell;
+      g.roundRect(ex + 3, ey + 3, cell - 6, cell - 6, 6).fill({ color: 0xff4d4d });
+      g.rect(ex + cell * 0.28, ey + cell * 0.32, cell * 0.16, cell * 0.2).fill({ color: 0xffffff });
+      g.rect(ex + cell * 0.56, ey + cell * 0.32, cell * 0.16, cell * 0.2).fill({ color: 0xffffff });
+      g.rect(ex + cell * 0.3, ey + cell * 0.66, cell * 0.4, 2).fill({ color: 0x4a0a0a });
     });
+    // blink while invulnerable after a hit
+    if (!(invuln > 0 && Math.floor(invuln * 12) % 2 === 0)) {
+      g.roundRect(player.c * cell + 3, player.r * cell + 3, cell - 6, cell - 6, 6).fill({
+        color: shield ? 0x9bffce : 0x3ddc84,
+      });
+      g.rect(
+        player.c * cell + cell * 0.3,
+        player.r * cell + cell * 0.3,
+        cell * 0.12,
+        cell * 0.18,
+      ).fill({ color: 0x0a1a10 });
+      g.rect(
+        player.c * cell + cell * 0.58,
+        player.r * cell + cell * 0.3,
+        cell * 0.12,
+        cell * 0.18,
+      ).fill({ color: 0x0a1a10 });
+    }
     if (shield)
       g.circle(player.c * cell + cell / 2, player.r * cell + cell / 2, cell * 0.5).stroke({
         width: 2,
@@ -243,11 +281,7 @@ export default function createGame(ctx: GameContext): Game {
         alpha: 0.6,
       });
     // particles
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
   };
 
   return {
@@ -255,12 +289,24 @@ export default function createGame(ctx: GameContext): Game {
       if (over) return;
       pulse += dt;
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
+      particles.update(dt);
+      if (invuln > 0) invuln -= dt;
+      // held direction: repeat the step so the keyboard / d-pad can be held to walk
+      moveCd -= dt;
+      if (moveCd <= 0) {
+        const hx = ctx.input.axis();
+        if (hx.x || hx.y) {
+          moveCd = 0.15;
+          move(
+            Math.abs(hx.x) >= Math.abs(hx.y)
+              ? hx.x > 0
+                ? 'right'
+                : 'left'
+              : hx.y > 0
+                ? 'down'
+                : 'up',
+          );
+        }
       }
       // pick up powerups
       const cellVal = grid[gi(player.c, player.r)]!;
@@ -329,7 +375,7 @@ export default function createGame(ctx: GameContext): Game {
       enemies.forEach((e) => {
         e.moveT -= dt;
         if (e.moveT <= 0) {
-          e.moveT = 0.4;
+          e.moveT = Math.max(0.22, 0.42 - level * 0.02); // enemies speed up with the level
           const opts = Object.values(DIRS).filter((d) => grid[gi(e.c + d.x, e.r + d.y)] === 0);
           if (opts.length) {
             // mostly keep direction

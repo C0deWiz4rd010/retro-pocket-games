@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle } from '@kits/arcade/glow';
 import type { Action, Dir } from '@core/InputManager';
 import { createSnake, setDir, step, type SnakeState, type Vec } from './core';
 import { DIRS } from '@kits/arcade/constants';
@@ -102,9 +103,14 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     // food
     food.clear();
+    // apple: glow, body, leaf and shine (gently pulsing)
+    const fcx = state.food.x * cell + cell / 2;
+    const fcy = state.food.y * cell + cell / 2;
+    glowCircle(food, fcx, fcy, cell * 0.34 * (1 + 0.05 * Math.sin(pulse * 5)), 0xff2e97, 0.3);
+    food.circle(fcx, fcy, cell * 0.34).fill({ color: 0xff2e97 });
     food
-      .circle(state.food.x * cell + cell / 2, state.food.y * cell + cell / 2, cell * 0.34)
-      .fill({ color: 0xff2e97 });
+      .ellipse(fcx + cell * 0.12, fcy - cell * 0.36, cell * 0.12, cell * 0.06)
+      .fill({ color: 0x3ddc84 });
     food
       .circle(
         state.food.x * cell + cell / 2 - cell * 0.1,
@@ -161,10 +167,17 @@ export default function createGame(ctx: GameContext): Game {
       const head = i === 0;
       const t = i / Math.max(1, state.body.length - 1);
       const base = shielded ? 0x00f7ff : 0x3ddc84;
-      snakeG.roundRect(seg.x * cell + 1, seg.y * cell + 1, cell - 2, cell - 2, 4).fill({
+      // tapered body: segments shrink slightly toward the tail, with a belly stripe
+      const inset = 1 + (head ? 0 : t * cell * 0.12);
+      const sz = cell - 2 * inset;
+      snakeG.roundRect(seg.x * cell + inset, seg.y * cell + inset, sz, sz, head ? 6 : 4).fill({
         color: head ? (shielded ? 0xbdfaff : 0x9bffce) : base,
-        alpha: head ? 1 : 0.9 - t * 0.35,
+        alpha: head ? 1 : 0.95 - t * 0.3,
       });
+      if (!head && i % 2 === 0)
+        snakeG
+          .roundRect(seg.x * cell + inset + 2, seg.y * cell + inset + 2, sz - 4, sz * 0.35, 3)
+          .fill({ color: 0xffffff, alpha: 0.18 });
       if (head) {
         // eyes facing travel direction
         const ex = state.dir.x,

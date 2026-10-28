@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle } from '@kits/arcade/glow';
 
 interface Pipe {
   x: number;
@@ -94,15 +95,12 @@ export default function createGame(ctx: GameContext): Game {
     return (r << 16) | (gg << 8) | b;
   };
 
-  const gapYNow = (p: Pipe): number => p.gapY + Math.sin(performance.now() / 600 + p.phase) * p.amp;
+  let clock = 0; // game time, so moving pipes and the idle bob pause with the game
+  const gapYNow = (p: Pipe): number => p.gapY + Math.sin(clock * 1.67 + p.phase) * p.amp;
 
-  const burst = (x: number, y: number, color: number, n = 8): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 120;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps pipe layout identical for a given daily seed
+  const burst = (x: number, y: number, color: number, n = 8): void =>
+    particles.burst(x, y, color, n, 120, 1);
 
   const draw = (): void => {
     // sky gradient (day -> night)
@@ -134,13 +132,23 @@ export default function createGame(ctx: GameContext): Game {
       const gy = gapYNow(p);
       g.rect(p.x, 0, PIPE_W, gy).fill({ color: 0x3ddc84 });
       g.rect(p.x, gy + gap, PIPE_W, H - groundH - (gy + gap)).fill({ color: 0x3ddc84 });
+      // light strip on the left, shade on the right (cylindrical look)
+      g.rect(p.x + 6, 0, 6, gy).fill({ color: 0xffffff, alpha: 0.2 });
+      g.rect(p.x + PIPE_W - 10, 0, 10, gy).fill({ color: 0x000000, alpha: 0.18 });
+      g.rect(p.x + 6, gy + gap, 6, H - groundH - (gy + gap)).fill({ color: 0xffffff, alpha: 0.2 });
+      g.rect(p.x + PIPE_W - 10, gy + gap, 10, H - groundH - (gy + gap)).fill({
+        color: 0x000000,
+        alpha: 0.18,
+      });
       g.rect(p.x - 3, gy - 16, PIPE_W + 6, 16).fill({ color: 0x2bb86c });
       g.rect(p.x - 3, gy + gap, PIPE_W + 6, 16).fill({ color: 0x2bb86c });
       if (p.coin && !p.coinTaken) {
         const cx = p.x + PIPE_W / 2;
         const cy = gy + gap / 2;
-        g.circle(cx, cy, 9).fill({ color: 0xffd200 });
-        g.circle(cx, cy, 5).fill({ color: 0xfff0a0 });
+        const spin = Math.abs(Math.cos(clock * 4 + p.phase));
+        glowCircle(g, cx, cy, 8, 0xffd200, 0.18);
+        g.ellipse(cx, cy, 9 * (0.35 + 0.65 * spin), 9).fill({ color: 0xffd200 });
+        g.ellipse(cx, cy, 5 * (0.35 + 0.65 * spin), 5).fill({ color: 0xfff0a0 });
       }
     });
     // particles
@@ -158,8 +166,15 @@ export default function createGame(ctx: GameContext): Game {
     if (shield || invuln > 0)
       g.circle(bx, by, bird.r + 6).stroke({ width: 2.5, color: 0x00f7ff, alpha: 0.7 });
     g.circle(bx, by, bird.r).fill({ color: 0xffd200 });
-    const eye = rp(4, -4);
-    g.circle(eye.x, eye.y, 3).fill({ color: 0x101018 });
+    // belly + flapping wing
+    const belly = rp(-2, 5);
+    g.ellipse(belly.x, belly.y, 8, 5).fill({ color: 0xfff0a0, alpha: 0.8 });
+    const flapY = Math.sin(clock * 22) * 4 * (started ? 1 : 0.4);
+    const wing = rp(-5, 1 + flapY);
+    g.ellipse(wing.x, wing.y, 7, 4).fill({ color: 0xe0a800 });
+    const eye = rp(5, -5);
+    g.circle(eye.x, eye.y, 4).fill({ color: 0xffffff });
+    g.circle(eye.x + 1, eye.y, 2).fill({ color: 0x101018 });
     const b0 = rp(bird.r, 0),
       b1 = rp(bird.r + 8, -3),
       b2 = rp(bird.r + 8, 3);
@@ -182,6 +197,7 @@ export default function createGame(ctx: GameContext): Game {
 
   return {
     update(dt) {
+      clock += dt;
       // ambient motion always runs
       for (const c of clouds) {
         c.x -= c.speed * dt;
@@ -194,7 +210,7 @@ export default function createGame(ctx: GameContext): Game {
       }
       if (invuln > 0) invuln -= dt;
       if (!started) {
-        bird.y = H / 2 + Math.sin(performance.now() / 300) * 8;
+        bird.y = H / 2 + Math.sin(clock * 3.3) * 8;
         draw();
         return;
       }
@@ -236,7 +252,7 @@ export default function createGame(ctx: GameContext): Game {
           ctx.hud.setScore(score);
           ctx.audio.sfx('coin');
           if (score % 10 === 0) {
-            speed += 18;
+            speed = Math.min(270, speed + 16);
             gap = Math.max(110, gap - 8);
             ctx.hud.toast(`SPEED UP! Lv ${score / 10 + 1}`);
           } else if (score === 10) ctx.hud.toast('🥉 BRONZE');

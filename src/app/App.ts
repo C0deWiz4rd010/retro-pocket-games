@@ -248,6 +248,8 @@ export class App {
     this.teardownGame();
     this.closeNav();
     this.view.classList.remove('is-home');
+    // Soft entrance for menu screens (home has its own power-on effect, games start instantly).
+    if (section && section !== 'play' && section !== 'daily') this.enterView();
 
     // Menu music plays everywhere except inside an active game.
     if (section === 'play' || section === 'daily') audio.stopMusic();
@@ -280,6 +282,21 @@ export class App {
   go(path: string): void {
     if (location.hash === `#/${path}`) this.route();
     else location.hash = `#/${path}`;
+  }
+
+  /** Short fade/slide-in for a freshly routed screen. Skipped under reduced motion. */
+  private enterView(): void {
+    const reduced =
+      document.documentElement.classList.contains('a11y-reduced-motion') ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || typeof this.view.animate !== 'function') return;
+    this.view.animate(
+      [
+        { opacity: 0, transform: 'translateY(8px)' },
+        { opacity: 1, transform: 'none' },
+      ],
+      { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+    );
   }
 
   private powerOn(): void {

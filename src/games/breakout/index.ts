@@ -1,7 +1,10 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { brickReflect, levelSpeed as coreLevelSpeed, paddleBounce } from './core';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle, glowRect, mix } from '@kits/arcade/glow';
+import { Starfield } from '@kits/arcade/starfield';
 
 const BRICK_COLORS = [0xff4d4d, 0xff7b00, 0xffd200, 0x3ddc84, 0x00f7ff];
 
@@ -46,8 +49,9 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   ctx.stage.addChild(layer);
+  const backdrop = new Starfield(W, H, { bg: 0x070914, count: 36, tint: 0x9fb4ff });
   const g = new Graphics();
-  layer.addChild(g);
+  layer.addChild(backdrop.view, g);
 
   const cols = 7;
   const brickW = (W - 20) / cols;
@@ -104,7 +108,7 @@ export default function createGame(ctx: GameContext): Game {
     balls = [{ x: pad.x + pad.w / 2, y: pad.y - 8, vx: 0, vy: 0, trail: [] }];
   };
 
-  const levelSpeed = (): number => Math.min(280 + level * 18, 520);
+  const levelSpeed = (): number => coreLevelSpeed(level);
 
   const launch = (): void => {
     if (!stuck) return;
@@ -201,7 +205,14 @@ export default function createGame(ctx: GameContext): Game {
     bricks.forEach((b) => {
       const dmg = b.maxHp > 1 ? b.hp / b.maxHp : 1;
       const color = b.kind === 'steel' ? 0xc0c8d8 : b.kind === 'bomb' ? 0xff7b00 : b.c;
-      g.roundRect(b.x, b.y, brickW - 4, brickH, 3).fill({ color, alpha: 0.5 + dmg * 0.5 });
+      const bw = brickW - 4;
+      g.roundRect(b.x, b.y, bw, brickH, 3).fill({ color, alpha: 0.5 + dmg * 0.5 });
+      // glossy top edge + darker bottom edge
+      g.roundRect(b.x + 1, b.y + 1, bw - 2, 4, 2).fill({ color: 0xffffff, alpha: 0.3 });
+      g.roundRect(b.x + 1, b.y + brickH - 4, bw - 2, 3, 2).fill({
+        color: mix(color, 0x000000, 0.55),
+        alpha: 0.6,
+      });
       if (b.kind === 'bomb') {
         g.circle(b.x + (brickW - 4) / 2, b.y + brickH / 2, 4).fill({ color: 0xfff1c0 });
       } else if (b.hp > 1) {
@@ -226,14 +237,20 @@ export default function createGame(ctx: GameContext): Game {
       g.roundRect(d.x - 9, d.y - 6, 18, 12, 3).fill({ color: POWER_META[d.kind].color });
     });
     const padColor = laserT > 0 ? 0xff4d4d : pad.wideT > 0 ? 0x3ddc84 : 0x00f7ff;
+    glowRect(g, pad.x, pad.y, pad.w, pad.h, 6, padColor, 0.45);
     g.roundRect(pad.x, pad.y, pad.w, pad.h, 6).fill({ color: padColor });
+    g.roundRect(pad.x + 3, pad.y + 2, pad.w - 6, 3, 2).fill({ color: 0xffffff, alpha: 0.45 });
     // laser cannons visual when active
     if (laserT > 0) {
       g.rect(pad.x + 3, pad.y - 5, 4, 6).fill({ color: 0xff4d4d });
       g.rect(pad.x + pad.w - 7, pad.y - 5, 4, 6).fill({ color: 0xff4d4d });
     }
     lasers.forEach((l) => g.rect(l.x - 2, l.y, 4, 12).fill({ color: 0xff4d4d, alpha: 0.9 }));
-    balls.forEach((b) => g.circle(b.x, b.y, 6).fill({ color: 0xffffff }));
+    balls.forEach((b) => {
+      glowCircle(g, b.x, b.y, 6, 0x9bf6ff, 0.22);
+      g.circle(b.x, b.y, 6).fill({ color: 0xffffff });
+      g.circle(b.x - 1.5, b.y - 1.5, 2).fill({ color: 0xffffff });
+    });
   };
 
   return {
@@ -306,9 +323,9 @@ export default function createGame(ctx: GameContext): Game {
           // bounce angle follows where the paddle was hit (±60°), speed is preserved
           const hit = clamp((ball.x - (pad.x + pad.w / 2)) / (pad.w / 2), -1, 1);
           const speed = Math.max(Math.hypot(ball.vx, ball.vy), levelSpeed() * 0.9);
-          const angle = hit * (Math.PI / 3);
-          ball.vx = Math.sin(angle) * speed;
-          ball.vy = -Math.cos(angle) * speed;
+          const v = paddleBounce(hit, speed);
+          ball.vx = v.vx;
+          ball.vy = v.vy;
           ball.y = pad.y - 6;
           combo = 0; // paddle touch breaks the combo chain
           ctx.audio.sfx('blip');
@@ -317,18 +334,11 @@ export default function createGame(ctx: GameContext): Game {
         if (ball.trail.length > 7) ball.trail.shift();
         for (let i = 0; i < bricks.length; i++) {
           const b = bricks[i]!;
-          if (
-            ball.x + 6 > b.x &&
-            ball.x - 6 < b.x + brickW - 4 &&
-            ball.y + 6 > b.y &&
-            ball.y - 6 < b.y + brickH
-          ) {
-            // reflect on the axis with the smaller penetration (side hits no longer flip vy)
-            const overlapX = Math.min(ball.x + 6 - b.x, b.x + brickW - 4 - (ball.x - 6));
-            const overlapY = Math.min(ball.y + 6 - b.y, b.y + brickH - (ball.y - 6));
-            if (overlapX < overlapY)
-              ball.vx = ball.x < b.x + (brickW - 4) / 2 ? -Math.abs(ball.vx) : Math.abs(ball.vx);
-            else ball.vy = ball.y < b.y + brickH / 2 ? -Math.abs(ball.vy) : Math.abs(ball.vy);
+          // reflect on the axis with the smaller penetration (side hits no longer flip vy)
+          const r = brickReflect(ball, 6, { x: b.x, y: b.y, w: brickW - 4, h: brickH });
+          if (r) {
+            ball.vx = r.vx;
+            ball.vy = r.vy;
             hitBrick(i);
             break;
           }
@@ -340,6 +350,7 @@ export default function createGame(ctx: GameContext): Game {
         lives--;
         ctx.hud.setLives(lives);
         ctx.audio.sfx('explosion');
+        ctx.fx.screenShake(6, 0.2);
         if (lives <= 0) {
           over = true;
           ctx.gameOver(score, { level });
@@ -374,6 +385,7 @@ export default function createGame(ctx: GameContext): Game {
 
       // particles + shake
       particles.update(dt);
+      backdrop.update(dt);
 
       draw();
     },

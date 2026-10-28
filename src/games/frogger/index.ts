@@ -139,6 +139,12 @@ export default function createGame(ctx: GameContext): Game {
       else if (roadRows.includes(r)) col = 0x1a1a22;
       else if (r === 6 || r === rows - 1) col = 0x24402a;
       bgG.rect(0, r * cell, cols * cell, cell).fill({ color: col });
+      // dashed lane markings between road lanes, kerb lines at the road edges
+      if (roadRows.includes(r) && roadRows.includes(r + 1))
+        for (let x = 0; x < cols * cell; x += cell * 1.2)
+          bgG.rect(x, (r + 1) * cell - 1, cell * 0.6, 2).fill({ color: 0xffd200, alpha: 0.35 });
+      if (r === 6 || r === rows - 1)
+        bgG.rect(0, r * cell, cols * cell, 3).fill({ color: 0x3ddc84, alpha: 0.25 });
       // water shimmer
       if (riverRows.includes(r)) {
         for (let x = 0; x < cols; x++) {
@@ -166,14 +172,35 @@ export default function createGame(ctx: GameContext): Game {
           });
         }
       } else {
+        const dirR = m.speed > 0;
+        // per-lane car colour so lanes read as different traffic
+        const carCol = [0xff5252, 0x42a5f5, 0xffb300, 0xab47bc, 0x26c6da, 0xff7043][m.lane % 6]!;
         g.roundRect(m.x, m.lane * cell + 4, m.w, cell - 8, 5).fill({
-          color: m.kind === 'log' ? 0x8a5a2b : 0xff5252,
+          color: m.kind === 'log' ? 0x8a5a2b : carCol,
         });
-        if (m.kind === 'car')
-          g.rect(m.x + 4, m.lane * cell + cell * 0.3, m.w - 8, 3).fill({
-            color: 0xffd200,
+        if (m.kind === 'log') {
+          // wood grain + end rings
+          for (let k = 0; k < 3; k++)
+            g.rect(m.x + 6, m.lane * cell + 8 + k * 5, m.w - 12, 1).fill({
+              color: 0x5c3a18,
+              alpha: 0.6,
+            });
+          g.circle(m.x + 4, m.lane * cell + cell / 2, cell * 0.18).fill({
+            color: 0xc08a50,
             alpha: 0.7,
           });
+        } else {
+          // windscreen toward the driving direction + headlights
+          const wx = dirR ? m.x + m.w * 0.55 : m.x + m.w * 0.12;
+          g.roundRect(wx, m.lane * cell + 7, m.w * 0.32, cell - 14, 3).fill({
+            color: 0xcfe9ff,
+            alpha: 0.75,
+          });
+          g.circle(dirR ? m.x + m.w - 3 : m.x + 3, m.lane * cell + 9, 2).fill({ color: 0xfff6b0 });
+          g.circle(dirR ? m.x + m.w - 3 : m.x + 3, m.lane * cell + cell - 9, 2).fill({
+            color: 0xfff6b0,
+          });
+        }
       }
     });
     // particles

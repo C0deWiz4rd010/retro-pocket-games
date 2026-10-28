@@ -77,6 +77,20 @@ export class App {
   private libraryActive = new Set<string>();
   private librarySort: LibrarySort = 'recommended';
   private runModes = new Map<string, GameMode>();
+  /** Live handles into the rendered home screen, so taps can patch instead of re-render. */
+  private homeRefs: {
+    favHost: HTMLElement;
+    gamesHost: HTMLElement;
+    libTitle: HTMLElement;
+  } | null = null;
+  /** Per-render memo: cleared whenever the home screen is rebuilt (scores may have changed). */
+  private memo = {
+    mastery: new Map<string, number>(),
+    ach: new Map<string, { total: number; unlocked: number }>(),
+    last: undefined as GameMeta | null | undefined,
+    tiles: new Map<string, HTMLElement>(),
+  };
+  private searchTimer = 0;
 
   async init(): Promise<void> {
     const screen = el('div', { class: 'screen' });
@@ -225,6 +239,10 @@ export class App {
 
   private route(): void {
     this.launchSeq++;
+    this.memo.mastery.clear();
+    this.memo.ach.clear();
+    this.memo.last = undefined;
+    this.memo.tiles.clear();
     const hash = location.hash.replace(/^#\/?/, '');
     const [section, arg] = hash.split('/');
     this.teardownGame();
@@ -275,6 +293,11 @@ export class App {
     const available = GAMES.filter((g) => g.available).map((g) => g.id);
     await preloadScores(available);
 
+    this.memo.mastery.clear();
+    this.memo.ach.clear();
+    this.memo.last = undefined;
+    this.memo.tiles.clear();
+    window.clearTimeout(this.searchTimer);
     clear(this.view);
     this.view.classList.remove('is-game');
     this.view.classList.add('is-home');
@@ -313,15 +336,21 @@ export class App {
       placeholder: t('home.search'),
       'aria-label': t('home.search'),
       onInput: (e: Event) => {
-        this.libraryQuery = (e.target as HTMLInputElement).value.trim().toLowerCase();
-        gamesHost.replaceChildren(this.libraryStage());
+        const value = (e.target as HTMLInputElement).value.trim().toLowerCase();
+        window.clearTimeout(this.searchTimer);
+        this.searchTimer = window.setTimeout(() => {
+          this.libraryQuery = value;
+          this.refreshLibrary();
+        }, 120);
       },
     });
     search.value = this.libraryQuery;
-    const rebuildLibrary = (): void => {
-      gamesHost.replaceChildren(this.libraryStage());
-    };
-    const filters = this.libraryFilters(rebuildLibrary);
+    const favHost = el('div', { class: 'section-host' }, this.favoritesSection());
+    const libTitle = el('h2', { class: 'library-head__title' });
+    const filters = this.libraryFilters();
+    const sort = this.sortControls();
+    this.homeRefs = { favHost, gamesHost, libTitle };
+    this.syncLibraryTitle();
     gamesHost.append(this.libraryStage());
 
     const body = el('div', { class: 'scroll landing' }, [
@@ -329,17 +358,13 @@ export class App {
       this.dailyHistory(),
       this.statsRow(),
       ...this.continueSection(),
-      ...this.favoritesSection(),
+      favHost,
       ...this.recommendedSection(),
       this.collectionsSection(),
       el('div', { class: 'library-head' }, [
         el('div', { class: 'tile__body' }, [
           el('div', { class: 'section-title' }, [t('home.library')]),
-          el('h2', { class: 'library-head__title' }, [
-            this.homeCollection
-              ? this.collectionLabel(this.homeCollection)
-              : t('home.libraryTitle'),
-          ]),
+          libTitle,
         ]),
         el('button', { class: 'btn btn--ghost', onClick: () => this.surpriseMe() }, [
           icon('surprise'),
@@ -351,12 +376,54 @@ export class App {
         search,
       ]),
       filters,
-      this.sortControls(rebuildLibrary),
+      sort,
       gamesHost,
       ...this.welcomeSection(),
     ]);
 
     this.view.append(topbar, body, this.bottomNav('home'));
+  }
+
+  private syncLibraryTitle(): void {
+    if (!this.homeRefs) return;
+    this.homeRefs.libTitle.textContent = this.homeCollection
+      ? this.collectionLabel(this.homeCollection)
+      : t('home.libraryTitle');
+  }
+
+  /** Re-apply the current filter/sort state to the library only (no full home re-render). */
+  private refreshLibrary(): void {
+    const refs = this.homeRefs;
+    if (!refs) return;
+    this.syncLibraryTitle();
+    for (const chip of this.view.querySelectorAll<HTMLElement>('.cat-chip')) {
+      const key = chip.dataset.filter;
+      const group = chip.dataset.group;
+      const sort = chip.dataset.sort;
+      const on =
+        key !== undefined
+          ? this.libraryActive.has(key)
+          : group !== undefined
+            ? group === this.homeFilter && !this.homeCollection
+            : sort === this.librarySort;
+      chip.classList.toggle('is-active', on);
+      chip.setAttribute('aria-pressed', String(on));
+    }
+    for (const card of this.view.querySelectorAll<HTMLElement>('.collection-card'))
+      card.classList.toggle('is-active', card.dataset.collection === this.homeCollection);
+    refs.gamesHost.replaceChildren(this.libraryStage());
+  }
+
+  /** Favourite toggled: flip every star for that game in place and patch the dependent bits. */
+  private onFavoriteChanged(id: string): void {
+    const on = isFavorite(id);
+    for (const star of this.view.querySelectorAll<HTMLElement>('.tile__fav')) {
+      if (star.dataset.fav !== id) continue;
+      star.classList.toggle('is-fav', on);
+      star.setAttribute('aria-pressed', String(on));
+    }
+    this.homeRefs?.favHost.replaceChildren(...this.favoritesSection());
+    if (this.libraryActive.has('favorite')) this.refreshLibrary();
   }
 
   /** A friendly hint shown only to brand-new players (nothing played yet). */
@@ -464,10 +531,14 @@ export class App {
             'button',
             {
               class: `collection-card${this.homeCollection === c.id ? ' is-active' : ''}`,
+              'data-collection': c.id,
               onClick: () => {
                 this.homeCollection = c.id;
                 this.homeFilter = 'all';
-                void this.renderHome();
+                this.refreshLibrary();
+                this.view
+                  .querySelector('.library-head')
+                  ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
               },
             },
             [
@@ -605,19 +676,19 @@ export class App {
     void this.renderHome();
   }
 
-  private libraryFilters(onChange: () => void): HTMLElement {
+  private libraryFilters(): HTMLElement {
     const chip = (key: string, label: string): HTMLElement =>
       el(
         'button',
         {
           class: `cat-chip${this.libraryActive.has(key) ? ' is-active' : ''}`,
           'data-filter': key,
+          'aria-pressed': String(this.libraryActive.has(key)),
           onClick: () => {
             audio.sfx('blip');
             if (this.libraryActive.has(key)) this.libraryActive.delete(key);
             else this.libraryActive.add(key);
-            onChange();
-            void this.renderHome();
+            this.refreshLibrary();
           },
         },
         [label],
@@ -628,13 +699,13 @@ export class App {
         'button',
         {
           class: `cat-chip${group === this.homeFilter ? ' is-active' : ''}`,
-          'data-filter': group,
+          'data-group': group,
+          'aria-pressed': String(group === this.homeFilter && !this.homeCollection),
           onClick: () => {
             audio.sfx('blip');
             this.homeFilter = group;
             this.homeCollection = null;
-            onChange();
-            void this.renderHome();
+            this.refreshLibrary();
           },
         },
         [group === 'all' ? t('filter.allGenres') : t(`group.${group.toLowerCase()}`)],
@@ -687,7 +758,7 @@ export class App {
     ]);
   }
 
-  private sortControls(onChange: () => void): HTMLElement {
+  private sortControls(): HTMLElement {
     const options: { id: LibrarySort; label: string }[] = [
       { id: 'recommended', label: t('sort.recommended') },
       { id: 'recent', label: t('sort.recent') },
@@ -706,11 +777,12 @@ export class App {
             'button',
             {
               class: `cat-chip${this.librarySort === option.id ? ' is-active' : ''}`,
+              'data-sort': option.id,
+              'aria-pressed': String(this.librarySort === option.id),
               onClick: () => {
                 audio.sfx('blip');
                 this.librarySort = option.id;
-                onChange();
-                void this.renderHome();
+                this.refreshLibrary();
               },
             },
             [option.label],
@@ -731,7 +803,7 @@ export class App {
       const grid = el(
         'div',
         { class: 'tilegrid' },
-        games.map((g) => this.tile(g)),
+        games.map((g) => this.libTile(g)),
       );
       wrap.append(grid);
     }
@@ -750,7 +822,7 @@ export class App {
         ? el(
             'div',
             { class: 'tilegrid' },
-            games.map((g) => this.tile(g)),
+            games.map((g) => this.libTile(g)),
           )
         : this.noMatches(),
     ]);
@@ -769,7 +841,9 @@ export class App {
           this.libraryActive.clear();
           this.homeFilter = 'all';
           this.homeCollection = null;
-          void this.renderHome();
+          const input = this.view.querySelector<HTMLInputElement>('.search');
+          if (input) input.value = '';
+          this.refreshLibrary();
         },
       },
     });
@@ -780,10 +854,9 @@ export class App {
     const games = GAMES.filter((g) => g.available)
       .filter((g) => !query || this.searchText(g).includes(query))
       .filter((g) => this.matchesActiveFilters(g));
-    return games.sort((a, b) => {
-      if (this.librarySort === 'az') return a.title.localeCompare(b.title);
-      return this.sortValue(b) - this.sortValue(a) || a.title.localeCompare(b.title);
-    });
+    if (this.librarySort === 'az') return games.sort((a, b) => a.title.localeCompare(b.title));
+    const key = new Map(games.map((g) => [g.id, this.sortValue(g)] as const));
+    return games.sort((a, b) => key.get(b.id)! - key.get(a.id)! || a.title.localeCompare(b.title));
   }
 
   private matchesActiveFilters(g: GameMeta): boolean {
@@ -822,9 +895,23 @@ export class App {
   }
 
   private lastPlayedGame(): GameMeta | undefined {
-    return GAMES.filter((g) => g.available && getLastPlayed(g.id) > 0).sort(
-      (a, b) => getLastPlayed(b.id) - getLastPlayed(a.id),
-    )[0];
+    if (this.memo.last === undefined) {
+      this.memo.last =
+        GAMES.filter((g) => g.available && getLastPlayed(g.id) > 0).sort(
+          (a, b) => getLastPlayed(b.id) - getLastPlayed(a.id),
+        )[0] ?? null;
+    }
+    return this.memo.last ?? undefined;
+  }
+
+  /** Library tiles are built once per home render and just re-parented when filters change. */
+  private libTile(g: GameMeta): HTMLElement {
+    let node = this.memo.tiles.get(g.id);
+    if (!node) {
+      node = this.tile(g);
+      this.memo.tiles.set(g.id, node);
+    }
+    return node;
   }
 
   private tile(g: GameMeta): HTMLElement {
@@ -904,6 +991,14 @@ export class App {
   }
 
   private achievementProgressFor(g: GameMeta): { total: number; unlocked: number } {
+    const hit = this.memo.ach.get(g.id);
+    if (hit) return hit;
+    const result = this.computeAchievementProgress(g);
+    this.memo.ach.set(g.id, result);
+    return result;
+  }
+
+  private computeAchievementProgress(g: GameMeta): { total: number; unlocked: number } {
     const achievements = ACHIEVEMENTS.filter(
       (a) => a.id.startsWith(`${g.id}-`) || a.desc.includes(g.title),
     );
@@ -955,6 +1050,14 @@ export class App {
   }
 
   private masteryRank(g: GameMeta): number {
+    const hit = this.memo.mastery.get(g.id);
+    if (hit !== undefined) return hit;
+    const rank = this.computeMastery(g);
+    this.memo.mastery.set(g.id, rank);
+    return rank;
+  }
+
+  private computeMastery(g: GameMeta): number {
     const best = getBest(g.id);
     let rank = 0;
     for (const goal of g.masteryGoals ?? []) {
@@ -1023,13 +1126,14 @@ export class App {
       'button',
       {
         class: `tile__fav${isFavorite(id) ? ' is-fav' : ''}`,
+        'data-fav': id,
         'aria-label': t('tile.favorite'),
         'aria-pressed': String(isFavorite(id)),
         onClick: (e: Event) => {
           e.stopPropagation();
           toggleFavorite(id);
           audio.sfx('blip');
-          void this.renderHome();
+          this.onFavoriteChanged(id);
         },
       },
       [icon('star')],

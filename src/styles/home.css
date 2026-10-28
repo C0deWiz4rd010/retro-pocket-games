@@ -448,3 +448,12 @@
 .nav__item[disabled] {
   opacity: 0.4;
 }
+
+/* Phase 6: keep long libraries cheap — off-screen tiles skip layout/paint. */
+.tilegrid > .tile {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
+}
+.section-host {
+  display: contents;
+}

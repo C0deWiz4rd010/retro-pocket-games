@@ -2,6 +2,8 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle, glowRect, mix } from '@kits/arcade/glow';
+import { Starfield } from '@kits/arcade/starfield';
 
 const BRICK_COLORS = [0xff4d4d, 0xff7b00, 0xffd200, 0x3ddc84, 0x00f7ff];
 
@@ -46,8 +48,9 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   ctx.stage.addChild(layer);
+  const backdrop = new Starfield(W, H, { bg: 0x070914, count: 36, tint: 0x9fb4ff });
   const g = new Graphics();
-  layer.addChild(g);
+  layer.addChild(backdrop.view, g);
 
   const cols = 7;
   const brickW = (W - 20) / cols;
@@ -201,7 +204,14 @@ export default function createGame(ctx: GameContext): Game {
     bricks.forEach((b) => {
       const dmg = b.maxHp > 1 ? b.hp / b.maxHp : 1;
       const color = b.kind === 'steel' ? 0xc0c8d8 : b.kind === 'bomb' ? 0xff7b00 : b.c;
-      g.roundRect(b.x, b.y, brickW - 4, brickH, 3).fill({ color, alpha: 0.5 + dmg * 0.5 });
+      const bw = brickW - 4;
+      g.roundRect(b.x, b.y, bw, brickH, 3).fill({ color, alpha: 0.5 + dmg * 0.5 });
+      // glossy top edge + darker bottom edge
+      g.roundRect(b.x + 1, b.y + 1, bw - 2, 4, 2).fill({ color: 0xffffff, alpha: 0.3 });
+      g.roundRect(b.x + 1, b.y + brickH - 4, bw - 2, 3, 2).fill({
+        color: mix(color, 0x000000, 0.55),
+        alpha: 0.6,
+      });
       if (b.kind === 'bomb') {
         g.circle(b.x + (brickW - 4) / 2, b.y + brickH / 2, 4).fill({ color: 0xfff1c0 });
       } else if (b.hp > 1) {
@@ -226,14 +236,20 @@ export default function createGame(ctx: GameContext): Game {
       g.roundRect(d.x - 9, d.y - 6, 18, 12, 3).fill({ color: POWER_META[d.kind].color });
     });
     const padColor = laserT > 0 ? 0xff4d4d : pad.wideT > 0 ? 0x3ddc84 : 0x00f7ff;
+    glowRect(g, pad.x, pad.y, pad.w, pad.h, 6, padColor, 0.45);
     g.roundRect(pad.x, pad.y, pad.w, pad.h, 6).fill({ color: padColor });
+    g.roundRect(pad.x + 3, pad.y + 2, pad.w - 6, 3, 2).fill({ color: 0xffffff, alpha: 0.45 });
     // laser cannons visual when active
     if (laserT > 0) {
       g.rect(pad.x + 3, pad.y - 5, 4, 6).fill({ color: 0xff4d4d });
       g.rect(pad.x + pad.w - 7, pad.y - 5, 4, 6).fill({ color: 0xff4d4d });
     }
     lasers.forEach((l) => g.rect(l.x - 2, l.y, 4, 12).fill({ color: 0xff4d4d, alpha: 0.9 }));
-    balls.forEach((b) => g.circle(b.x, b.y, 6).fill({ color: 0xffffff }));
+    balls.forEach((b) => {
+      glowCircle(g, b.x, b.y, 6, 0x9bf6ff, 0.22);
+      g.circle(b.x, b.y, 6).fill({ color: 0xffffff });
+      g.circle(b.x - 1.5, b.y - 1.5, 2).fill({ color: 0xffffff });
+    });
   };
 
   return {
@@ -340,6 +356,7 @@ export default function createGame(ctx: GameContext): Game {
         lives--;
         ctx.hud.setLives(lives);
         ctx.audio.sfx('explosion');
+        ctx.fx.screenShake(6, 0.2);
         if (lives <= 0) {
           over = true;
           ctx.gameOver(score, { level });
@@ -374,6 +391,7 @@ export default function createGame(ctx: GameContext): Game {
 
       // particles + shake
       particles.update(dt);
+      backdrop.update(dt);
 
       draw();
     },

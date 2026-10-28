@@ -3,6 +3,8 @@ import type { Game, GameContext } from '@core/types';
 import { TAU, wrap } from '@utils/math';
 import type { RNG } from '@utils/rng';
 import { Particles } from '@kits/arcade/particles';
+import { glowCircle } from '@kits/arcade/glow';
+import { Starfield } from '@kits/arcade/starfield';
 import { fxRandom } from '@utils/rng';
 
 interface Roid {
@@ -45,16 +47,9 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   ctx.stage.addChild(layer);
-  const bgG = new Graphics();
+  const starfield = new Starfield(W, H, { bg: 0x05060f, count: 56 });
   const g = new Graphics();
-  layer.addChild(bgG, g);
-
-  const stars: { x: number; y: number; s: number }[] = [];
-  for (let i = 0; i < 50; i++)
-    stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
-  bgG.rect(0, 0, W, H).fill({ color: 0x05060f });
-  for (const s of stars)
-    bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.1 + s.s * 0.2 });
+  layer.addChild(starfield.view, g);
 
   const ship = { x: W / 2, y: H / 2, a: -Math.PI / 2, vx: 0, vy: 0, thrust: false, inv: 0 };
   let bullets: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
@@ -218,7 +213,9 @@ export default function createGame(ctx: GameContext): Game {
       const [bx, by] = tx(-10, -8);
       const [cx, cy] = tx(-6, 0);
       const [dx, dy] = tx(-10, 8);
-      g.poly([ax, ay, bx, by, cx, cy, dx, dy]).stroke({ width: 2, color: 0xa8a0ff });
+      glowCircle(g, ship.x, ship.y, 7, 0xa8a0ff, 0.12);
+      g.poly([ax, ay, bx, by, cx, cy, dx, dy]).stroke({ width: 5, color: 0xa8a0ff, alpha: 0.18 });
+      g.poly([ax, ay, bx, by, cx, cy, dx, dy]).stroke({ width: 2, color: 0xe6e3ff });
       if (ship.thrust) g.poly([cx, cy, ...tx(-18, 0)]).stroke({ width: 2, color: 0xff7b00 });
     }
     // roids
@@ -228,10 +225,18 @@ export default function createGame(ctx: GameContext): Game {
         const ang = (i / r.verts.length) * TAU;
         path.push(r.x + Math.cos(ang) * r.r * rr, r.y + Math.sin(ang) * r.r * rr);
       });
-      g.poly(path).stroke({ width: 2, color: 0xcad0ff });
+      const rc = r.size === 3 ? 0xcad0ff : r.size === 2 ? 0xffe9a8 : 0xffb3a8;
+      g.poly(path).stroke({ width: 5, color: rc, alpha: 0.14 });
+      g.poly(path).stroke({ width: 2, color: rc });
     });
-    bullets.forEach((b) => g.circle(b.x, b.y, 2.5).fill({ color: 0xffffff }));
-    eBullets.forEach((b) => g.circle(b.x, b.y, 2.5).fill({ color: 0xff4d4d }));
+    bullets.forEach((b) => {
+      g.circle(b.x, b.y, 5).fill({ color: 0xffffff, alpha: 0.15 });
+      g.circle(b.x, b.y, 2.5).fill({ color: 0xffffff });
+    });
+    eBullets.forEach((b) => {
+      g.circle(b.x, b.y, 5).fill({ color: 0xff4d4d, alpha: 0.2 });
+      g.circle(b.x, b.y, 2.5).fill({ color: 0xff4d4d });
+    });
     if (saucer) {
       g.ellipse(saucer.x, saucer.y, 16, 7).stroke({ width: 2, color: 0xff2e97 });
       g.ellipse(saucer.x, saucer.y - 3, 8, 5).stroke({ width: 2, color: 0xff7b00 });
@@ -242,6 +247,7 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       clock += dt;
+      starfield.update(dt);
       // controls
       const ax = ctx.input.axis().x;
       ship.a += ax * 3.4 * dt;
@@ -394,6 +400,7 @@ export default function createGame(ctx: GameContext): Game {
       if (!invincible()) {
         for (const r of roids) {
           if (Math.hypot(ship.x - r.x, ship.y - r.y) < r.r + 8) {
+            ctx.fx.hitStop(0.08);
             if (loseLife()) return;
             break;
           }

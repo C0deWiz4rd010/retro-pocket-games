@@ -182,6 +182,7 @@ export class GameHost {
       // A fixed-step accumulator was considered and rejected: games draw inside update(), so
       // sub-stepping would re-tessellate every frame several times on exactly the slow devices
       // that can least afford it.
+      if (this.fx.isFrozen(dt)) return; // hit-stop: the picture holds for a few ms
       const step = Math.min(dt * timeScale, 0.075);
       this.timers.update(step);
       this.game.update(step);

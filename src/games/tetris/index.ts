@@ -1,7 +1,10 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
-import { fxRandom, type RNG } from '@utils/rng';
+import { type RNG } from '@utils/rng';
+import { Particles } from '@kits/arcade/particles';
+import { bevelBlock } from '@kits/arcade/glow';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const COLS = 10;
 const ROWS = 20;
@@ -78,10 +81,27 @@ export default function createGame(ctx: GameContext): Game {
   layer.position.set(ox, oy);
   ctx.stage.addChild(layer);
   const frame = new Graphics();
+  // static: well backdrop, faint grid and frame are drawn once
+  frame.rect(0, 0, fieldW, fieldH).fill({ color: 0x0a0a12, alpha: 0.6 });
+  for (let c = 1; c < COLS; c++)
+    frame.rect(c * cell, 0, 1, fieldH).fill({ color: 0xffffff, alpha: 0.04 });
+  for (let r = 1; r < ROWS; r++)
+    frame.rect(0, r * cell, fieldW, 1).fill({ color: 0xffffff, alpha: 0.04 });
   frame.rect(-3, -3, fieldW + 6, fieldH + 6).stroke({ width: 3, color: 0x2b2b40 });
+  frame.rect(-1, -1, fieldW + 2, fieldH + 2).stroke({ width: 1, color: 0x00f7ff, alpha: 0.25 });
   const g = new Graphics();
   const sideG = new Graphics();
   layer.addChild(frame, g, sideG);
+  const sideLabel = (text: string, y: number): void => {
+    const t = new Text({
+      text,
+      style: { fontFamily: PIXEL_FONT, fontSize: Math.max(12, cell * 0.55), fill: 0x8f95b8 },
+    });
+    t.position.set(fieldW + cell * 0.9, y);
+    layer.addChild(t);
+  };
+  sideLabel('HOLD', cell * 0.15);
+  sideLabel('NEXT', cell * 3.3);
 
   const board: Cell[] = new Array(COLS * ROWS).fill(0);
   const queue: number[] = [...bag(ctx.rng), ...bag(ctx.rng)];
@@ -105,23 +125,15 @@ export default function createGame(ctx: GameContext): Game {
   let lockT = 0;
   let lockResets = 0;
   let lowestY = 0;
-  interface Particle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    life: number;
-    color: number;
-  }
-  const particles: Particle[] = [];
+  const particles = new Particles({ gravity: 200 });
   const spawnParticles = (rowY: number, color: number): void => {
     for (let i = 0; i < 14; i++) {
-      particles.push({
-        x: fxRandom() * fieldW,
+      particles.emit({
+        x: (i / 14) * fieldW + cell * 0.35,
         y: rowY * cell + cell / 2,
-        vx: (fxRandom() - 0.5) * 160,
-        vy: (fxRandom() - 0.5) * 120,
-        life: 0.5,
+        vx: ((i % 5) - 2) * 55,
+        vy: -60 - (i % 3) * 30,
+        life: 0.55,
         color,
       });
     }
@@ -344,52 +356,41 @@ export default function createGame(ctx: GameContext): Game {
     const mc = cell * 0.7;
     s.m.forEach((row, y) =>
       row.forEach((v, x) => {
-        if (v)
-          sideG.roundRect(px + x * mc, py + y * mc, mc - 2, mc - 2, 2).fill({ color: s.color });
+        if (v) bevelBlock(sideG, px + x * mc, py + y * mc, mc - 2, s.color);
       }),
     );
   };
 
   const draw = (): void => {
     g.clear();
-    g.rect(0, 0, fieldW, fieldH).fill({ color: 0x0a0a12, alpha: 0.6 });
     board.forEach((c, i) => {
       if (!c) return;
       const x = (i % COLS) * cell;
       const y = Math.floor(i / COLS) * cell;
       const row = Math.floor(i / COLS);
       const flashing = flashRows.includes(row) && flashT > 0;
-      g.roundRect(x + 1, y + 1, cell - 2, cell - 2, 3).fill({ color: flashing ? 0xffffff : c });
+      bevelBlock(g, x + 1, y + 1, cell - 2, flashing ? 0xffffff : c);
     });
     let gy = piece.y;
     while (!collides(piece, piece.x, gy + 1)) gy++;
     piece.m.forEach((row, y) =>
       row.forEach((v, x) => {
         if (v)
-          g.roundRect((piece.x + x) * cell + 1, (gy + y) * cell + 1, cell - 2, cell - 2, 3).fill({
+          g.roundRect((piece.x + x) * cell + 2, (gy + y) * cell + 2, cell - 4, cell - 4, 3).stroke({
+            width: 1.5,
             color: piece.color,
-            alpha: 0.18,
+            alpha: 0.55,
           });
       }),
     );
     piece.m.forEach((row, y) =>
       row.forEach((v, x) => {
         if (v && piece.y + y >= 0)
-          g.roundRect(
-            (piece.x + x) * cell + 1,
-            (piece.y + y) * cell + 1,
-            cell - 2,
-            cell - 2,
-            3,
-          ).fill({ color: piece.color });
+          bevelBlock(g, (piece.x + x) * cell + 1, (piece.y + y) * cell + 1, cell - 2, piece.color);
       }),
     );
 
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
 
     sideG.clear();
     const sx = fieldW + cell * 0.6;
@@ -402,14 +403,7 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       // particles + shake animate independently of lock state
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vy += 200 * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
       if (flashT > 0) {
         flashT -= dt;
         if (flashT <= 0) {

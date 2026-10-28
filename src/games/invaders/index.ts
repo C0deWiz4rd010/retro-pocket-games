@@ -2,7 +2,8 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
-import { fxRandom } from '@utils/rng';
+import { Starfield } from '@kits/arcade/starfield';
+import { glowRect } from '@kits/arcade/glow';
 
 interface Alien {
   x: number;
@@ -27,11 +28,6 @@ interface Drop {
   y: number;
   kind: PowerKind;
 }
-interface Star {
-  x: number;
-  y: number;
-  s: number;
-}
 
 const POWER: Record<PowerKind, { color: number; label: string }> = {
   rapid: { color: 0xffd200, label: 'RAPID FIRE' },
@@ -44,9 +40,9 @@ export default function createGame(ctx: GameContext): Game {
   const H = ctx.height;
   const layer = new Container();
   ctx.stage.addChild(layer);
-  const bgG = new Graphics();
+  const starfield = new Starfield(W, H, { bg: 0x05060f, count: 44 });
   const g = new Graphics();
-  layer.addChild(bgG, g);
+  layer.addChild(starfield.view, g);
 
   const COLS = 8;
   const ROWS = 5;
@@ -62,7 +58,6 @@ export default function createGame(ctx: GameContext): Game {
   const bunkers: BunkerCell[] = [];
   const drops: Drop[] = [];
   const particles = new Particles({ decay: 1.8, fade: 1 });
-  const stars: Star[] = [];
   let ufo: { x: number; dir: number; worth: number } | null = null;
   let ufoTimer = 12;
   let score = 0;
@@ -75,9 +70,6 @@ export default function createGame(ctx: GameContext): Game {
   let spreadT = 0;
   let shield = false;
   const bSize = 6;
-
-  for (let i = 0; i < 40; i++)
-    stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.5 + 0.5 });
 
   const build = (): void => {
     aliens = [];
@@ -120,6 +112,7 @@ export default function createGame(ctx: GameContext): Game {
     particles.burst(x, y, color, n, 150, 1);
 
   let invuln = 0; // seconds of grace after being hit
+  let marchFrame = 0;
 
   const fire = (): void => {
     if (over || fireCd > 0) return;
@@ -182,22 +175,33 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const draw = (): void => {
-    bgG.clear();
-    bgG.rect(0, 0, W, H).fill({ color: 0x05060f });
-    for (const s of stars)
-      bgG.circle(s.x, s.y, s.s).fill({ color: 0xffffff, alpha: 0.15 + s.s * 0.25 });
-
     g.clear();
+    // two-frame walk cycle: legs swap on every formation step
+    const frame = marchFrame;
     aliens.forEach((a) => {
       if (!a.alive) return;
       const col = a.row < 1 ? 0xff2e97 : a.row < 3 ? 0x00f7ff : 0x3ddc84;
-      g.roundRect(a.x, a.y, alienW, 16, 4).fill({ color: col });
-      g.rect(a.x + 4, a.y + 18, 4, 4).fill({ color: col });
-      g.rect(a.x + alienW - 8, a.y + 18, 4, 4).fill({ color: col });
+      const dark = a.row < 1 ? 0x8a1450 : a.row < 3 ? 0x007a86 : 0x1c7a45;
+      // body with a darker belly + bright top edge
+      g.roundRect(a.x, a.y, alienW, 16, 5).fill({ color: col });
+      g.roundRect(a.x + 2, a.y + 9, alienW - 4, 6, 3).fill({ color: dark, alpha: 0.55 });
+      g.rect(a.x + 4, a.y + 1, alienW - 8, 2).fill({ color: 0xffffff, alpha: 0.35 });
+      // eyes track the player a little
+      const look = Math.max(-1.5, Math.min(1.5, (player.x - a.x - alienW / 2) / 60));
+      g.rect(a.x + 6 + look, a.y + 5, 4, 4).fill({ color: 0x05060f });
+      g.rect(a.x + alienW - 10 + look, a.y + 5, 4, 4).fill({ color: 0x05060f });
+      // antennae + legs (alternate frames)
+      g.rect(a.x + 4, a.y - 3, 2, 4).fill({ color: col });
+      g.rect(a.x + alienW - 6, a.y - 3, 2, 4).fill({ color: col });
+      const lx = frame ? 2 : 6;
+      g.rect(a.x + lx, a.y + 17, 4, 5).fill({ color: col });
+      g.rect(a.x + alienW - lx - 4, a.y + 17, 4, 5).fill({ color: col });
     });
     if (ufo) {
+      glowRect(g, ufo.x - 16, 50, 32, 12, 6, 0xff2e97, 0.5);
       g.roundRect(ufo.x - 16, 50, 32, 12, 6).fill({ color: 0xff2e97 });
       g.ellipse(ufo.x, 50, 10, 4).fill({ color: 0xffd6ec });
+      for (let i = -1; i <= 1; i++) g.circle(ufo.x + i * 9, 57, 1.5).fill({ color: 0xffd200 });
     }
     bunkers.forEach((c) =>
       g.rect(c.x, c.y, bSize, bSize).fill({ color: 0x3ddc84, alpha: 0.4 + c.hp * 0.2 }),
@@ -217,10 +221,16 @@ export default function createGame(ctx: GameContext): Game {
       });
       g.rect(player.x - 2, player.y - 6, 4, 6).fill({ color: 0x00f7ff });
     }
-    pBullets.forEach((b) =>
-      g.rect(b.x - 2, b.y, 4, 12).fill({ color: spreadT > 0 ? 0x00f7ff : 0xffffff }),
-    );
-    eBullets.forEach((b) => g.rect(b.x - 2, b.y, 4, 12).fill({ color: 0xff4d4d }));
+    pBullets.forEach((b) => {
+      const c = spreadT > 0 ? 0x00f7ff : 0xffffff;
+      g.rect(b.x - 4, b.y - 2, 8, 16).fill({ color: c, alpha: 0.18 });
+      g.rect(b.x - 2, b.y, 4, 12).fill({ color: c });
+    });
+    eBullets.forEach((b) => {
+      g.rect(b.x - 4, b.y - 2, 8, 16).fill({ color: 0xff4d4d, alpha: 0.2 });
+      g.rect(b.x - 2, b.y, 4, 12).fill({ color: 0xff4d4d });
+      g.rect(b.x - 1, b.y + 2, 2, 4).fill({ color: 0xffd6d6 });
+    });
     particles.draw(g);
   };
 
@@ -234,14 +244,7 @@ export default function createGame(ctx: GameContext): Game {
       const ax = ctx.input.axis().x;
       if (ax) player.x = clamp(player.x + ax * 260 * dt, player.w / 2, W - player.w / 2);
 
-      // starfield drift
-      for (const s of stars) {
-        s.y += s.s * 8 * dt;
-        if (s.y > H) {
-          s.y = 0;
-          s.x = fxRandom() * W;
-        }
-      }
+      starfield.update(dt);
 
       ufoTimer -= dt;
       if (!ufo && ufoTimer <= 0) {
@@ -282,6 +285,7 @@ export default function createGame(ctx: GameContext): Game {
           descend = false;
         }
         ctx.audio.sfx('blip');
+        marchFrame ^= 1;
         if (aliens.some((a) => a.alive && a.y + 24 >= player.y)) {
           over = true;
           ctx.gameOver(score, { wave });
@@ -380,6 +384,7 @@ export default function createGame(ctx: GameContext): Game {
           }
           lives--;
           invuln = 1.4;
+          ctx.fx.hitStop(0.07);
           ctx.fx.screenShake(8, 0.25);
           burst(player.x, player.y, 0x00f7ff, 14);
           ctx.hud.setLives(lives);

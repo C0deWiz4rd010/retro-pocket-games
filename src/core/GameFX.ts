@@ -27,6 +27,7 @@ export class GameFX {
   private shakeTime = 0;
   private shakeAmp = 0;
   private shakeTotal = 0.16;
+  private freeze = 0;
 
   attach(root: Container): void {
     this.root = root;
@@ -91,6 +92,19 @@ export class GameFX {
     this.shakeTime = Math.max(this.shakeTime, seconds);
   }
 
+  /** Freeze the simulation for a few ms on a big hit ("hit-stop"). Ignored under reduced motion. */
+  hitStop(seconds = 0.05): void {
+    if (document.documentElement.classList.contains('a11y-reduced-motion')) return;
+    this.freeze = Math.max(this.freeze, Math.min(seconds, 0.12));
+  }
+
+  /** Consumed by the host each frame: true while the simulation should stay frozen. */
+  isFrozen(dt: number): boolean {
+    if (this.freeze <= 0) return false;
+    this.freeze -= dt;
+    return true;
+  }
+
   update(dt: number): void {
     for (let i = this.texts.length - 1; i >= 0; i--) {
       const item = this.texts[i]!;
@@ -134,5 +148,6 @@ export class GameFX {
     this.root = null;
     this.shakeTime = 0;
     this.shakeAmp = 0;
+    this.freeze = 0;
   }
 }

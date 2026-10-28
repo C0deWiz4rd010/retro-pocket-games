@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { Particles } from '@kits/arcade/particles';
 
 const BRICK_COLORS = [0xff4d4d, 0xff7b00, 0xffd200, 0x3ddc84, 0x00f7ff];
 
@@ -19,14 +20,6 @@ interface Brick {
   hp: number;
   maxHp: number;
   kind: BrickKind;
-}
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
 }
 type PowerKind = 'multi' | 'wide' | 'slow' | 'life' | 'laser';
 interface Drop {
@@ -64,7 +57,7 @@ export default function createGame(ctx: GameContext): Game {
   let drops: Drop[] = [];
   let bricks: Brick[] = [];
   const lasers: Laser[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles({ gravity: 220, decay: 2, fade: 1 });
   let score = 0;
   let lives = 3;
   let level = 1;
@@ -73,13 +66,12 @@ export default function createGame(ctx: GameContext): Game {
   let slowT = 0;
   let laserT = 0;
   let combo = 0; // Feature: bricks broken before the ball next touches the paddle
-  let shake = 0;
 
   const burst = (x: number, y: number, color: number, n = 8): void => {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 140;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
     }
   };
 
@@ -189,7 +181,7 @@ export default function createGame(ctx: GameContext): Game {
     if (combo > 0 && combo % 8 === 0) ctx.hud.toast(`COMBO x${combo} (${mult}x)`);
     maybeDrop(b.x + brickW / 2, b.y);
     if (b.kind === 'bomb') {
-      shake = Math.max(shake, 0.5);
+      ctx.fx.screenShake(0.5 * 16, 0.5 / 2);
       ctx.audio.sfx('explosion');
       burst(b.x + brickW / 2, b.y + brickH / 2, 0xff7b00, 18);
       // clear neighbours in a radius (chain bombs included)
@@ -220,9 +212,7 @@ export default function createGame(ctx: GameContext): Game {
       }
     });
     // particles
-    particles.forEach((p) =>
-      g.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life }),
-    );
+    particles.draw(g);
     // ball trails
     balls.forEach((b) =>
       b.trail.forEach((t, i) =>
@@ -367,20 +357,7 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       // particles + shake
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vy += 220 * dt;
-        p.life -= dt * 2;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0,
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 8 : 0,
-      );
+      particles.update(dt);
 
       draw();
     },

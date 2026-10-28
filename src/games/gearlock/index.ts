@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
-import { burst, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
+import { burst, drawBackdrop, drawSparks, type Spark, updateSparks } from '@kits/arcade/juice';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;

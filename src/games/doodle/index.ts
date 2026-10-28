@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { wrap } from '@utils/math';
+import { Particles } from '@kits/arcade/particles';
 
 interface Platform {
   x: number;
@@ -24,14 +25,6 @@ interface Bullet {
   x: number;
   y: number;
 }
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
-}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -54,7 +47,7 @@ export default function createGame(ctx: GameContext): Game {
   let monsters: Monster[] = [];
   let jetpacks: { x: number; y: number }[] = [];
   const bullets: Bullet[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles();
   const stars: { x: number; y: number; s: number }[] = [];
   for (let i = 0; i < 40; i++)
     stars.push({ x: ctx.rng.next() * W, y: ctx.rng.next() * H, s: ctx.rng.next() * 1.4 + 0.4 });
@@ -98,7 +91,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 90;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
     }
   };
 
@@ -148,11 +141,7 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(m.x + 5, m.y - camY - 2, 3).fill({ color: 0xffffff });
     });
     bullets.forEach((b) => g.circle(b.x, b.y - camY, 4).fill({ color: 0xffffff }));
-    for (const p of particles)
-      g.circle(p.x, p.y - camY, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g, 0, -camY);
     // doodler with squash + jet flame
     const sq = player.squash;
     if (jetT > 0)
@@ -179,7 +168,7 @@ export default function createGame(ctx: GameContext): Game {
         jetT -= dt;
         player.vy = -780;
         if (ctx.rng.next() < 0.6)
-          particles.push({
+          particles.emit({
             x: player.x,
             y: player.y + player.r,
             vx: (ctx.rng.next() - 0.5) * 40,
@@ -195,13 +184,7 @@ export default function createGame(ctx: GameContext): Game {
       player.y += player.vy * dt;
 
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       // bullets travel up; hit monsters
       for (let i = bullets.length - 1; i >= 0; i--) {

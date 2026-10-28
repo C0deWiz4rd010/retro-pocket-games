@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -8,7 +9,7 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const hint = new Text({
     text: 'FIND THE SIGNAL',
-    style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0xf97316 },
+    style: { fontFamily: PIXEL_FONT, fontSize: 30, fill: 0xf97316 },
   });
   hint.anchor.set(0.5);
   hint.position.set(W / 2, 58);

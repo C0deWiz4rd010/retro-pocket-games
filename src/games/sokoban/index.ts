@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action, Dir } from '@core/InputManager';
+import { DIRS } from '@kits/arcade/constants';
 
 // Hand-made levels. # wall, . goal, $ box, * box-on-goal, @ player, + player-on-goal
 const LEVELS = [
@@ -8,13 +9,6 @@ const LEVELS = [
   ['########', '#  .   #', '# $## $#', '# @  . #', '#  $.  #', '#   .  #', '########'],
   ['#######', '#.  . #', '# $$$ #', '# . @ #', '#  $. #', '#######'],
 ];
-
-const DIRS: Record<string, { x: number; y: number }> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
 
 export default function createGame(ctx: GameContext): Game {
   const layer = new Container();

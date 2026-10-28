@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { Particles } from '@kits/arcade/particles';
 
 interface Pipe {
   x: number;
@@ -15,14 +16,6 @@ interface Cloud {
   y: number;
   s: number;
   speed: number;
-}
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
 }
 
 export default function createGame(ctx: GameContext): Game {
@@ -43,7 +36,7 @@ export default function createGame(ctx: GameContext): Game {
   const bird = { x: W * 0.28, y: H / 2, vy: 0, r: 13 };
   let pipes: Pipe[] = [];
   const clouds: Cloud[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles({ gravity: 200, decay: 2, fade: 1 });
   let spawnT = 0;
   let score = 0;
   let speed = 150;
@@ -107,7 +100,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 120;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
     }
   };
 
@@ -151,9 +144,7 @@ export default function createGame(ctx: GameContext): Game {
       }
     });
     // particles
-    particles.forEach((p) =>
-      g.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life }),
-    );
+    particles.draw(g);
     // bird (rotates with velocity)
     const rot = Math.max(-0.5, Math.min(1.1, bird.vy / 600));
     const bx = bird.x,
@@ -196,14 +187,7 @@ export default function createGame(ctx: GameContext): Game {
         c.x -= c.speed * dt;
         if (c.x < -40) c.x = W + 40;
       }
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vy += 200 * dt;
-        p.life -= dt * 2;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
       if (over) {
         draw();
         return;

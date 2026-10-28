@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -83,23 +84,23 @@ export default function createGame(ctx: GameContext): Game {
   // UI elements
   const dealerTitle = new Text({
     text: 'DEALER',
-    style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xff4d4d },
+    style: { fontFamily: PIXEL_FONT, fontSize: 18, fill: 0xff4d4d },
   });
   const playerTitle = new Text({
     text: 'YOU',
-    style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0x9bffce },
+    style: { fontFamily: PIXEL_FONT, fontSize: 18, fill: 0x9bffce },
   });
   const dealerScore = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff },
+    style: { fontFamily: PIXEL_FONT, fontSize: 22, fill: 0xffffff },
   });
   const playerScore = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xffffff },
+    style: { fontFamily: PIXEL_FONT, fontSize: 22, fill: 0xffffff },
   });
   const resultText = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0xffd200, align: 'center' },
+    style: { fontFamily: PIXEL_FONT, fontSize: 28, fill: 0xffd200, align: 'center' },
   });
   resultText.anchor.set(0.5);
 
@@ -119,7 +120,7 @@ export default function createGame(ctx: GameContext): Game {
   const btnLabels: Text[] = buttons.map((b) => {
     const t = new Text({
       text: b.label,
-      style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0xffffff },
+      style: { fontFamily: PIXEL_FONT, fontSize: 18, fill: 0xffffff },
     });
     t.anchor.set(0.5);
     layer.addChild(t);
@@ -139,7 +140,7 @@ export default function createGame(ctx: GameContext): Game {
         const label = new Text({
           text: `${card.value}\n${card.suit}`,
           style: {
-            fontFamily: 'VT323, monospace',
+            fontFamily: PIXEL_FONT,
             fontSize: cardW * 0.3,
             fill: red ? 0xcc2222 : 0x111111,
             align: 'left',
@@ -161,7 +162,7 @@ export default function createGame(ctx: GameContext): Game {
         const t = new Text({
           text: card.value + card.suit,
           style: {
-            fontFamily: 'VT323, monospace',
+            fontFamily: PIXEL_FONT,
             fontSize: cardW * 0.32,
             fill: red ? 0xcc2222 : 0x111111,
           },
@@ -181,7 +182,7 @@ export default function createGame(ctx: GameContext): Game {
       const t = new Text({
         text: card.value + card.suit,
         style: {
-          fontFamily: 'VT323, monospace',
+          fontFamily: PIXEL_FONT,
           fontSize: cardW * 0.32,
           fill: red ? 0xcc2222 : 0x111111,
         },
@@ -204,7 +205,7 @@ export default function createGame(ctx: GameContext): Game {
     // Bet display
     const betText = new Text({
       text: `BET: ${bet}  CREDITS: ${credits}`,
-      style: { fontFamily: 'VT323, monospace', fontSize: 16, fill: 0xffd200 },
+      style: { fontFamily: PIXEL_FONT, fontSize: 16, fill: 0xffd200 },
     });
     betText.anchor.set(0.5, 0);
     betText.position.set(W / 2, H * 0.82);

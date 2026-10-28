@@ -37,7 +37,6 @@ export default function createGame(ctx: GameContext): Game {
   let rally = 0;
   let bestRally = 0;
   let overdrive = false;
-  let shake = 0;
   let growT = 0;
   let shrinkT = 0;
   let slowT = 0;
@@ -133,7 +132,7 @@ export default function createGame(ctx: GameContext): Game {
     capsules.length = 0;
     growT = shrinkT = slowT = 0;
     player.h = cpu.h = basePadH;
-    shake = 0.4;
+    ctx.fx.screenShake(6.4, 0.2);
     burst(player1 ? W - 20 : 20, ball.y, player1 ? 0x00f7ff : 0xff2e97, 14);
     ctx.hud.setScore(pScore);
     setLabel();
@@ -171,7 +170,6 @@ export default function createGame(ctx: GameContext): Game {
       if (growT > 0 && (growT -= dt) <= 0) player.h = basePadH;
       if (shrinkT > 0 && (shrinkT -= dt) <= 0) cpu.h = basePadH;
       if (slowT > 0) slowT -= dt;
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
 
       const ax = ctx.input.axis().y;
       if (ax) player.y = clamp(player.y + ax * 420 * dt, 0, H - player.h);
@@ -240,7 +238,7 @@ export default function createGame(ctx: GameContext): Game {
           ctx.audio.sfx('powerup');
         }
         if (rally % 5 === 0) ctx.hud.toast(`RALLY x${rally}`);
-        shake = overdrive ? 0.35 : 0.18;
+        ctx.fx.screenShake(overdrive ? 5.6 : 2.9, overdrive ? 0.18 : 0.09);
         burst(ball.x, ball.y, dir > 0 ? 0x00f7ff : 0xff2e97, 6);
         ctx.audio.sfx('blip');
       };
@@ -272,13 +270,6 @@ export default function createGame(ctx: GameContext): Game {
         s.life -= dt * 2;
         if (s.life <= 0) sparks.splice(i, 1);
       }
-
-      // screen shake
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 10 : 0,
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 10 : 0,
-      );
 
       draw();
     },

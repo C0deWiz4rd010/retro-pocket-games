@@ -1,6 +1,8 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action, Dir } from '@core/InputManager';
+import { Particles } from '@kits/arcade/particles';
+import { DIRS } from '@kits/arcade/constants';
 
 type MoverKind = 'car' | 'log' | 'turtle';
 interface Mover {
@@ -12,21 +14,6 @@ interface Mover {
   kind: MoverKind;
   phase: number; // turtle dive phase offset
 }
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
-}
-
-const DIRS: Record<string, { x: number; y: number }> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -75,7 +62,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const frog = { col: Math.floor(cols / 2), row: rows - 1, facing: 'up' as Dir };
   const homes = [false, false, false, false, false];
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let score = 0;
   let lives = 3;
   let frogX = frog.col * cell;
@@ -104,7 +91,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 30 + ctx.rng.next() * 70;
-      particles.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
+      particles.emit({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
     }
   };
 
@@ -187,11 +174,7 @@ export default function createGame(ctx: GameContext): Game {
       }
     });
     // particles
-    particles.forEach((p) =>
-      g
-        .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
-        .fill({ color: p.color, alpha: Math.min(1, p.life * 2) }),
-    );
+    particles.draw(g);
     // frog with eyes
     const fx = frogX + 4,
       fy = frog.row * cell + 4,
@@ -217,13 +200,7 @@ export default function createGame(ctx: GameContext): Game {
         return die();
       }
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       if (flySlot !== null) {
         flyTtl -= dt;

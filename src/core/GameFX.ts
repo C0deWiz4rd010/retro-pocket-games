@@ -26,6 +26,7 @@ export class GameFX {
   private flashPool: Graphics[] = [];
   private shakeTime = 0;
   private shakeAmp = 0;
+  private shakeTotal = 0.16;
 
   attach(root: Container): void {
     this.root = root;
@@ -82,7 +83,11 @@ export class GameFX {
   screenShake(amp = 6, seconds = 0.16): void {
     // Respect the reduced-motion accessibility setting (shake is a common nausea trigger).
     if (document.documentElement.classList.contains('a11y-reduced-motion')) return;
-    this.shakeAmp = Math.max(this.shakeAmp, amp);
+    // A stronger shake takes over; a weaker one never cuts a running shake short.
+    if (amp >= this.shakeAmp * Math.max(0, this.shakeTime / this.shakeTotal)) {
+      this.shakeAmp = amp;
+      this.shakeTotal = Math.max(0.01, seconds);
+    }
     this.shakeTime = Math.max(this.shakeTime, seconds);
   }
 
@@ -108,7 +113,7 @@ export class GameFX {
     }
     if (this.root && this.shakeTime > 0) {
       this.shakeTime -= dt;
-      const amp = this.shakeAmp * Math.max(0, this.shakeTime / 0.16);
+      const amp = this.shakeAmp * Math.max(0, this.shakeTime / this.shakeTotal);
       this.root.position.set((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
       if (this.shakeTime <= 0) {
         this.shakeAmp = 0;

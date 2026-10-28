@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
+import { Particles } from '@kits/arcade/particles';
 
 /**
  * Q*bert-lite: hop down an isometric pyramid of cubes, flipping each to the target
@@ -17,14 +18,6 @@ interface Hopper {
   row: number;
   col: number;
   t: number;
-}
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
 }
 
 export default function createGame(ctx: GameContext): Game {
@@ -54,7 +47,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const q = { row: 0, col: 0, fall: false };
   const enemies: Hopper[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let orb: Hopper | null = null;
   let score = 0;
   let lives = 3;
@@ -78,7 +71,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 90;
-      particles.push({
+      particles.emit({
         x: p.x,
         y: p.y + cubeH * 0.4,
         vx: Math.cos(a) * s,
@@ -219,11 +212,7 @@ export default function createGame(ctx: GameContext): Game {
         drawCube(p.x, p.y, cubes[row]![col]!.state);
       }
     // particles
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
     // bonus orb
     if (orb) {
       const p = pos(orb.row, orb.col);
@@ -248,13 +237,7 @@ export default function createGame(ctx: GameContext): Game {
       if (over) return;
       if (freeze > 0) freeze -= dt;
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       // spawn enemies
       enemyTimer -= dt;

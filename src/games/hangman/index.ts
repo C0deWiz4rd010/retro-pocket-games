@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const WORDS = [
   'PIXEL',
@@ -29,15 +30,15 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const title = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0x7dd3fc, align: 'center' },
+    style: { fontFamily: PIXEL_FONT, fontSize: 30, fill: 0x7dd3fc, align: 'center' },
   });
   const wordText = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 34, fill: 0xffffff, align: 'center' },
+    style: { fontFamily: PIXEL_FONT, fontSize: 34, fill: 0xffffff, align: 'center' },
   });
   const info = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: 0xffd200, align: 'center' },
+    style: { fontFamily: PIXEL_FONT, fontSize: 20, fill: 0xffd200, align: 'center' },
   });
   title.anchor.set(0.5);
   wordText.anchor.set(0.5);
@@ -206,7 +207,7 @@ export default function createGame(ctx: GameContext): Game {
         .stroke({ width: 1, color: 0x7dd3fc, alpha: used ? 0.25 : 0.9 });
       const t = new Text({
         text: letter,
-        style: { fontFamily: 'VT323, monospace', fontSize: 20, fill: used ? 0xcccccc : 0xffffff },
+        style: { fontFamily: PIXEL_FONT, fontSize: 20, fill: used ? 0xcccccc : 0xffffff },
       });
       t.anchor.set(0.5);
       t.position.set(c * keyW + keyW / 2, y + keyH / 2 - 2);

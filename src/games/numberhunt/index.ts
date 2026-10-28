@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -8,7 +9,7 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const title = new Text({
     text: 'NUMBER HUNT',
-    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0x34d399 },
+    style: { fontFamily: PIXEL_FONT, fontSize: 28, fill: 0x34d399 },
   });
   const prompt = new Text({
     text: '',

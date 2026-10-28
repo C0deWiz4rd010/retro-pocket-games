@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const WORDS = [
   'PIXEL',
@@ -29,7 +30,7 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const title = new Text({
     text: 'WORD MIX',
-    style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0xa78bfa },
+    style: { fontFamily: PIXEL_FONT, fontSize: 30, fill: 0xa78bfa },
   });
   const scramble = new Text({
     text: '',
@@ -141,7 +142,7 @@ export default function createGame(ctx: GameContext): Game {
         .stroke({ width: 2, color: gone ? 0x3a3450 : 0xa78bfa, alpha: gone ? 0.4 : 1 });
       const t = new Text({
         text: gone ? '✗' : choice,
-        style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: gone ? 0x5a5470 : 0xffffff },
+        style: { fontFamily: PIXEL_FONT, fontSize: 22, fill: gone ? 0x5a5470 : 0xffffff },
       });
       t.anchor.set(0.5);
       t.position.set(x, y + 37);

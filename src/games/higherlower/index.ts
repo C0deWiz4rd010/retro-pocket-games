@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
@@ -14,15 +15,15 @@ export default function createGame(ctx: GameContext): Game {
   });
   const msg = new Text({
     text: 'HIGHER OR LOWER?',
-    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0xfacc15 },
+    style: { fontFamily: PIXEL_FONT, fontSize: 28, fill: 0xfacc15 },
   });
   const hint = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0x9bb3c9 },
+    style: { fontFamily: PIXEL_FONT, fontSize: 22, fill: 0x9bb3c9 },
   });
   const bankLabel = new Text({
     text: 'BANK',
-    style: { fontFamily: 'VT323, monospace', fontSize: 16, fill: 0xffffff },
+    style: { fontFamily: PIXEL_FONT, fontSize: 16, fill: 0xffffff },
   });
   card.anchor.set(0.5);
   msg.anchor.set(0.5);

@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { Particles } from '@kits/arcade/particles';
 
 interface Alien {
   x: number;
@@ -23,14 +24,6 @@ interface Drop {
   x: number;
   y: number;
   kind: PowerKind;
-}
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
 }
 interface Star {
   x: number;
@@ -66,7 +59,7 @@ export default function createGame(ctx: GameContext): Game {
   const eBullets: { x: number; y: number }[] = [];
   const bunkers: BunkerCell[] = [];
   const drops: Drop[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles({ decay: 1.8, fade: 1 });
   const stars: Star[] = [];
   let ufo: { x: number; dir: number; worth: number } | null = null;
   let ufoTimer = 12;
@@ -79,7 +72,6 @@ export default function createGame(ctx: GameContext): Game {
   let rapidT = 0;
   let spreadT = 0;
   let shield = false;
-  let shake = 0;
   const bSize = 6;
 
   for (let i = 0; i < 40; i++)
@@ -118,7 +110,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 50 + ctx.rng.next() * 150;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
     }
   };
 
@@ -165,7 +157,7 @@ export default function createGame(ctx: GameContext): Game {
     score += (ROWS - a.row) * 10;
     ctx.hud.setScore(score);
     burst(a.x + alienW / 2, a.y + 8, a.row < 1 ? 0xff2e97 : a.row < 3 ? 0x00f7ff : 0x3ddc84);
-    shake = Math.max(shake, 0.2);
+    ctx.fx.screenShake(0.2 * 16, 0.2 / 2);
     ctx.audio.sfx('explosion');
     if (ctx.rng.next() < 0.12) {
       const kinds: PowerKind[] = ['rapid', 'spread', 'shield'];
@@ -216,9 +208,7 @@ export default function createGame(ctx: GameContext): Game {
       g.rect(b.x - 2, b.y, 4, 12).fill({ color: spreadT > 0 ? 0x00f7ff : 0xffffff }),
     );
     eBullets.forEach((b) => g.rect(b.x - 2, b.y, 4, 12).fill({ color: 0xff4d4d }));
-    particles.forEach((p) =>
-      g.circle(p.x, p.y, 3 * p.life).fill({ color: p.color, alpha: p.life }),
-    );
+    particles.draw(g);
   };
 
   return {
@@ -227,7 +217,6 @@ export default function createGame(ctx: GameContext): Game {
       if (fireCd > 0) fireCd -= dt;
       if (rapidT > 0 && (rapidT -= dt) <= 0) setLabel();
       if (spreadT > 0 && (spreadT -= dt) <= 0) setLabel();
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
 
       const ax = ctx.input.axis().x;
       if (ax) player.x = clamp(player.x + ax * 260 * dt, player.w / 2, W - player.w / 2);
@@ -371,7 +360,7 @@ export default function createGame(ctx: GameContext): Game {
             continue;
           }
           lives--;
-          shake = 0.5;
+          ctx.fx.screenShake(8, 0.25);
           burst(player.x, player.y, 0x00f7ff, 14);
           ctx.hud.setLives(lives);
           ctx.audio.sfx('hit');
@@ -384,13 +373,7 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt * 1.8;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       if (aliveCount() === 0) {
         wave++;
@@ -401,11 +384,6 @@ export default function createGame(ctx: GameContext): Game {
         if (wave % 2 === 0) buildBunkers();
       }
 
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
-      );
       draw();
     },
     destroy() {

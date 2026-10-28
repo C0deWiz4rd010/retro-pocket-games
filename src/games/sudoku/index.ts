@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { BOX, N, generateSolved, makePuzzle } from './core';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -20,7 +21,7 @@ export default function createGame(ctx: GameContext): Game {
   for (let i = 0; i < N * N; i++) {
     const t = new Text({
       text: '',
-      style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.58, fill: 0xffffff },
+      style: { fontFamily: PIXEL_FONT, fontSize: cell * 0.58, fill: 0xffffff },
     });
     t.anchor.set(0.5);
     labels.push(t);
@@ -31,7 +32,7 @@ export default function createGame(ctx: GameContext): Game {
   for (let n = 1; n <= 9; n++) {
     const t = new Text({
       text: String(n),
-      style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.7, fill: 0xffd200 },
+      style: { fontFamily: PIXEL_FONT, fontSize: cell * 0.7, fill: 0xffd200 },
     });
     t.anchor.set(0.5);
     pickerLabels.push(t);
@@ -39,14 +40,14 @@ export default function createGame(ctx: GameContext): Game {
   }
   const eraseLabel = new Text({
     text: 'X',
-    style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.6, fill: 0xff4d4d },
+    style: { fontFamily: PIXEL_FONT, fontSize: cell * 0.6, fill: 0xff4d4d },
   });
   eraseLabel.anchor.set(0.5);
   layer.addChild(eraseLabel);
 
   const timeText = new Text({
     text: '0:00',
-    style: { fontFamily: 'VT323, monospace', fontSize: cell * 0.6, fill: 0x9bffce },
+    style: { fontFamily: PIXEL_FONT, fontSize: cell * 0.6, fill: 0x9bffce },
   });
   timeText.anchor.set(0.5);
   timeText.position.set(ox + gw / 2, Math.max(cell * 0.5, oy - cell * 0.6));

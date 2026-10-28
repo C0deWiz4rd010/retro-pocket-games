@@ -3,13 +3,7 @@ import type { Game, GameContext } from '@core/types';
 import { fxRandom } from '@utils/rng';
 import type { Action, Dir } from '@core/InputManager';
 import { createSnake, setDir, step, type SnakeState, type Vec } from './core';
-
-const DIRS: Record<string, { x: number; y: number }> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
+import { DIRS } from '@kits/arcade/constants';
 
 export default function createGame(ctx: GameContext): Game {
   const cols = 18;

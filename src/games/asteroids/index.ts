@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { TAU, wrap } from '@utils/math';
 import type { RNG } from '@utils/rng';
+import { Particles } from '@kits/arcade/particles';
 
 interface Roid {
   x: number;
@@ -32,14 +33,6 @@ interface Power {
   kind: PowerKind;
   life: number;
 }
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
-}
 const POWER: Record<PowerKind, { color: number; label: string }> = {
   shield: { color: 0x00f7ff, label: 'SHIELD' },
   triple: { color: 0xffd200, label: 'TRIPLE SHOT' },
@@ -66,7 +59,7 @@ export default function createGame(ctx: GameContext): Game {
   let bullets: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
   let roids: Roid[] = [];
   const powers: Power[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles({ size: 2.5 });
   let score = 0;
   let lives = 3;
   let wave = 1;
@@ -82,7 +75,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * TAU;
       const sp = 40 + ctx.rng.next() * 140;
-      particles.push({
+      particles.emit({
         x,
         y,
         vx: Math.cos(a) * sp,
@@ -190,11 +183,7 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     // particles
-    for (const p of particles)
-      g.circle(p.x, p.y, 2.5 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
     // power-ups
     for (const pw of powers) {
       const flash = pw.life < 3 && Math.floor(pw.life * 6) % 2 === 0;
@@ -254,7 +243,7 @@ export default function createGame(ctx: GameContext): Game {
         // thruster particles
         const bx = ship.x - Math.cos(ship.a) * 12;
         const by = ship.y - Math.sin(ship.a) * 12;
-        particles.push({
+        particles.emit({
           x: bx,
           y: by,
           vx: -Math.cos(ship.a) * 80 + (ctx.rng.next() - 0.5) * 40,
@@ -272,13 +261,7 @@ export default function createGame(ctx: GameContext): Game {
       if (tripleT > 0 && (tripleT -= dt) <= 0) setLabel();
 
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       // power-ups drift + pickup
       for (let i = powers.length - 1; i >= 0; i--) {

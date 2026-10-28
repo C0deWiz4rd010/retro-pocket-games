@@ -7,7 +7,7 @@ import {
   drawSparks,
   type Spark,
   updateSparks,
-} from '@games/_shared/juice';
+} from '@kits/arcade/juice';
 
 type Gate = { y: number; x: number; w: number; color: number; passed: boolean };
 

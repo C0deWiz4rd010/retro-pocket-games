@@ -15,6 +15,7 @@ import {
   softDrop,
   spawnPiece,
 } from './core';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const DEFAULT_COLORS = [0xff4d4d, 0xffd200, 0x3ddc84, 0x00f7ff, 0xb388ff, 0xff80ab];
 const COLORBLIND_COLORS = [0xe69f00, 0x56b4e9, 0x009e73, 0xf0e442, 0x0072b2, 0xcc79a7];
@@ -50,7 +51,7 @@ export default function createGame(ctx: GameContext): Game {
     text: 'NEXT',
     style: {
       fill: 0xc9c9ff,
-      fontFamily: 'VT323, monospace',
+      fontFamily: PIXEL_FONT,
       fontSize: 17,
       letterSpacing: 0,
     },

@@ -105,7 +105,6 @@ export default function createGame(ctx: GameContext): Game {
   let lockT = 0;
   let lockResets = 0;
   let lowestY = 0;
-  let shake = 0;
   interface Particle {
     x: number;
     y: number;
@@ -203,7 +202,10 @@ export default function createGame(ctx: GameContext): Game {
       score += pts;
       lastClearWasTetris = isTetris;
       level = 1 + Math.floor(lines / 10);
-      shake = Math.min(0.6, 0.2 + cleared * 0.12);
+      ctx.fx.screenShake(
+        Math.min(0.6, 0.2 + cleared * 0.12) * 16,
+        Math.min(0.6, 0.2 + cleared * 0.12) / 2,
+      );
       for (const ry of flashRows) spawnParticles(ry, 0xffffff);
       ctx.hud.setScore(score);
       ctx.hud.setLabel(`LV ${level}`);
@@ -408,12 +410,6 @@ export default function createGame(ctx: GameContext): Game {
         p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
       }
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        ox + (rmS > 0 ? (fxRandom() * 2 - 1) * rmS * 6 : 0),
-        oy + (rmS > 0 ? (fxRandom() * 2 - 1) * rmS * 6 : 0),
-      );
       if (flashT > 0) {
         flashT -= dt;
         if (flashT <= 0) {

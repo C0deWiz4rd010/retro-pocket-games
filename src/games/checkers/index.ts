@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const N = 8; // board size
 
@@ -29,7 +30,7 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(g);
   const statusText = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 16, fill: 0xffd200 },
+    style: { fontFamily: PIXEL_FONT, fontSize: 16, fill: 0xffd200 },
   });
   statusText.anchor.set(0.5, 0);
   statusText.position.set(W / 2, oy + gw + 8);

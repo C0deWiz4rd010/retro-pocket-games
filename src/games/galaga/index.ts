@@ -2,6 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
 import { Particles } from '@kits/arcade/particles';
+import { fxRandom } from '@utils/rng';
 
 interface Enemy {
   x: number;
@@ -59,13 +60,10 @@ export default function createGame(ctx: GameContext): Game {
   let streak = 0;
   let streakTimer = 0;
 
-  const burst = (x: number, y: number, color: number, n = 10): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 140;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps the seeded gameplay rolls independent of effects
+  const burst = (x: number, y: number, color: number, n = 10): void =>
+    particles.burst(x, y, color, n, 140, 0.6);
+  let invuln = 0; // grace period after being hit
   const setLabel = (): void => {
     const buffs = [dualT > 0 ? '⋔' : '', rapidT > 0 ? '⚡' : '', shield ? '🛡' : ''].join('');
     ctx.hud.setLabel(`WAVE ${wave}${buffs ? '  ' + buffs : ''}`);
@@ -161,10 +159,13 @@ export default function createGame(ctx: GameContext): Game {
         player.y + 8,
       ]).fill({ color: 0x00f7ff });
     };
-    drawShip(player.x);
-    if (dualT > 0) {
-      drawShip(player.x - 24);
-      drawShip(player.x + 24);
+    // blink while invulnerable after a hit
+    if (!(invuln > 0 && Math.floor(invuln * 12) % 2 === 0)) {
+      drawShip(player.x);
+      if (dualT > 0) {
+        drawShip(player.x - 24);
+        drawShip(player.x + 24);
+      }
     }
     bullets.forEach((b) => g.rect(b.x - 2, b.y, 4, 12).fill({ color: 0xffffff }));
     eBullets.forEach((b) => g.rect(b.x - 2, b.y, 4, 10).fill({ color: 0xff4d4d }));
@@ -186,13 +187,14 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
       if (streakTimer > 0 && (streakTimer -= dt) <= 0) streak = 0;
+      if (invuln > 0) invuln -= dt;
 
       // starfield drift
       for (const s of stars) {
         s.y += s.s * 12 * dt;
         if (s.y > H) {
           s.y = 0;
-          s.x = ctx.rng.next() * W;
+          s.x = fxRandom() * W;
         }
       }
       // particles
@@ -225,7 +227,7 @@ export default function createGame(ctx: GameContext): Game {
           const dx = player.x - e.x;
           const targetVx = dx * 2.5;
           e.x += (targetVx - (e.x - e.hx)) * Math.min(1, dt * 2.5);
-          e.y += (140 + wave * 12) * dt;
+          e.y += (140 + Math.min(wave, 8) * 12) * dt;
           e.x += Math.sin(e.t * 4) * 80 * dt;
           if (e.y > H + 20) {
             e.diving = false;
@@ -236,7 +238,7 @@ export default function createGame(ctx: GameContext): Game {
       });
 
       diveAcc += dt;
-      if (diveAcc > 1.4) {
+      if (diveAcc > Math.max(0.6, 1.4 - (wave - 1) * 0.1)) {
         diveAcc = 0;
         const candidates = enemies.filter((e) => e.alive && !e.diving);
         if (candidates.length) {
@@ -247,7 +249,7 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       fireAcc += dt;
-      if (fireAcc > 0.7) {
+      if (fireAcc > Math.max(0.35, 0.7 - (wave - 1) * 0.05)) {
         fireAcc = 0;
         const divers = enemies.filter((e) => e.alive && e.diving);
         if (divers.length) {
@@ -292,7 +294,12 @@ export default function createGame(ctx: GameContext): Game {
       eBullets = eBullets.filter((b) => b.y < H + 10);
       for (let i = eBullets.length - 1; i >= 0; i--) {
         const b = eBullets[i]!;
-        if (Math.abs(b.x - player.x) < player.w / 2 && b.y > player.y - 10 && b.y < player.y + 8) {
+        if (
+          invuln <= 0 &&
+          Math.abs(b.x - player.x) < player.w / 2 &&
+          b.y > player.y - 10 &&
+          b.y < player.y + 8
+        ) {
           eBullets.splice(i, 1);
           if (shield) {
             shield = false;
@@ -303,6 +310,7 @@ export default function createGame(ctx: GameContext): Game {
             continue;
           }
           lives--;
+          invuln = 1.3;
           streak = 0;
           ctx.fx.screenShake(8, 0.25);
           burst(player.x, player.y, 0x00f7ff, 14);
@@ -319,6 +327,7 @@ export default function createGame(ctx: GameContext): Game {
         if (
           e.alive &&
           e.diving &&
+          invuln <= 0 &&
           Math.abs(e.x - player.x) < player.w / 2 &&
           Math.abs(e.y - player.y) < 16
         ) {
@@ -332,6 +341,7 @@ export default function createGame(ctx: GameContext): Game {
             continue;
           }
           lives--;
+          invuln = 1.3;
           streak = 0;
           ctx.fx.screenShake(8, 0.25);
           ctx.hud.setLives(lives);

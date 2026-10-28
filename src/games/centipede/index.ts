@@ -63,13 +63,11 @@ export default function createGame(ctx: GameContext): Game {
   ctx.hud.setLives(lives);
   setLabel();
 
-  const burst = (x: number, y: number, color: number, n = 8): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 90;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.55, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps mushroom/spider rolls independent of effects
+  const burst = (x: number, y: number, color: number, n = 8): void =>
+    particles.burst(x, y, color, n, 90, 0.55);
+  let moveCd = 0; // the shooter steps one cell per tick, not one per frame
+  let spiderEat = 0;
 
   const loseLife = (): void => {
     lives--;
@@ -102,13 +100,15 @@ export default function createGame(ctx: GameContext): Game {
   const stepCentipede = (): void => {
     for (const s of segments) {
       let nc = s.col + s.dir;
+      // segments still queued off-screen on the left are walking in, not hitting a wall
+      const entering = s.col < 0 && s.dir > 0;
       const blockedMush = nc >= 0 && nc < cols && mushrooms[mIdx(nc, s.row)]! > 0;
-      if (nc < 0 || nc >= cols || blockedMush) {
+      if (!entering && (nc < 0 || nc >= cols || blockedMush)) {
         s.dir *= -1;
         s.row = Math.min(rows - 1, s.row + 1);
         nc = s.col + s.dir;
       }
-      s.col = clamp(nc, 0, cols - 1);
+      s.col = entering ? nc : clamp(nc, 0, cols - 1);
     }
     if (segments.some((s) => s.row >= rows - 1)) loseLife();
   };
@@ -136,6 +136,7 @@ export default function createGame(ctx: GameContext): Game {
       });
     }
     segments.forEach((s) => {
+      if (s.col < 0) return; // not on the board yet
       g.circle(s.col * cell + cell / 2, s.row * cell + cell / 2, cell * 0.4).fill({
         color: s.head ? 0xff2e97 : 0xffd200,
       });
@@ -162,8 +163,12 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       const ax = ctx.input.axis();
-      if (ax.x) player.col = clamp(player.col + Math.sign(ax.x), 0, cols - 1);
-      if (ax.y) player.row = clamp(player.row + Math.sign(ax.y), rows - playerBandRows, rows - 1);
+      moveCd -= dt;
+      if ((ax.x || ax.y) && moveCd <= 0) {
+        moveCd = 0.075; // ~13 cells/s: fast but controllable (was: one cell per frame)
+        if (ax.x) player.col = clamp(player.col + Math.sign(ax.x), 0, cols - 1);
+        if (ax.y) player.row = clamp(player.row + Math.sign(ax.y), rows - playerBandRows, rows - 1);
+      } else if (!ax.x && !ax.y) moveCd = 0;
 
       if (doubleT > 0 && (doubleT -= dt) <= 0) setLabel();
 
@@ -189,15 +194,13 @@ export default function createGame(ctx: GameContext): Game {
         if (spider.x < 0 || spider.x > cols * cell) spider.vx *= -1;
         const sc = Math.floor(spider.x / cell);
         const sr = Math.floor(spider.y / cell);
-        if (
-          sc >= 0 &&
-          sc < cols &&
-          sr >= 0 &&
-          sr < rows &&
-          mushrooms[mIdx(sc, sr)]! > 0 &&
-          ctx.rng.next() < 0.1
-        )
-          mushrooms[mIdx(sc, sr)] = 0;
+        if (sc >= 0 && sc < cols && sr >= 0 && sr < rows && mushrooms[mIdx(sc, sr)]! > 0) {
+          // eats a mushroom after lingering on it (time-based, frame-rate independent)
+          if ((spiderEat += dt) > 0.3) {
+            mushrooms[mIdx(sc, sr)] = 0;
+            spiderEat = 0;
+          }
+        } else spiderEat = 0;
         // contact with player
         if (
           Math.abs(spider.x - (player.col * cell + cell / 2)) < cell * 0.7 &&

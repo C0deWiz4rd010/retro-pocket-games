@@ -67,13 +67,9 @@ export default function createGame(ctx: GameContext): Game {
   let laserT = 0;
   let combo = 0; // Feature: bricks broken before the ball next touches the paddle
 
-  const burst = (x: number, y: number, color: number, n = 8): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 40 + ctx.rng.next() * 140;
-      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color });
-    }
-  };
+  // cosmetic sparks must not consume the seeded game RNG (daily runs would diverge)
+  const burst = (x: number, y: number, color: number, n = 8): void =>
+    particles.burst(x, y, color, n, 140, 1);
 
   const buildBricks = (): void => {
     bricks = [];
@@ -108,13 +104,16 @@ export default function createGame(ctx: GameContext): Game {
     balls = [{ x: pad.x + pad.w / 2, y: pad.y - 8, vx: 0, vy: 0, trail: [] }];
   };
 
+  const levelSpeed = (): number => Math.min(280 + level * 18, 520);
+
   const launch = (): void => {
     if (!stuck) return;
-    const speed = 280 + level * 18;
+    const speed = levelSpeed();
     const b = balls[0]!;
     b.vx = (ctx.rng.next() < 0.5 ? -1 : 1) * speed * 0.5;
     b.vy = -speed;
     stuck = false;
+    ctx.hud.setLabel(`LEVEL ${level}`);
     ctx.audio.sfx('blip');
   };
 
@@ -185,10 +184,12 @@ export default function createGame(ctx: GameContext): Game {
       ctx.audio.sfx('explosion');
       burst(b.x + brickW / 2, b.y + brickH / 2, 0xff7b00, 18);
       // clear neighbours in a radius (chain bombs included)
-      for (let j = bricks.length - 1; j >= 0; j--) {
-        const n = bricks[j]!;
-        if (Math.abs(n.x - b.x) <= brickW * 1.1 && Math.abs(n.y - b.y) <= (brickH + 6) * 1.1)
-          hitBrick(j, true);
+      const victims = bricks.filter(
+        (n) => Math.abs(n.x - b.x) <= brickW * 1.1 && Math.abs(n.y - b.y) <= (brickH + 6) * 1.1,
+      );
+      for (const n of victims) {
+        const j = bricks.indexOf(n);
+        if (j >= 0) hitBrick(j, true);
       }
     } else {
       ctx.audio.sfx('hit');
@@ -302,10 +303,13 @@ export default function createGame(ctx: GameContext): Game {
           ball.x >= pad.x &&
           ball.x <= pad.x + pad.w
         ) {
-          const hit = (ball.x - (pad.x + pad.w / 2)) / (pad.w / 2);
-          const speed = Math.hypot(ball.vx, ball.vy);
-          ball.vx = hit * speed * 0.8;
-          ball.vy = -Math.abs(speed * 0.7) - 40;
+          // bounce angle follows where the paddle was hit (±60°), speed is preserved
+          const hit = clamp((ball.x - (pad.x + pad.w / 2)) / (pad.w / 2), -1, 1);
+          const speed = Math.max(Math.hypot(ball.vx, ball.vy), levelSpeed() * 0.9);
+          const angle = hit * (Math.PI / 3);
+          ball.vx = Math.sin(angle) * speed;
+          ball.vy = -Math.cos(angle) * speed;
+          ball.y = pad.y - 6;
           combo = 0; // paddle touch breaks the combo chain
           ctx.audio.sfx('blip');
         }
@@ -313,8 +317,18 @@ export default function createGame(ctx: GameContext): Game {
         if (ball.trail.length > 7) ball.trail.shift();
         for (let i = 0; i < bricks.length; i++) {
           const b = bricks[i]!;
-          if (ball.x > b.x && ball.x < b.x + brickW && ball.y > b.y && ball.y < b.y + brickH) {
-            ball.vy = -ball.vy;
+          if (
+            ball.x + 6 > b.x &&
+            ball.x - 6 < b.x + brickW - 4 &&
+            ball.y + 6 > b.y &&
+            ball.y - 6 < b.y + brickH
+          ) {
+            // reflect on the axis with the smaller penetration (side hits no longer flip vy)
+            const overlapX = Math.min(ball.x + 6 - b.x, b.x + brickW - 4 - (ball.x - 6));
+            const overlapY = Math.min(ball.y + 6 - b.y, b.y + brickH - (ball.y - 6));
+            if (overlapX < overlapY)
+              ball.vx = ball.x < b.x + (brickW - 4) / 2 ? -Math.abs(ball.vx) : Math.abs(ball.vx);
+            else ball.vy = ball.y < b.y + brickH / 2 ? -Math.abs(ball.vy) : Math.abs(ball.vy);
             hitBrick(i);
             break;
           }
@@ -351,6 +365,8 @@ export default function createGame(ctx: GameContext): Game {
         level++;
         ctx.hud.setLabel(`LEVEL ${level}`);
         ctx.audio.sfx('powerup');
+        score += 50 * level;
+        ctx.hud.setScore(score);
         drops = [];
         buildBricks();
         resetBall();

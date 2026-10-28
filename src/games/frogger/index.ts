@@ -40,7 +40,9 @@ export default function createGame(ctx: GameContext): Game {
     for (const lane of [...riverRows, ...roadRows]) {
       const isRiver = riverRows.includes(lane);
       const dir = lane % 2 === 0 ? 1 : -1;
-      const speed = (0.8 + ctx.rng.next() * 1.4) * dir * cell * (1 + (level - 1) * 0.12);
+      // lane speed grows with the level but is capped so the last levels stay fair
+      const speed =
+        (0.8 + ctx.rng.next() * 1.4) * dir * cell * Math.min(2.2, 1 + (level - 1) * 0.12);
       // Feature: some river lanes are diving turtles
       const turtle = isRiver && ctx.rng.next() < 0.4;
       const kind: MoverKind = isRiver ? (turtle ? 'turtle' : 'log') : 'car';
@@ -87,21 +89,22 @@ export default function createGame(ctx: GameContext): Game {
     time = maxTime;
   };
 
-  const burst = (cx: number, cy: number, color: number, n = 8): void => {
-    for (let i = 0; i < n; i++) {
-      const a = ctx.rng.next() * Math.PI * 2;
-      const s = 30 + ctx.rng.next() * 70;
-      particles.emit({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
-    }
-  };
+  // cosmetic only: fx RNG keeps the seeded lane layout / fly timing independent of effects
+  const burst = (cx: number, cy: number, color: number, n = 8): void =>
+    particles.burst(cx, cy, color, n, 70, 0.6);
+  let over = false;
+  let flyTimer = 4;
 
   const die = (): void => {
+    if (over) return;
     lives--;
     ctx.hud.setLives(lives);
     burst(frogX + cell / 2, frog.row * cell + cell / 2, 0x9bffce, 12);
     ctx.audio.sfx('hit');
-    if (lives <= 0) ctx.gameOver(score, { homes: homes.filter(Boolean).length, level });
-    else reset();
+    if (lives <= 0) {
+      over = true;
+      ctx.gameOver(score, { homes: homes.filter(Boolean).length, level });
+    } else reset();
   };
 
   const maybeSpawnFly = (): void => {
@@ -115,7 +118,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const hop = (a: Action | Dir): void => {
     const d = DIRS[a];
-    if (!d) return;
+    if (!d || over) return;
     if (a === 'up' || a === 'down' || a === 'left' || a === 'right') frog.facing = a;
     frog.col = Math.max(0, Math.min(cols - 1, frog.col + d.x));
     frog.row = Math.max(0, Math.min(rows - 1, frog.row + d.y));
@@ -193,6 +196,7 @@ export default function createGame(ctx: GameContext): Game {
 
   return {
     update(dt) {
+      if (over) return;
       t += dt;
       time -= dt;
       if (time <= 0) {
@@ -205,7 +209,9 @@ export default function createGame(ctx: GameContext): Game {
       if (flySlot !== null) {
         flyTtl -= dt;
         if (flyTtl <= 0 || homes[flySlot]) flySlot = null;
-      } else if (ctx.rng.next() < dt * 0.25) {
+      } else if ((flyTimer -= dt) <= 0) {
+        // timer-driven (not a per-frame dice roll) so spawns don't depend on the frame rate
+        flyTimer = 3 + ctx.rng.next() * 4;
         maybeSpawnFly();
       }
 

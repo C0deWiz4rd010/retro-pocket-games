@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
-import { fxRandom } from '@utils/rng';
+import { Particles } from '@kits/arcade/particles';
 import type { Action, Dir } from '@core/InputManager';
 import { createSnake, setDir, step, type SnakeState, type Vec } from './core';
 import { DIRS } from '@kits/arcade/constants';
@@ -36,15 +36,7 @@ export default function createGame(ctx: GameContext): Game {
   const edge = new Graphics(); // shield / death edge glow
   layer.addChild(rockG, food, bonusG, poisonG, orbG, snakeG, particleG, edge);
 
-  interface Particle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    life: number;
-    color: number;
-  }
-  const particles: Particle[] = [];
+  const particles = new Particles({ decay: 2.5, fade: 1, size: cell * 0.18 });
 
   const state: SnakeState = createSnake(cols, rows, ctx.rng);
   state.obstacles = [];
@@ -72,7 +64,7 @@ export default function createGame(ctx: GameContext): Game {
   // Feature 3: shield orb — grab for temporary pass-through invincibility.
   let orb: { x: number; y: number; ttl: number } | null = null;
 
-  const interval = (): number => Math.max(0.06, 0.16 - state.score * 0.0006);
+  const interval = (): number => Math.max(0.078, 0.16 - state.score * 0.0004);
 
   const occupied = (x: number, y: number): boolean =>
     state.body.some((b) => b.x === x && b.y === y) ||
@@ -90,30 +82,7 @@ export default function createGame(ctx: GameContext): Game {
   };
 
   const spawnParticles = (gx: number, gy: number, color: number, n = 8): void => {
-    const cx = gx * cell + cell / 2;
-    const cy = gy * cell + cell / 2;
-    for (let i = 0; i < n; i++) {
-      const angle = (i / n) * Math.PI * 2;
-      const speed = 40 + fxRandom() * 60;
-      particles.push({
-        x: cx,
-        y: cy,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: 1,
-        color,
-      });
-    }
-  };
-
-  const updateParticles = (dt: number): void => {
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i]!;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.life -= dt * 2.5;
-      if (p.life <= 0) particles.splice(i, 1);
-    }
+    particles.burst(gx * cell + cell / 2, gy * cell + cell / 2, color, n, 70, 1);
   };
 
   const setLabel = (): void => {
@@ -216,9 +185,7 @@ export default function createGame(ctx: GameContext): Game {
 
     // particles
     particleG.clear();
-    for (const p of particles) {
-      particleG.circle(p.x, p.y, cell * 0.18 * p.life).fill({ color: p.color, alpha: p.life });
-    }
+    particles.draw(particleG);
 
     // edge glow (shield / death)
     edge.clear();
@@ -237,7 +204,7 @@ export default function createGame(ctx: GameContext): Game {
   return {
     update(dt) {
       pulse += dt;
-      updateParticles(dt);
+      particles.update(dt);
       if (deathFlash > 0) deathFlash = Math.max(0, deathFlash - dt * 2);
       if (dead) {
         draw();

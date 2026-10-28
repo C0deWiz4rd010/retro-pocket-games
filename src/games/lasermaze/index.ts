@@ -2,7 +2,7 @@ import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
 import { idx } from '@kits/grid/core';
-import { burst, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
+import { burst, drawBackdrop, drawSparks, type Spark, updateSparks } from '@kits/arcade/juice';
 
 const COLS = 7;
 const ROWS = 9;

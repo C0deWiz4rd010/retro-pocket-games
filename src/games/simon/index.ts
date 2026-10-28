@@ -1,6 +1,7 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
+import { Particles } from '@kits/arcade/particles';
 
 const PADS = [
   { color: 0x3ddc84, dim: 0x1d6e44, q: 0 }, // green TL
@@ -8,15 +9,6 @@ const PADS = [
   { color: 0xffd200, dim: 0x7a6400, q: 2 }, // yellow BL
   { color: 0x00f7ff, dim: 0x067a7e, q: 3 }, // blue BR
 ];
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
-}
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -44,7 +36,7 @@ export default function createGame(ctx: GameContext): Game {
   layer.addChild(centerText);
 
   const seq: number[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let inputIdx = 0;
   let lit = -1;
   let over = false;
@@ -71,7 +63,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < 10; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 90;
-      particles.push({
+      particles.emit({
         x: p.x,
         y: p.y,
         vx: Math.cos(a) * s,
@@ -146,11 +138,7 @@ export default function createGame(ctx: GameContext): Game {
       g.fill({ color: lit === p.q ? p.color : p.dim });
     });
     // particles
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
     g.circle(cx, cy, R * 0.32).fill({ color: 0x14141f });
     g.circle(cx, cy, R * 0.32).stroke({ width: 3, color: 0x2b2b40 });
     // input time ring
@@ -169,13 +157,7 @@ export default function createGame(ctx: GameContext): Game {
       if (over) return;
       timer -= dt;
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       if (phase === 'idle' && timer <= 0) {
         nextRound();

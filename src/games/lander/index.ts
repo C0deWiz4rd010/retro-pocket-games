@@ -1,15 +1,8 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { fxRandom } from '@utils/rng';
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
-}
+import { Particles } from '@kits/arcade/particles';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -21,7 +14,7 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const info = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 18, fill: 0x9bffce },
+    style: { fontFamily: PIXEL_FONT, fontSize: 18, fill: 0x9bffce },
   });
   info.position.set(10, 10);
   layer.addChild(bgG, terrainG, g, info);
@@ -44,7 +37,7 @@ export default function createGame(ctx: GameContext): Game {
   let padY = 0;
   let padMult = 2;
   let fuelCans: { x: number; y: number }[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles();
 
   let level = 1;
   let lives = 3;
@@ -95,7 +88,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 140;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
     }
   };
 
@@ -123,7 +116,7 @@ export default function createGame(ctx: GameContext): Game {
     terrainG.rect(padX1, padY - 2, padX2 - padX1, 4).fill({ color: 0x3ddc84 });
     const flag = new Text({
       text: `x${padMult}`,
-      style: { fontFamily: 'VT323, monospace', fontSize: 16, fill: 0x3ddc84 },
+      style: { fontFamily: PIXEL_FONT, fontSize: 16, fill: 0x3ddc84 },
     });
     flag.position.set((padX1 + padX2) / 2 - 8, padY - 22);
     terrainG.addChild(flag);
@@ -154,11 +147,7 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     // particles
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
     // fuel canisters
     fuelCans.forEach((c) => {
       g.roundRect(c.x - 6, c.y - 8, 12, 16, 3).fill({ color: 0x00f7ff });
@@ -200,7 +189,7 @@ export default function createGame(ctx: GameContext): Game {
         // thruster particles
         const fx = ship.x - Math.sin(ship.a) * 12;
         const fy = ship.y + Math.cos(ship.a) * 12;
-        particles.push({
+        particles.emit({
           x: fx,
           y: fy,
           vx: ship.vx * 0.3 + (ctx.rng.next() - 0.5) * 30,
@@ -215,13 +204,7 @@ export default function createGame(ctx: GameContext): Game {
       if (ship.x > W) ship.x = W;
 
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       // fuel pickup
       for (let i = fuelCans.length - 1; i >= 0; i--) {

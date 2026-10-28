@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action, Dir } from '@core/InputManager';
+import { DIRS } from '@kits/arcade/constants';
 
 /**
  * Pac-Man-lite: a procedurally built, guaranteed-connected maze, dots + power pellets,
@@ -19,13 +20,6 @@ interface Ghost {
   scatter: { x: number; y: number };
   frightened: number;
 }
-
-const DIRS: Record<string, { x: number; y: number }> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
 
 export default function createGame(ctx: GameContext): Game {
   const COLS = 19;

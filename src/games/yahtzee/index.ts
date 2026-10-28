@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const comboScore = (dice: readonly number[]): { label: string; points: number } => {
   const counts = Array.from({ length: 7 }, (_, i) => dice.filter((d) => d === i).length);
@@ -35,16 +36,16 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const label = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0xfacc15, align: 'center' },
+    style: { fontFamily: PIXEL_FONT, fontSize: 28, fill: 0xfacc15, align: 'center' },
   });
   const hint = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 19, fill: 0xffffff, align: 'center' },
+    style: { fontFamily: PIXEL_FONT, fontSize: 19, fill: 0xffffff, align: 'center' },
   });
   const mkBtnLabel = (): Text => {
     const t = new Text({
       text: '',
-      style: { fontFamily: 'VT323, monospace', fontSize: 24, fill: 0xffffff, align: 'center' },
+      style: { fontFamily: PIXEL_FONT, fontSize: 24, fill: 0xffffff, align: 'center' },
     });
     t.anchor.set(0.5);
     return t;

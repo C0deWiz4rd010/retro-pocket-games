@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { Particles } from '@kits/arcade/particles';
 
 interface Segment {
   col: number;
@@ -13,14 +14,6 @@ interface Spider {
   y: number;
   vx: number;
   vy: number;
-}
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
 }
 
 export default function createGame(ctx: GameContext): Game {
@@ -54,7 +47,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const player = { col: Math.floor(cols / 2), row: rows - 1 };
   const bullets: { x: number; y: number }[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let spider: Spider | null = null;
   let spiderTimer = 8;
   let doubleT = 0; // Feature: double-shot power-up
@@ -64,7 +57,6 @@ export default function createGame(ctx: GameContext): Game {
   let over = false;
   let moveAcc = 0;
   let level = 1;
-  let shake = 0;
 
   const setLabel = (): void => ctx.hud.setLabel(`DEFEND · L${level}${doubleT > 0 ? ' ⋔' : ''}`);
   ctx.hud.setScore(0);
@@ -75,13 +67,13 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 90;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.55, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.55, color });
     }
   };
 
   const loseLife = (): void => {
     lives--;
-    shake = 0.5;
+    ctx.fx.screenShake(8, 0.25);
     burst(player.col * cell + cell / 2, player.row * cell + cell / 2, 0x00f7ff, 16);
     ctx.hud.setLives(lives);
     ctx.audio.sfx('hit');
@@ -133,11 +125,7 @@ export default function createGame(ctx: GameContext): Game {
           });
       }
     // particles
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
     // power drop
     if (powerDrop) {
       g.roundRect(powerDrop.x - 8, powerDrop.y - 6, 16, 12, 3).fill({ color: 0xffd200 });
@@ -178,16 +166,9 @@ export default function createGame(ctx: GameContext): Game {
       if (ax.y) player.row = clamp(player.row + Math.sign(ax.y), rows - playerBandRows, rows - 1);
 
       if (doubleT > 0 && (doubleT -= dt) <= 0) setLabel();
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
 
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       // Feature: spider — roams the lower band, eats mushrooms, lethal on contact
       spiderTimer -= dt;
@@ -297,11 +278,6 @@ export default function createGame(ctx: GameContext): Game {
         ctx.audio.sfx('powerup');
         spawnCentipede(10 + level);
       }
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0),
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0,
-      );
       draw();
     },
     destroy() {

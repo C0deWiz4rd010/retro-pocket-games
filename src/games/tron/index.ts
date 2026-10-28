@@ -1,6 +1,8 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action, Dir } from '@core/InputManager';
+import { Particles } from '@kits/arcade/particles';
+import { DIRS } from '@kits/arcade/constants';
 
 interface Cycle {
   x: number;
@@ -9,21 +11,6 @@ interface Cycle {
   dy: number;
   color: number;
 }
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
-}
-
-const DIRS: Record<string, { x: number; y: number }> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
 
 export default function createGame(ctx: GameContext): Game {
   const cell = 8;
@@ -73,7 +60,7 @@ export default function createGame(ctx: GameContext): Game {
   let speed = 0.08;
   let over = false;
   let wins = 0;
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let boost = 1; // Feature: boost meter 0..1
   let boostT = 0; // active boost timer
   let pickup: { x: number; y: number } | null = null; // Feature: energy pickup
@@ -150,7 +137,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 160;
-      particles.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.7, color });
+      particles.emit({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.7, color });
     }
   };
 
@@ -174,10 +161,7 @@ export default function createGame(ctx: GameContext): Game {
 
   const drawFx = (): void => {
     fxG.clear();
-    for (const p of particles)
-      fxG
-        .circle(p.x, p.y, 3 * Math.min(1, p.life * 2))
-        .fill({ color: p.color, alpha: Math.min(1, p.life * 2) });
+    particles.draw(fxG);
   };
 
   const reset = (): void => {
@@ -271,13 +255,7 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
 
       // pickup spawn
       if (!pickup) {

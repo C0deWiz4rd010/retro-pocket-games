@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 const GRID = 8;
 const SHIPS = [4, 3, 3, 2, 2]; // lengths: carrier, 2×destroyer, 2×patrol
@@ -33,12 +34,12 @@ export default function createGame(ctx: GameContext): Game {
 
   const playerLabel = new Text({
     text: 'YOUR FLEET',
-    style: { fontFamily: 'VT323, monospace', fontSize: 14, fill: 0x9bffce },
+    style: { fontFamily: PIXEL_FONT, fontSize: 14, fill: 0x9bffce },
   });
   playerLabel.position.set(playerOx, playerOy - 18);
   const enemyLabel = new Text({
     text: 'ENEMY - TAP TO FIRE',
-    style: { fontFamily: 'VT323, monospace', fontSize: 14, fill: 0xff4d4d },
+    style: { fontFamily: PIXEL_FONT, fontSize: 14, fill: 0xff4d4d },
   });
   enemyLabel.position.set(enemyOx, enemyOy - 18);
   layer.addChild(playerLabel, enemyLabel);

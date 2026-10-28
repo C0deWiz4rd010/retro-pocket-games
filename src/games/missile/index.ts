@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { Particles } from '@kits/arcade/particles';
 
 interface Incoming {
   x: number;
@@ -16,14 +17,6 @@ interface Crate {
   y: number;
   vy: number;
 } // Feature: ammo crate
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
-}
 interface Counter {
   x: number;
   y: number;
@@ -65,7 +58,7 @@ export default function createGame(ctx: GameContext): Game {
   const cities = [0.16, 0.32, 0.48, 0.64, 0.8].map((f) => ({ x: f * W, alive: true }));
   const battery = { x: W / 2, y: groundY, ammo: 10 };
   const incoming: Incoming[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let counters: Counter[] = [];
   let blasts: Blast[] = [];
   let crate: Crate | null = null;
@@ -75,13 +68,12 @@ export default function createGame(ctx: GameContext): Game {
   let over = false;
   let spawnAcc = 0;
   let toSpawn = 6;
-  let shake = 0;
 
   const burst = (x: number, y: number, color: number, n = 8): void => {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 100;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.5, color });
     }
   };
 
@@ -167,11 +159,7 @@ export default function createGame(ctx: GameContext): Game {
         alpha: 0.7,
       });
     }
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
   };
 
   return {
@@ -244,7 +232,7 @@ export default function createGame(ctx: GameContext): Game {
         }
         if (m.y >= groundY) {
           incoming.splice(i, 1);
-          shake = 0.5;
+          ctx.fx.screenShake(8, 0.25);
           burst(m.x, groundY, 0xff4d4d, 12);
           ctx.audio.sfx('hit');
           // destroy nearest city / battery
@@ -279,14 +267,7 @@ export default function createGame(ctx: GameContext): Game {
       }
 
       // particles + shake
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
+      particles.update(dt);
 
       // wave clear
       if (toSpawn === 0 && incoming.length === 0 && counters.length === 0 && blasts.length === 0) {
@@ -310,11 +291,6 @@ export default function createGame(ctx: GameContext): Game {
         ctx.gameOver(score, { wave });
         return;
       }
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
-      );
       draw();
     },
     destroy() {

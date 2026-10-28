@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 /**
  * Reflex Grid: a target lights up at a random spot; tap it as fast as you can. Average
@@ -13,7 +14,7 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const info = new Text({
     text: 'TAP THE TARGET',
-    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0x9bffce, align: 'center' },
+    style: { fontFamily: PIXEL_FONT, fontSize: 22, fill: 0x9bffce, align: 'center' },
   });
   info.anchor.set(0.5);
   info.position.set(W / 2, H * 0.2);

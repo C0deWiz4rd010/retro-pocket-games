@@ -8,7 +8,7 @@ import {
   drawSparks,
   type Spark,
   updateSparks,
-} from '@games/_shared/juice';
+} from '@kits/arcade/juice';
 
 type Hazard = {
   x: number;

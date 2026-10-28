@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 type Problem = { label: string; answer: number; choices: number[] };
 
@@ -10,7 +11,7 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const title = new Text({
     text: 'QUICK MATH',
-    style: { fontFamily: 'VT323, monospace', fontSize: 28, fill: 0x38bdf8 },
+    style: { fontFamily: PIXEL_FONT, fontSize: 28, fill: 0x38bdf8 },
   });
   const problemText = new Text({
     text: '',
@@ -23,7 +24,7 @@ export default function createGame(ctx: GameContext): Game {
   });
   const info = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 22, fill: 0xfacc15 },
+    style: { fontFamily: PIXEL_FONT, fontSize: 22, fill: 0xfacc15 },
   });
   title.anchor.set(0.5);
   problemText.anchor.set(0.5);
@@ -130,7 +131,7 @@ export default function createGame(ctx: GameContext): Game {
         .stroke({ width: 2, color: 0x38bdf8 });
       const t = new Text({
         text: String(choice),
-        style: { fontFamily: 'VT323, monospace', fontSize: 30, fill: 0xffffff },
+        style: { fontFamily: PIXEL_FONT, fontSize: 30, fill: 0xffffff },
       });
       t.anchor.set(0.5);
       t.position.set(x, y + 36);

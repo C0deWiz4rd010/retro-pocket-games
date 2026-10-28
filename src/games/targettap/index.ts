@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
+import { PIXEL_FONT } from '@kits/arcade/constants';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
@@ -9,7 +10,7 @@ export default function createGame(ctx: GameContext): Game {
   const g = new Graphics();
   const label = new Text({
     text: '',
-    style: { fontFamily: 'VT323, monospace', fontSize: 24, fill: 0x22d3ee },
+    style: { fontFamily: PIXEL_FONT, fontSize: 24, fill: 0x22d3ee },
   });
   label.anchor.set(0.5);
   label.position.set(W / 2, 52);

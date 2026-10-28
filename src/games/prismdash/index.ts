@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action } from '@core/InputManager';
-import { burst, drawBackdrop, drawSparks, type Spark, updateSparks } from '@games/_shared/juice';
+import { burst, drawBackdrop, drawSparks, type Spark, updateSparks } from '@kits/arcade/juice';
 
 type Gate = { x: number; gapY: number; color: number; scored: boolean; rainbow: boolean };
 const COLORS = [0x22d3ee, 0xff4d8d, 0xffd200];

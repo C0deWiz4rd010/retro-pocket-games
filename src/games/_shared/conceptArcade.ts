@@ -1,6 +1,13 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
-import { backdropLayers, burst, clamp, drawSparks, type Spark, updateSparks } from './juice';
+import {
+  backdropLayers,
+  burst,
+  clamp,
+  drawSparks,
+  type Spark,
+  updateSparks,
+} from '@kits/arcade/juice';
 
 const CYAN = 0x00f7ff;
 const PINK = 0xff2e97;

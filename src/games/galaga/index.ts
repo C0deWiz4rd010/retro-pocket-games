@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import { clamp } from '@utils/math';
+import { Particles } from '@kits/arcade/particles';
 
 interface Enemy {
   x: number;
@@ -18,14 +19,6 @@ interface Drop {
   x: number;
   y: number;
   kind: PowerKind;
-}
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  color: number;
 }
 const POWER: Record<PowerKind, { color: number; label: string }> = {
   dual: { color: 0xffd200, label: 'DUAL FIGHTER' },
@@ -51,7 +44,7 @@ export default function createGame(ctx: GameContext): Game {
   let eBullets: { x: number; y: number; vx: number; vy: number }[] = [];
   let enemies: Enemy[] = [];
   const drops: Drop[] = [];
-  const particles: Particle[] = [];
+  const particles = new Particles();
   let score = 0;
   let lives = 3;
   let wave = 1;
@@ -65,13 +58,12 @@ export default function createGame(ctx: GameContext): Game {
   let shield = false; // Feature: shield
   let streak = 0;
   let streakTimer = 0;
-  let shake = 0;
 
   const burst = (x: number, y: number, color: number, n = 10): void => {
     for (let i = 0; i < n; i++) {
       const a = ctx.rng.next() * Math.PI * 2;
       const s = 40 + ctx.rng.next() * 140;
-      particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
+      particles.emit({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, color });
     }
   };
   const setLabel = (): void => {
@@ -144,11 +136,7 @@ export default function createGame(ctx: GameContext): Game {
   const draw = (): void => {
     g.clear();
     // particles
-    for (const p of particles)
-      g.circle(p.x, p.y, 3 * Math.min(1, p.life * 2)).fill({
-        color: p.color,
-        alpha: Math.min(1, p.life * 2),
-      });
+    particles.draw(g);
     // drops
     drops.forEach((d) => {
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).fill({ color: POWER[d.kind].color });
@@ -197,7 +185,6 @@ export default function createGame(ctx: GameContext): Game {
           fire();
         }
       }
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
       if (streakTimer > 0 && (streakTimer -= dt) <= 0) streak = 0;
 
       // starfield drift
@@ -209,13 +196,7 @@ export default function createGame(ctx: GameContext): Game {
         }
       }
       // particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]!;
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
+      particles.update(dt);
       // drops fall + pickup
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i]!;
@@ -292,7 +273,7 @@ export default function createGame(ctx: GameContext): Game {
             ctx.hud.setScore(score);
             if (streak >= 3 && streak % 3 === 0) ctx.hud.toast(`STREAK x${streak}`);
             burst(e.x, e.y, e.boss ? 0xff2e97 : 0x42a5f5, e.boss ? 16 : 10);
-            shake = Math.max(shake, e.boss ? 0.35 : 0.15);
+            ctx.fx.screenShake((e.boss ? 0.35 : 0.15) * 16, (e.boss ? 0.35 : 0.15) / 2);
             ctx.audio.sfx('explosion');
             // Feature: bosses drop power-ups
             if (e.boss && ctx.rng.next() < 0.5) {
@@ -323,7 +304,7 @@ export default function createGame(ctx: GameContext): Game {
           }
           lives--;
           streak = 0;
-          shake = 0.5;
+          ctx.fx.screenShake(8, 0.25);
           burst(player.x, player.y, 0x00f7ff, 14);
           ctx.hud.setLives(lives);
           ctx.audio.sfx('hit');
@@ -352,7 +333,7 @@ export default function createGame(ctx: GameContext): Game {
           }
           lives--;
           streak = 0;
-          shake = 0.5;
+          ctx.fx.screenShake(8, 0.25);
           ctx.hud.setLives(lives);
           ctx.audio.sfx('hit');
           if (lives <= 0) {
@@ -370,11 +351,6 @@ export default function createGame(ctx: GameContext): Game {
         ctx.audio.sfx('powerup');
         buildWave();
       }
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
-        rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 7 : 0,
-      );
       draw();
     },
     destroy() {

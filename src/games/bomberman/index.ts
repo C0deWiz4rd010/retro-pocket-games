@@ -1,6 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import type { Game, GameContext } from '@core/types';
 import type { Action, Dir } from '@core/InputManager';
+import { DIRS } from '@kits/arcade/constants';
 
 interface Bomb {
   c: number;
@@ -13,13 +14,6 @@ interface Enemy {
   dir: { x: number; y: number };
   moveT: number;
 }
-
-const DIRS: Record<string, { x: number; y: number }> = {
-  up: { x: 0, y: -1 },
-  down: { x: 0, y: 1 },
-  left: { x: -1, y: 0 },
-  right: { x: 1, y: 0 },
-};
 
 // 0 empty, 1 hard wall, 2 soft block
 export default function createGame(ctx: GameContext): Game {
@@ -60,7 +54,6 @@ export default function createGame(ctx: GameContext): Game {
   let lives = 3;
   let over = false;
   let level = 1;
-  let shake = 0;
   let pulse = 0;
   let exit: { c: number; r: number } | null = null; // Feature: exit portal
   let exitRevealed = false;
@@ -156,7 +149,7 @@ export default function createGame(ctx: GameContext): Game {
       }
     }
     blasts.push(...cells.map((p) => ({ ...p, t: 0.4 })));
-    shake = Math.max(shake, 0.3);
+    ctx.fx.screenShake(0.3 * 16, 0.3 / 2);
     for (const p of cells) burst(p.c, p.r, 0xff7b00, 4);
     ctx.audio.sfx('explosion');
     // chain other bombs
@@ -178,7 +171,7 @@ export default function createGame(ctx: GameContext): Game {
   const loseLife = (): void => {
     if (shield) {
       shield = false;
-      shake = 0.5;
+      ctx.fx.screenShake(8, 0.25);
       burst(player.c, player.r, 0x00f7ff, 12);
       ctx.audio.sfx('powerup');
       ctx.hud.toast('SHIELD ABSORBED');
@@ -186,7 +179,7 @@ export default function createGame(ctx: GameContext): Game {
       return;
     }
     lives--;
-    shake = 0.5;
+    ctx.fx.screenShake(8, 0.25);
     burst(player.c, player.r, 0x3ddc84, 12);
     ctx.hud.setLives(lives);
     ctx.audio.sfx('hit');
@@ -261,7 +254,6 @@ export default function createGame(ctx: GameContext): Game {
     update(dt) {
       if (over) return;
       pulse += dt;
-      if (shake > 0) shake = Math.max(0, shake - dt * 2);
       // particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i]!;
@@ -371,11 +363,6 @@ export default function createGame(ctx: GameContext): Game {
           ctx.hud.setLabel('REACH THE EXIT →');
         }
       }
-      const rmS = document.documentElement.classList.contains('a11y-reduced-motion') ? 0 : shake;
-      layer.position.set(
-        ox + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0),
-        oy + (rmS > 0 ? (ctx.rng.next() * 2 - 1) * rmS * 6 : 0),
-      );
       draw();
     },
     destroy() {

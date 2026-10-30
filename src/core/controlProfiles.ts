@@ -125,6 +125,34 @@ const explicit: Record<string, ControlProfile> = {
   wordmix: { ...CONTROL_PROFILES.tap, assist: { action: 'select', label: 'assist.hint' } },
   sudoku: { ...CONTROL_PROFILES.tap, assist: { action: 'select', label: 'assist.hint' } },
   driftracer: CONTROL_PROFILES.vector,
+  // Batch 8.3: concept games with their own signature mechanic
+  pixeldash: {
+    ...CONTROL_PROFILES.grid,
+    primaryActions: [
+      { action: 'a', label: 'ctl.jump' },
+      { action: 'b', label: 'ctl.flip' },
+    ],
+    hints: ['Jump', 'Flip'],
+  },
+  jumpquest: {
+    ...CONTROL_PROFILES.grid,
+    primaryActions: [{ action: 'a', label: 'ctl.charge' }],
+    hints: ['Move', 'Charge'],
+  },
+  turbodrift: {
+    ...CONTROL_PROFILES.vector,
+    primaryActions: [{ action: 'a', label: 'ctl.drift' }],
+    hints: ['Steer', 'Drift'],
+  },
+  galacticinvaders: {
+    ...CONTROL_PROFILES.shooter,
+    primaryActions: [
+      { action: 'a', label: 'ctl.fire' },
+      { action: 'b', label: 'ctl.mirror' },
+    ],
+    hints: ['Move', 'Fire', 'Mirror'],
+  },
+  memorymatch: { ...CONTROL_PROFILES.tap, assist: { action: 'b', label: 'assist.peek' } },
   pinball: base({
     preset: 'dual',
     surfaces: ['actions'],

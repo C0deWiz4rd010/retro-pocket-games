@@ -8,7 +8,7 @@ export default function createGame(ctx: GameContext): Game {
   const { layer, g, sparks } = makeLayer(ctx);
   const player = { x: W / 2, y: H - 42 };
   const invaders: { x: number; y: number; row: number; alive: boolean }[] = [];
-  const shots: { x: number; y: number; enemy: boolean; vx?: number }[] = [];
+  const shots: { x: number; y: number; enemy: boolean; vx?: number; mirror?: boolean }[] = [];
   const barriers: { x: number; y: number; hp: number }[] = [];
   const drops: { x: number; y: number; kind: 'rapid' | 'spread' | 'shield' }[] = []; // Feature: power-up drops
   let ufo: { x: number; y: number; dir: number; worth: number } | null = null;
@@ -23,6 +23,10 @@ export default function createGame(ctx: GameContext): Game {
   let rapidT = 0; // Feature: rapid fire
   let spreadT = 0; // Feature: spread shot
   let shield = false; // Feature: shield
+  let over = false;
+  let parryT = 0; // seconds the mirror shield is up
+  let parryCd = 0; // cooldown until it can be raised again
+  let reflected = 0;
   let streak = 0; // Feature: kill streak multiplier
   let streakT = 0;
   const DROPCOL: Record<string, number> = { rapid: GOLD, spread: CYAN, shield: GREEN };
@@ -34,9 +38,7 @@ export default function createGame(ctx: GameContext): Game {
     for (let r = 0; r < 5; r++)
       for (let c = 0; c < 8; c++)
         invaders.push({ x: 32 + c * 38, y: 70 + r * 30, row: r, alive: true });
-    barriers.length = 0;
-    for (let i = 0; i < 3; i++)
-      barriers.push({ x: W * (0.25 + i * 0.25), y: H - 118, hp: 5 + wave });
+    barriers.length = 0; // no bunkers: your only cover is the mirror shield
   };
   build();
   const shoot = (): void => {
@@ -56,8 +58,15 @@ export default function createGame(ctx: GameContext): Game {
     ctx.audio.sfx('powerup');
     ctx.hud.toast(kind === 'rapid' ? 'RAPID FIRE' : kind === 'spread' ? 'SPREAD SHOT' : 'SHIELD');
   };
+  const parry = (): void => {
+    if (over || parryCd > 0) return;
+    parryT = 0.28;
+    parryCd = 1.1;
+    ctx.audio.sfx('select');
+  };
   const offDown = ctx.input.on('down', (a) => {
     if (a === 'a') shoot();
+    else if (a === 'b') parry();
   });
   const offTap = ctx.input.on('tap', shoot);
   function draw(): void {
@@ -76,7 +85,13 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(ufo.x, ufo.y - 10, 10).fill({ color: PINK });
       g.rect(ufo.x - 15, ufo.y + 6, 30, 3).fill({ color: CYAN, alpha: 0.75 });
     }
-    for (const s of shots) g.rect(s.x - 2, s.y - 8, 4, 14).fill({ color: s.enemy ? PINK : WHITE });
+    for (const s of shots) {
+      if (s.mirror) {
+        // reflected bolts glow and pierce the fleet
+        g.rect(s.x - 5, s.y - 12, 10, 24).fill({ color: CYAN, alpha: 0.25 });
+        g.rect(s.x - 2, s.y - 10, 4, 20).fill({ color: WHITE });
+      } else g.rect(s.x - 2, s.y - 8, 4, 14).fill({ color: s.enemy ? PINK : WHITE });
+    }
     for (const b of barriers) {
       const alpha = Math.max(0.25, b.hp / (5 + wave));
       g.roundRect(b.x - 28, b.y - 10, 56, 20, 6).fill({ color: GREEN, alpha });
@@ -87,6 +102,31 @@ export default function createGame(ctx: GameContext): Game {
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).stroke({ width: 1, color: WHITE, alpha: 0.6 });
     }
     if (shield) g.circle(player.x, player.y + 4, 26).stroke({ width: 2, color: GREEN, alpha: 0.6 });
+    // mirror shield: a bright arc while active, a cooldown ring while recharging
+    if (parryT > 0) {
+      g.arc(player.x, player.y + 2, 36, -Math.PI * 0.95, -Math.PI * 0.05).stroke({
+        width: 5,
+        color: WHITE,
+        alpha: 0.95,
+      });
+      g.arc(player.x, player.y + 2, 42, -Math.PI * 0.9, -Math.PI * 0.1).stroke({
+        width: 2,
+        color: CYAN,
+        alpha: 0.6,
+      });
+    } else if (parryCd > 0) {
+      g.arc(
+        player.x,
+        player.y + 4,
+        30,
+        -Math.PI / 2,
+        -Math.PI / 2 + (1 - parryCd / 1.1) * Math.PI * 2,
+      ).stroke({
+        width: 2,
+        color: CYAN,
+        alpha: 0.4,
+      });
+    }
     g.roundRect(player.x - 20, player.y, 40, 14, 4).fill({
       color: spreadT > 0 ? CYAN : rapidT > 0 ? GOLD : CYAN,
     });
@@ -95,8 +135,11 @@ export default function createGame(ctx: GameContext): Game {
   }
   return {
     update(dt) {
+      if (over) return;
       t += dt;
       updateSparks(sparks, dt);
+      parryT = Math.max(0, parryT - dt);
+      parryCd = Math.max(0, parryCd - dt);
       fireCd = Math.max(0, fireCd - dt);
       rapidT = Math.max(0, rapidT - dt);
       spreadT = Math.max(0, spreadT - dt);
@@ -143,18 +186,45 @@ export default function createGame(ctx: GameContext): Game {
           dir *= -1;
           for (const inv of alive) inv.y += 18;
         } else for (const inv of alive) inv.x += dir * 14;
-        if (alive.some((inv) => inv.y > H - 78)) ctx.gameOver(score, { wave });
+        if (alive.some((inv) => inv.y > H - 78)) {
+          over = true;
+          ctx.gameOver(score, { wave });
+          return;
+        }
         const shooter = ctx.rng.pick(alive);
         if (shooter && ctx.rng.next() < 0.45)
           shots.push({ x: shooter.x, y: shooter.y + 12, enemy: true });
       }
       for (let i = shots.length - 1; i >= 0; i--) {
         const s = shots[i]!;
-        s.y += (s.enemy ? 260 : -460) * dt;
+        s.y += (s.enemy ? 260 + Math.min(wave, 8) * 8 : s.mirror ? -560 : -460) * dt;
         s.x += (s.vx ?? 0) * dt;
         if (s.y < -20 || s.y > H + 20 || s.x < -20 || s.x > W + 20) {
           shots.splice(i, 1);
           continue;
+        }
+        if (
+          s.enemy &&
+          parryT > 0 &&
+          Math.hypot(s.x - player.x, s.y - player.y) < 44 &&
+          s.y < player.y + 6
+        ) {
+          // PARRY: the bolt turns around, pierces and is worth double
+          s.enemy = false;
+          s.mirror = true;
+          s.vx = (s.x - player.x) * 3;
+          reflected++;
+          const perfect = parryT > 0.17; // reacted at the start of the window
+          score += perfect ? 60 : 25;
+          ctx.fx.floatingText(
+            perfect ? 'PERFECT PARRY' : 'PARRY',
+            s.x,
+            s.y - 12,
+            perfect ? GOLD : CYAN,
+          );
+          ctx.audio.sfx('powerup');
+          ctx.fx.hitStop(0.04);
+          burst(sparks, ctx.rng, s.x, s.y, WHITE, 8, 110);
         }
         let blocked = false;
         for (let bi = barriers.length - 1; bi >= 0; bi--) {
@@ -182,7 +252,8 @@ export default function createGame(ctx: GameContext): Game {
             ctx.hud.setLives(lives);
             ctx.fx.screenShake(6, 0.12);
             if (lives <= 0) {
-              ctx.gameOver(score, { wave });
+              over = true;
+              ctx.gameOver(score, { wave, reflected });
               return;
             }
           }
@@ -199,11 +270,11 @@ export default function createGame(ctx: GameContext): Game {
           for (const inv of invaders) {
             if (inv.alive && Math.abs(s.x - inv.x) < 17 && Math.abs(s.y - inv.y) < 16) {
               inv.alive = false;
-              shots.splice(i, 1);
+              if (!s.mirror) shots.splice(i, 1); // mirror bolts keep flying
               streak++;
               streakT = 2.5;
               const mult = 1 + Math.floor(streak / 6);
-              score += (5 - inv.row) * 20 * mult;
+              score += (5 - inv.row) * 20 * mult * (s.mirror ? 2 : 1);
               if (streak >= 6 && streak % 6 === 0)
                 ctx.fx.floatingText(`STREAK x${mult}`, inv.x, inv.y - 14, GOLD);
               if (ctx.rng.next() < 0.1)

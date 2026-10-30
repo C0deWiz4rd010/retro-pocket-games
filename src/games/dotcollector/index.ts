@@ -1,11 +1,15 @@
 import type { Game, GameContext } from '@core/types';
 import { burst, drawSparks, updateSparks } from '@kits/arcade/juice';
+import { Graphics } from 'pixi.js';
 import { CYAN, PINK, GOLD, GREEN, VIOLET, makeLayer, backdrop } from '@kits/arcade/concept';
 
 export default function createGame(ctx: GameContext): Game {
   const W = ctx.width;
   const H = ctx.height;
   const { layer, g, sparks } = makeLayer(ctx);
+  // The darkness: a full-board veil with a soft lantern hole cut out around the player.
+  const fog = new Graphics();
+  layer.addChild(fog);
   const cols = 15;
   const rows = 21;
   const cell = Math.floor(Math.min(W / cols, (H - 30) / rows));
@@ -52,7 +56,7 @@ export default function createGame(ctx: GameContext): Game {
   let speedTimer = 12;
   ctx.hud.setScore(0);
   ctx.hud.setLives(lives);
-  ctx.hud.setLabel('DOTS');
+  ctx.hud.setLabel('LANTERN · FIND THE DOTS');
   const can = (x: number, y: number): boolean => !walls.has(`${x},${y}`);
   const freeFloor = (): { x: number; y: number } => {
     let c: { x: number; y: number };
@@ -114,7 +118,31 @@ export default function createGame(ctx: GameContext): Game {
       });
     }
     drawSparks(g, sparks);
+    drawFog();
   }
+  /** Lantern radius in cells: grows with power mode / speed boost, flickers slightly. */
+  const lantern = (): number => (power > 0 ? 6.2 : speedT > 0 ? 4.6 : 3.6) + Math.sin(t * 9) * 0.08;
+  function drawFog(): void {
+    fog.clear();
+    const bx = ox - 5;
+    const by = oy - 5;
+    const bw = cols * cell + 10;
+    const bh = rows * cell + 10;
+    const cx = ox + player.x * cell + cell / 2;
+    const cy = oy + player.y * cell + cell / 2;
+    const r = lantern() * cell;
+    // two veils: a strong one beyond the light, a thin one in the penumbra
+    fog.rect(bx, by, bw, bh).fill({ color: 0x02030a, alpha: 0.93 });
+    fog.circle(cx, cy, r * 1.35).cut();
+    // soft penumbra at the edge of the light
+    fog.circle(cx, cy, r * 1.2).stroke({ width: r * 0.3, color: 0x02030a, alpha: 0.5 });
+    // warm glow inside the lit area
+    fog.circle(cx, cy, r).fill({ color: GOLD, alpha: 0.05 });
+    fog.circle(cx, cy, r * 0.6).fill({ color: GOLD, alpha: 0.05 });
+  }
+  /** Is this cell inside the lantern light? (dots/foes outside it are hidden by the veil) */
+  const lit = (x: number, y: number): boolean =>
+    Math.hypot(x - player.x, y - player.y) <= lantern() * 1.35;
   return {
     update(dt) {
       if (over) return;
@@ -180,6 +208,8 @@ export default function createGame(ctx: GameContext): Game {
           );
         }
         for (const f of foes) {
+          // a chaser that cannot see the lantern wanders; one inside the light hunts
+          const hunting = lit(f.x, f.y) || power > 0;
           const opts = [
             [1, 0],
             [-1, 0],
@@ -193,7 +223,10 @@ export default function createGame(ctx: GameContext): Game {
           );
           const pick =
             opts[
-              Math.min(opts.length - 1, ctx.rng.next() < 0.7 ? 0 : ctx.rng.int(0, opts.length - 1))
+              Math.min(
+                opts.length - 1,
+                ctx.rng.next() < (hunting ? 0.78 : 0.3) ? 0 : ctx.rng.int(0, opts.length - 1),
+              )
             ]!;
           f.x += pick[0]!;
           f.y += pick[1]!;
@@ -228,7 +261,7 @@ export default function createGame(ctx: GameContext): Game {
             ? `POWER ${Math.ceil(power)}${chain > 1 ? ` x${chain}` : ''}`
             : speedT > 0
               ? `SPEED ${Math.ceil(speedT)}`
-              : `DOTS ${dots.size}`,
+              : `LANTERN · ${dots.size} DOTS`,
         );
         draw();
       }

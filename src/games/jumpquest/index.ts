@@ -26,6 +26,11 @@ export default function createGame(ctx: GameContext): Game {
   let score = 0;
   let t = 0;
   let over = false;
+  let charge = 0; // 0..1 jump charge while the button is held on the ground
+  let holding = false;
+  let lava = H + 260; // world-space y of the rising lava surface
+  const MIN_JUMP = 400; // a tap is a short hop …
+  const MAX_JUMP = 900; // … a full charge clears about three platforms
   let jet = 0; // Feature: jetpack boost
   let shield = 0; // Feature: shield absorbs one enemy hit
   ctx.hud.setScore(0);
@@ -50,17 +55,34 @@ export default function createGame(ctx: GameContext): Game {
     if (ctx.rng.next() < 0.1)
       pickups.push({ x: x + 30, y: y - 30, kind: ctx.rng.next() < 0.5 ? 'jet' : 'shield' });
   }
-  const jump = (): void => {
-    if (player.grounded) {
-      player.vy = -720;
-      player.grounded = false;
-      ctx.audio.sfx('jump');
-    }
+  /** Release the jump with the given charge (0..1). */
+  const jump = (power: number): void => {
+    if (!player.grounded) return;
+    const p = Math.max(0, Math.min(1, power));
+    player.vy = -(MIN_JUMP + (MAX_JUMP - MIN_JUMP) * p);
+    player.grounded = false;
+    ctx.audio.sfx('jump');
+    burst(
+      sparks,
+      ctx.rng,
+      player.x,
+      player.y - cam,
+      p > 0.7 ? GOLD : GREEN,
+      6 + Math.round(p * 8),
+      90,
+    );
   };
   const offDown = ctx.input.on('down', (a) => {
-    if (a === 'a' || a === 'up') jump();
+    if (a === 'a' || a === 'up') holding = true;
   });
-  const offTap = ctx.input.on('tap', jump);
+  const offUp = ctx.input.on('up', (a) => {
+    if (a !== 'a' && a !== 'up') return;
+    holding = false;
+    jump(charge);
+    charge = 0;
+  });
+  // touch: a tap on the playfield is a medium hop
+  const offTap = ctx.input.on('tap', () => jump(0.45));
   function draw(): void {
     g.clear();
     backdrop(g, W, H, t, H * 0.7);
@@ -100,6 +122,20 @@ export default function createGame(ctx: GameContext): Game {
       g.circle(e.x + 5, e.y - cam - 2, 2).fill({ color: WHITE });
     }
     const py = player.y - cam;
+    // rising lava with a bubbling surface
+    const ly = lava - cam;
+    if (ly < H + 20) {
+      g.rect(0, ly, W, H - ly + 30).fill({ color: 0xff4d1a, alpha: 0.92 });
+      g.rect(0, ly - 6, W, 8).fill({ color: GOLD, alpha: 0.8 });
+      for (let x = 0; x < W; x += 22)
+        g.circle(x + ((t * 40) % 22), ly - 2 + Math.sin(t * 4 + x) * 3, 5).fill({
+          color: GOLD,
+          alpha: 0.7,
+        });
+    }
+    // charge meter + squash while charging
+    if (charge > 0)
+      g.rect(player.x - 14, py - 46, 28 * charge, 4).fill({ color: charge >= 1 ? GOLD : CYAN });
     if (shield > 0) g.circle(player.x, py - 12, 26).stroke({ width: 2, color: CYAN, alpha: 0.6 });
     if (jet > 0)
       g.poly([
@@ -110,8 +146,11 @@ export default function createGame(ctx: GameContext): Game {
         player.x,
         py + 14 + Math.sin(t * 30) * 4,
       ]).fill({ color: GOLD });
-    g.roundRect(player.x - 12, py - 28, 24, 32, 6).fill({ color: jet > 0 ? GOLD : 0x7dd3fc });
-    g.roundRect(player.x - 8, py - 22, 16, 12, 4).fill({ color: 0xffd1a8 });
+    const squash = charge * 8; // crouch while charging
+    g.roundRect(player.x - 12 - squash / 2, py - 28 + squash, 24 + squash, 32 - squash, 6).fill({
+      color: jet > 0 ? GOLD : charge >= 1 ? 0xfff0a0 : 0x7dd3fc,
+    });
+    g.roundRect(player.x - 8, py - 22 + squash, 16, 12, 4).fill({ color: 0xffd1a8 });
     drawSparks(g, sparks);
   }
   return {
@@ -120,6 +159,9 @@ export default function createGame(ctx: GameContext): Game {
       t += dt;
       updateSparks(sparks, dt);
       player.vx = ctx.input.axis().x * 235;
+      if (holding && player.grounded) charge = Math.min(1, charge + dt / 0.55);
+      // the lava climbs faster the higher you get, but never faster than a decent climber
+      lava -= (16 + Math.min(26, Math.max(0, (H - 80 - top) / 120))) * dt;
       jet = Math.max(0, jet - dt);
       if (jet > 0)
         player.vy = -640; // Feature: jetpack thrust
@@ -230,16 +272,28 @@ export default function createGame(ctx: GameContext): Game {
         score += 1;
       }
       cam += (player.y - H * 0.46 - cam) * Math.min(1, dt * 4);
-      if (player.y - cam > H + 40) {
+      if (player.y - cam > H + 40 || player.y > lava) {
         over = true;
-        ctx.gameOver(score);
+        ctx.fx.screenShake(8, 0.2);
+        ctx.audio.sfx('explosion');
+        ctx.gameOver(score, { height: Math.max(0, Math.round((H - top) / 10)) });
+        return;
       }
       ctx.hud.setScore(score);
-      ctx.hud.setLabel(jet > 0 ? `JETPACK ${jet.toFixed(1)}` : shield > 0 ? 'SHIELD' : 'CLIMB');
+      ctx.hud.setLabel(
+        jet > 0
+          ? `JETPACK ${jet.toFixed(1)}`
+          : shield > 0
+            ? 'SHIELD'
+            : charge > 0
+              ? `CHARGE ${Math.round(charge * 100)}%`
+              : 'HOLD A · RELEASE TO JUMP',
+      );
       draw();
     },
     destroy() {
       offDown();
+      offUp();
       offTap();
       layer.destroy({ children: true });
     },

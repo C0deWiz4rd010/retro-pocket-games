@@ -37,25 +37,39 @@ export default function createGame(ctx: GameContext): Game {
   let t = 0;
   const colors = [PINK, GOLD, GREEN, CYAN, VIOLET];
   const DROP: Record<string, number> = { multi: CYAN, slow: GOLD, grow: GREEN };
+  const ROW_H = 24;
+  let rowSeed = 0; // keeps colours cycling as new rows are added at the top
+  const addRow = (y: number, hp: number): void => {
+    // a gap or two keeps the ball finding lanes into the wall
+    const gap = ctx.rng.int(0, 7);
+    for (let c = 0; c < 8; c++) {
+      if (c === gap && level > 1) continue;
+      bricks.push({
+        x: 18 + c * 40,
+        y,
+        w: 34,
+        h: 15,
+        hp,
+        color: colors[rowSeed % colors.length]!,
+      });
+    }
+    rowSeed++;
+  };
   const buildBricks = (lvl: number): void => {
     bricks.length = 0;
-    const rowsN = Math.min(5 + lvl, 8);
-    for (let r = 0; r < rowsN; r++) {
-      for (let c = 0; c < 8; c++)
-        bricks.push({
-          x: 18 + c * 40,
-          y: 62 + r * 24,
-          w: 34,
-          h: 15,
-          hp: r < lvl ? 2 : 1,
-          color: colors[r % colors.length]!,
-        });
-    }
+    rowSeed = 0;
+    const rowsN = Math.min(4 + lvl, 7);
+    for (let r = 0; r < rowsN; r++) addRow(62 + r * ROW_H, r < lvl - 1 ? 2 : 1);
   };
+  /** Seconds between wall steps: faster each level, never below 5 s. */
+  const marchEvery = (): number => Math.max(5, 12 - level * 0.9);
+  let march = marchEvery();
+  /** Lowest brick edge; when it reaches the paddle zone the wall has breached. */
+  const breachY = paddle.y - 26;
   buildBricks(level);
   ctx.hud.setScore(0);
   ctx.hud.setLives(lives);
-  ctx.hud.setLabel('BREAK · L1');
+  ctx.hud.setLabel('HOLD THE LINE · L1');
   const offPtr = ctx.input.on('pointermove', ({ x }) => {
     paddle.x = clamp(x, paddle.w / 2, W - paddle.w / 2);
   });
@@ -67,6 +81,12 @@ export default function createGame(ctx: GameContext): Game {
         .fill({ color: b.color, alpha: b.hp === 2 ? 0.92 : 0.75 })
         .stroke({ width: 1, color: WHITE, alpha: 0.22 });
     }
+    // breach line + time until the next step
+    g.rect(0, breachY, W, 2).fill({ color: PINK, alpha: 0.35 });
+    g.rect(0, breachY - 3, W * Math.max(0, 1 - march / marchEvery()), 2).fill({
+      color: GOLD,
+      alpha: 0.7,
+    });
     for (const d of drops) {
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).fill({ color: DROP[d.kind]! });
       g.roundRect(d.x - 8, d.y - 6, 16, 12, 3).stroke({ width: 1, color: WHITE, alpha: 0.6 });
@@ -84,6 +104,21 @@ export default function createGame(ctx: GameContext): Game {
       updateSparks(sparks, dt);
       hot = Math.max(0, hot - dt);
       slow = Math.max(0, slow - dt);
+      // the siege: the whole wall steps down one row and a fresh row appears on top
+      march -= dt * (slow > 0 ? 0.6 : 1);
+      if (march <= 0) {
+        march = marchEvery();
+        for (const b of bricks) b.y += ROW_H;
+        addRow(62, level >= 3 ? 2 : 1);
+        ctx.audio.sfx('blip');
+        ctx.fx.screenShake(3, 0.08);
+        if (bricks.some((b) => b.y + b.h >= breachY)) {
+          ctx.fx.screenShake(10, 0.3);
+          ctx.audio.sfx('explosion');
+          ctx.gameOver(score, { level, cleared });
+          return;
+        }
+      }
       const ax = ctx.input.axis().x;
       if (ax) paddle.x = clamp(paddle.x + ax * 330 * dt, paddle.w / 2, W - paddle.w / 2);
       const sp = slow > 0 ? 0.62 : 1;
@@ -115,7 +150,10 @@ export default function createGame(ctx: GameContext): Game {
           if (
             boxHit(ball.x - ball.r, ball.y - ball.r, ball.r * 2, ball.r * 2, b.x, b.y, b.w, b.h)
           ) {
-            ball.vy *= -1;
+            const overlapX = Math.min(ball.x + ball.r - b.x, b.x + b.w - (ball.x - ball.r));
+            const overlapY = Math.min(ball.y + ball.r - b.y, b.y + b.h - (ball.y - ball.r));
+            if (overlapX < overlapY) ball.vx *= -1;
+            else ball.vy *= -1;
             b.hp -= hot > 0 ? 2 : 1;
             if (b.hp <= 0) {
               bricks.splice(i, 1);
@@ -188,6 +226,7 @@ export default function createGame(ctx: GameContext): Game {
       if (!bricks.length) {
         level++;
         score += 500;
+        march = marchEvery();
         paddle.w = 76;
         drops.length = 0;
         balls = [{ x: paddle.x, y: H - 82, vx: ctx.rng.pick([-200, 200]), vy: -300, r: 6 }];
@@ -203,7 +242,7 @@ export default function createGame(ctx: GameContext): Game {
             ? `SLOW ${Math.ceil(slow)}`
             : combo >= 5
               ? `COMBO x${1 + Math.floor(combo / 5)}`
-              : `BREAK · L${level}`,
+              : `HOLD THE LINE · L${level}`,
       );
       draw();
     },

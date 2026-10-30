@@ -5,18 +5,24 @@
  */
 
 export const GAME_BLURB_DE: Record<string, string> = {
-  pixeldash: 'Renn über neonbeleuchtete Dächer, sammle Münzen und weiche Hindernissen aus.',
+  pixeldash:
+    'Renn durch einen Tunnel mit Hindernissen am Boden und an der Decke. Dreh die Schwerkraft, um auszuweichen.',
   neonrider: 'Schlängle dich in Sonnenuntergangs-Tempo durch den Verkehr.',
   blockcollapse: 'Lass verbundene Blöcke platzen und löse mächtige Kettenreaktionen aus.',
   spaceblaster: 'Schieß Käfer, Felsen und Untertassen ab, bevor sie durchbrechen.',
-  jumpquest: 'Klettere über Plattformen, sammle Edelsteine und meide die Wachen.',
-  retrosnake: 'Ein leuchtendes Schlangenfeld, in dem der Rand zur Falle wird.',
-  dotcollector: 'Räum das Labyrinth leer, während die Jäger näher kommen.',
-  memorymatch: 'Dreh Neonkarten um und verkette perfekte Paare.',
-  brickbreaker: 'Zertrümmere leuchtende Ziegelwände mit einem aufgeladenen Schläger.',
-  turbodrift: 'Rutsche mit Schwung durch Neontore.',
+  jumpquest:
+    'Halte gedrückt, um den Sprung aufzuladen, lass los zum Abspringen. Klettere schneller als die Lava steigt.',
+  retrosnake:
+    'Beiß dir in den eigenen Schwanz, um ihn abzutrennen und zu Geld zu machen. Aber wer hungert, verwelkt.',
+  dotcollector:
+    'Ein stockdunkles Labyrinth, nur von deiner Laterne erhellt. Die Jäger folgen dem, was das Licht zeigt.',
+  memorymatch:
+    'Jedes gefundene Paar mischt den Tisch neu. Merk dir alles neu, bevor die Zeit abläuft.',
+  brickbreaker: 'Die Wand marschiert auf dich zu. Zerschlag sie, bevor sie die Linie durchbricht.',
+  turbodrift:
+    'Drifte über eine kurvige Straße: Halten zum Rutschen, Loslassen für einen Mini-Turbo.',
   colorswitch: 'Wechsle die Farbe, um durch rotierende Neonringe zu kommen.',
-  galacticinvaders: 'Angreifer in Formation – mit modernem Pixel-Schliff.',
+  galacticinvaders: 'Keine Bunker, nur ein Spiegelschild. Wehre Schüsse ab und schick sie zurück.',
   snake: 'Iss, wachse und beiß dir nicht in den Schwanz.',
   tetris: 'Stapel die Blöcke und räum die Reihen ab.',
   pong: 'Das Original. Wer zuerst 11 hat, gewinnt.',
